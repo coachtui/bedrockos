@@ -68,6 +68,8 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
 
   // Entity state — seeded from mock files
   const orgId = config.org.id;
+  // Phase 1: MOCK_PROJECTS and MOCK_ASSETS have no orgId field — single-org, no filter needed.
+  // Phase 3: replace with org-scoped Supabase fetches.
   const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS);
   const [assets,   setAssets]   = useState<Asset[]>(MOCK_ASSETS);
   const [workers]               = useState<OrgWorker[]>(MOCK_WORKERS.filter((w) => w.orgId === orgId));
@@ -82,6 +84,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
   }
 
   function setCurrentProject(project: ProjectContext) {
+    if (!projects.some((p) => p.id === project.id)) return;
     setConfig((prev) => ({ ...prev, currentProject: project }));
   }
 

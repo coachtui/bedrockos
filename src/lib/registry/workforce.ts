@@ -15,11 +15,19 @@ import {
 import { MOCK_WORKERS } from "@/lib/mock/workers";
 import type { OrgWorker, WorkerRole } from "@/types/domain";
 
+const KNOWN_WORKER_ROLES = new Set<WorkerRole>([
+  "mechanic", "driver", "mason", "foreman", "superintendent", "operator", "laborer",
+]);
+
+function toWorkerRole(r: string): WorkerRole {
+  return KNOWN_WORKER_ROLES.has(r as WorkerRole) ? (r as WorkerRole) : "laborer";
+}
+
 function toOrgWorker(orgId: string) {
   return (w: CruWorker): OrgWorker => ({
     id:        w.id,
     name:      w.name,
-    role:      w.role as WorkerRole,
+    role:      toWorkerRole(w.role),
     orgId,
     userId:    null,
     projectId: w.siteId,
