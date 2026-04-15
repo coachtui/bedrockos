@@ -46,6 +46,7 @@ interface OrgContextValue {
   addSkillToRole: (role: WorkerRole, skill: string) => void;
   updateWorkerSkills: (workerId: string, skills: string[]) => void;
   reassignWorker:     (workerId: string, projectId: string | undefined, crewId: string | undefined) => void;
+  toggleWorkerAvailability: (workerId: string) => void;
 }
 
 const OrgContext = createContext<OrgContextValue | null>(null);
@@ -227,6 +228,28 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     );
   }
 
+  function toggleWorkerAvailability(workerId: string): void {
+    const worker = workers.find((w) => w.id === workerId);
+    if (!worker) return;
+
+    const next = !worker.available;
+    setWorkers((prev) =>
+      prev.map((w) => (w.id === workerId ? { ...w, available: next } : w))
+    );
+
+    addEmittedActivity({
+      id:          crypto.randomUUID(),
+      actor_name:  config.currentUser.name,
+      action:      `marked ${worker.name} as ${next ? "available" : "unavailable"}`,
+      entity_type: "worker",
+      entity_id:   workerId,
+      entity_name: worker.name,
+      project_id:  worker.projectId ?? config.currentProject.id,
+      module:      "shell",
+      timestamp:   new Date().toISOString(),
+    });
+  }
+
   function reassignWorker(
     workerId: string,
     projectId: string | undefined,
@@ -277,6 +300,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
       actor_name:  config.currentUser.name,
       action,
       entity_type: "worker",
+      entity_id:   workerId,
       entity_name: worker.name,
       project_id:  projectId ?? config.currentProject.id,
       module:      "shell",
@@ -330,6 +354,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
         addSkillToRole,
         updateWorkerSkills,
         reassignWorker,
+        toggleWorkerAvailability,
       }}
     >
       {children}
