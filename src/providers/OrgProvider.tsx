@@ -281,7 +281,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     addEmittedActivity({
       id:          crypto.randomUUID(),
       actor_name:  config.currentUser.name,
-      action:      `renamed crew to ${name}`,
+      action:      `renamed ${crew.name} to ${name}`,
       entity_type: "crew",
       entity_id:   crewId,
       entity_name: name,
