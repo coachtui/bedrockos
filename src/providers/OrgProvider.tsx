@@ -6,6 +6,7 @@ import type { ModuleFeatureMap } from "@/types/org";
 import type {
   Issue, ActivityEvent, Project, Asset, OrgWorker, OrgCrew,
   CreateProjectInput, CreateAssetInput, CreateCrewInput,
+  CreateWorkerInput, WorkerRole,
 } from "@/types/domain";
 import { getOrgConfig, MOCK_USER_BY_ROLE, DEFAULT_USER } from "@/lib/config/org";
 import { getModulesForBundles } from "@/lib/modules/bundles";
@@ -13,6 +14,7 @@ import { MOCK_PROJECTS } from "@/lib/mock/projects";
 import { MOCK_ASSETS }   from "@/lib/mock/assets";
 import { MOCK_WORKERS }  from "@/lib/mock/workers";
 import { MOCK_CREWS }    from "@/lib/mock/crews";
+import { SKILL_CATALOG } from "@/lib/mock/skills";
 
 interface OrgContextValue {
   currentOrganization: OrgConfig["org"];
@@ -39,6 +41,9 @@ interface OrgContextValue {
   addProject: (input: CreateProjectInput) => Project;
   addAsset:   (input: CreateAssetInput)   => Asset;
   addCrew:    (input: CreateCrewInput)    => OrgCrew;
+  skillCatalog:   Record<WorkerRole, string[]>;
+  addWorker:      (input: CreateWorkerInput) => OrgWorker;
+  addSkillToRole: (role: WorkerRole, skill: string) => void;
 }
 
 const OrgContext = createContext<OrgContextValue | null>(null);
@@ -72,8 +77,20 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
   // Phase 3: replace with org-scoped Supabase fetches.
   const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS);
   const [assets,   setAssets]   = useState<Asset[]>(MOCK_ASSETS);
-  const [workers]               = useState<OrgWorker[]>(MOCK_WORKERS.filter((w) => w.orgId === orgId));
+  const [workers, setWorkers]   = useState<OrgWorker[]>(MOCK_WORKERS.filter((w) => w.orgId === orgId));
   const [crews,    setCrews]    = useState<OrgCrew[]>(seedCrews(orgId));
+  const [skillCatalog, setSkillCatalog] = useState<Record<WorkerRole, string[]>>(
+    () => ({
+      operator:       [...SKILL_CATALOG.operator],
+      driver:         [...SKILL_CATALOG.driver],
+      mechanic:       [...SKILL_CATALOG.mechanic],
+      mason:          [...SKILL_CATALOG.mason],
+      carpenter:      [...SKILL_CATALOG.carpenter],
+      laborer:        [...SKILL_CATALOG.laborer],
+      foreman:        [...SKILL_CATALOG.foreman],
+      superintendent: [...SKILL_CATALOG.superintendent],
+    })
+  );
 
   function addEmittedActivity(event: ActivityEvent): void {
     setEmittedActivity((prev) => [event, ...prev]);
@@ -171,6 +188,37 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     return crew;
   }
 
+  function addWorker(input: CreateWorkerInput): OrgWorker {
+    const worker: OrgWorker = {
+      id:        crypto.randomUUID(),
+      orgId,
+      name:      input.name,
+      role:      input.role,
+      userId:    null,
+      available: true,
+      skills:    input.skills,
+    };
+    setWorkers((prev) => [worker, ...prev]);
+    addEmittedActivity({
+      id:          crypto.randomUUID(),
+      actor_name:  config.currentUser.name,
+      action:      "added worker to the roster",
+      entity_type: "worker",
+      entity_name: worker.name,
+      project_id:  config.currentProject.id,
+      module:      "shell",
+      timestamp:   new Date().toISOString(),
+    });
+    return worker;
+  }
+
+  function addSkillToRole(role: WorkerRole, skill: string): void {
+    setSkillCatalog((prev) => ({
+      ...prev,
+      [role]: [...(prev[role] ?? []), skill],
+    }));
+  }
+
   const enabledModules = getModulesForBundles(config.purchasedBundles);
 
   function isModuleEnabled(id: ModuleId): boolean {
@@ -212,6 +260,9 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
         addProject,
         addAsset,
         addCrew,
+        skillCatalog,
+        addWorker,
+        addSkillToRole,
       }}
     >
       {children}
