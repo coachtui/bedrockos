@@ -4,19 +4,11 @@ import { useState, useEffect } from "react";
 import { InspectorPanel } from "@/components/ui/InspectorPanel";
 import { useOrg } from "@/providers/OrgProvider";
 import { MOCK_ACTIVITY } from "@/lib/mock/activity";
+import { relativeTime } from "@/lib/utils/time";
 import type { UserRole } from "@/types/org";
 
 const CAN_EDIT           = new Set<UserRole>(["owner", "admin", "superintendent"]);
 const CAN_CHANGE_PROJECT = new Set<UserRole>(["owner", "admin"]);
-
-function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
 
 interface WorkerInspectorPanelProps {
   workerId: string | null;

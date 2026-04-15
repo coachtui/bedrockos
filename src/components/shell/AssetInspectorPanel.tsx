@@ -5,6 +5,7 @@ import { InspectorPanel } from "@/components/ui/InspectorPanel";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useOrg } from "@/providers/OrgProvider";
 import { MOCK_ISSUES } from "@/lib/mock/issues";
+import { relativeTime } from "@/lib/utils/time";
 import type { UserRole } from "@/types/org";
 import type { AssetStatus } from "@/types/domain";
 
@@ -22,16 +23,9 @@ interface AssetInspectorPanelProps {
   onClose: () => void;
 }
 
-function relativeTime(iso: string): string {
-  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-}
-
 export function AssetInspectorPanel({ assetId, onClose }: AssetInspectorPanelProps) {
   const {
-    assets, projects, role,
+    assets, projects, role, emittedIssues,
     updateAssetStatus, updateAssetProject,
   } = useOrg();
   const router = useRouter();
@@ -41,7 +35,7 @@ export function AssetInspectorPanel({ assetId, onClose }: AssetInspectorPanelPro
   const canChangeProject = CAN_CHANGE_PROJECT.has(role);
 
   const linkedIssues = asset
-    ? MOCK_ISSUES.filter((i) => i.asset_id === asset.id)
+    ? [...MOCK_ISSUES, ...emittedIssues].filter((i) => i.asset_id === asset.id)
     : [];
 
   const assetProject = asset
@@ -142,7 +136,7 @@ export function AssetInspectorPanel({ assetId, onClose }: AssetInspectorPanelPro
                           {issue.title}
                         </p>
                         <p className="text-[10px] text-content-muted mt-0.5 capitalize">
-                          {issue.status.replace("_", " ")}
+                          {issue.status.replace(/_/g, " ")}
                         </p>
                       </div>
                     </li>
