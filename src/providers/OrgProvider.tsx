@@ -134,7 +134,6 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
       last_seen:  new Date().toISOString(),
     };
     setAssets((prev) => [asset, ...prev]);
-    const project = projects.find((p) => p.id === input.projectId);
     addEmittedActivity({
       id:          crypto.randomUUID(),
       actor_name:  config.currentUser.name,
@@ -144,8 +143,6 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
       project_id:  input.projectId,
       module:      "shell",
       timestamp:   new Date().toISOString(),
-      target_type: "project",
-      target_id:   project?.id,
     });
     return asset;
   }
