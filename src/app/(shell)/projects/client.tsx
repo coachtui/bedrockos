@@ -71,7 +71,7 @@ export function ProjectsClient() {
       {showModal && (
         <CreateProjectModal
           onClose={() => setShowModal(false)}
-          onCreated={() => setShowModal(false)}
+          onCreated={(_projectId) => setShowModal(false)}
         />
       )}
     </PageContainer>
