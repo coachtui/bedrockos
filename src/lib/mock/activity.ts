@@ -185,7 +185,7 @@ export const MOCK_ACTIVITY: ActivityEvent[] = [
   {
     id:          "act_w_003",
     actor_name:  "Sarah Kim",
-    action:      "reassigned Tony Reeves to Foundation Crew A",
+    action:      "reassigned Tony Reeves to Mechanical Crew M-1",
     entity_type: "worker",
     entity_id:   "worker_001",
     entity_name: "Tony Reeves",
