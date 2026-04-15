@@ -18,6 +18,7 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
     workers, crews, projects, skillCatalog,
     currentProject, role,
     updateWorkerSkills, reassignWorker, addSkillToRole,
+    toggleWorkerAvailability,
   } = useOrg();
 
   const worker = workerId ? (workers.find((w) => w.id === workerId) ?? null) : null;
@@ -336,13 +337,23 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
             <h3 className="text-[10px] font-bold uppercase tracking-widest text-content-muted mb-3">
               Availability
             </h3>
-            <div className="flex items-center gap-2">
-              <span
-                className={`w-2 h-2 rounded-full flex-shrink-0 ${worker.available ? "bg-green-400" : "bg-content-muted"}`}
-              />
-              <span className="text-xs text-content-primary">
-                {worker.available ? "Available" : "Unavailable"}
-              </span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`w-2 h-2 rounded-full flex-shrink-0 ${worker.available ? "bg-green-400" : "bg-content-muted"}`}
+                />
+                <span className="text-xs text-content-primary">
+                  {worker.available ? "Available" : "Unavailable"}
+                </span>
+              </div>
+              {canEdit && (
+                <button
+                  onClick={() => toggleWorkerAvailability(worker.id)}
+                  className="text-[10px] font-semibold text-content-muted hover:text-teal transition-colors"
+                >
+                  {worker.available ? "Mark unavailable" : "Mark available"}
+                </button>
+              )}
             </div>
           </section>
 
