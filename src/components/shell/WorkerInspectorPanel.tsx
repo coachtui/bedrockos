@@ -333,7 +333,7 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
           </section>
 
           {/* ── Availability ───────────────────────────────────────────── */}
-          <section className="border-t border-surface-border pt-4 pb-2">
+          <section className="border-t border-surface-border pt-4">
             <h3 className="text-[10px] font-bold uppercase tracking-widest text-content-muted mb-3">
               Availability
             </h3>
