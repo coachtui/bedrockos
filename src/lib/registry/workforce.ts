@@ -12,18 +12,8 @@ import {
   getCruMechanicsAndDrivers,
   type CruWorker,
 } from "@/lib/integrations/cru";
-
-export interface OrgWorker {
-  id:                string;
-  name:              string;
-  role:              string;
-  orgId:             string;
-  projectId?:        string;
-  siteName?:         string;
-  available:         boolean;
-  activeAssignment?: string;
-  source:            "cru" | "local";
-}
+import { MOCK_WORKERS } from "@/lib/mock/workers";
+import type { OrgWorker } from "@/types/domain";
 
 function toOrgWorker(orgId: string) {
   return (w: CruWorker): OrgWorker => ({
@@ -31,10 +21,10 @@ function toOrgWorker(orgId: string) {
     name:      w.name,
     role:      w.role,
     orgId,
+    userId:    null,
     projectId: w.siteId,
     siteName:  w.siteName,
     available: w.available,
-    source:    "cru",
   });
 }
 
@@ -51,4 +41,13 @@ export async function getOrgWorkersByRole(orgId: string, role: string): Promise<
 export async function getOrgMechanicsAndDrivers(orgId: string): Promise<OrgWorker[]> {
   const workers = await getCruMechanicsAndDrivers(orgId);
   return workers.map(toOrgWorker(orgId));
+}
+
+/**
+ * Phase 1–2: returns org workforce from MOCK_WORKERS (local, synchronous).
+ * Phase 3: replaced by a Supabase fetch.
+ */
+export function getOrgWorkforceLocal(orgId: string, projectId?: string): OrgWorker[] {
+  const all = MOCK_WORKERS.filter((w) => w.orgId === orgId);
+  return projectId ? all.filter((w) => !w.projectId || w.projectId === projectId) : all;
 }

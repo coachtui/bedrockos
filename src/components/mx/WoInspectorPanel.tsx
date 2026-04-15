@@ -22,7 +22,7 @@ import { InspectorPanel } from "@/components/ui/InspectorPanel";
 import { useMx } from "@/providers/MxProvider";
 import { useOrg } from "@/providers/OrgProvider";
 import { getOrgMechanicsAndDrivers } from "@/lib/registry";
-import type { OrgWorker } from "@/lib/registry";
+import type { OrgWorker } from "@/types/domain";
 import {
   STATUS_LABELS, STATUS_BADGE,
   PRIORITY_LABELS, PRIORITY_BADGE,

@@ -17,7 +17,7 @@ import {
 import { deriveReadiness } from "@/lib/mx/readiness";
 import { getOrgMechanicsAndDrivers } from "@/lib/registry";
 import type { MxWorkOrderStatus, MxWorkOrderPriority } from "@/lib/mx/types";
-import type { OrgWorker } from "@/lib/registry";
+import type { OrgWorker } from "@/types/domain";
 import {
   ArrowLeft, User, Wrench, AlertTriangle, CalendarDays,
   Building2, ChevronRight, UserPlus, X,

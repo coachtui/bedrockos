@@ -92,3 +92,14 @@ export interface User {
   email: string;
   role:  string;
 }
+
+export interface OrgWorker {
+  id:        string;
+  orgId:     string;
+  name:      string;
+  role:      string;   // mechanic | driver | mason | foreman | superintendent | ...
+  userId:    string | null;  // null until worker has an AIGACP login
+  available: boolean;
+  projectId?: string;
+  siteName?:  string;
+}
