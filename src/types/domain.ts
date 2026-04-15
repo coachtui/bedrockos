@@ -93,13 +93,55 @@ export interface User {
   role:  string;
 }
 
+export type WorkerRole =
+  | "mechanic"
+  | "driver"
+  | "mason"
+  | "foreman"
+  | "superintendent"
+  | "operator"
+  | "laborer";
+
 export interface OrgWorker {
   id:        string;
   orgId:     string;
   name:      string;
-  role:      string;   // mechanic | driver | mason | foreman | superintendent | ...
+  role:      WorkerRole;
   userId:    string | null;  // null until worker has an AIGACP login
   available: boolean;
   projectId?: string;
   siteName?:  string;
+}
+
+export interface OrgCrew {
+  id:        string;
+  orgId:     string;
+  projectId: string;
+  name:      string;
+  memberIds: string[];   // OrgWorker ids
+  // Preserved from seeded data; undefined for user-created crews
+  leadName?: string;
+  status?:   CrewStatus;
+}
+
+export interface CreateProjectInput {
+  name:      string;
+  location:  string;
+  phase:     string;
+  pmName:    string;
+  startDate: string;  // YYYY-MM-DD
+  endDate:   string;  // YYYY-MM-DD
+}
+
+export interface CreateAssetInput {
+  name:      string;
+  type:      string;
+  status:    AssetStatus;
+  projectId: string;
+}
+
+export interface CreateCrewInput {
+  name:      string;
+  projectId: string;
+  memberIds: string[];
 }

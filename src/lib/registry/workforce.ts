@@ -13,13 +13,13 @@ import {
   type CruWorker,
 } from "@/lib/integrations/cru";
 import { MOCK_WORKERS } from "@/lib/mock/workers";
-import type { OrgWorker } from "@/types/domain";
+import type { OrgWorker, WorkerRole } from "@/types/domain";
 
 function toOrgWorker(orgId: string) {
   return (w: CruWorker): OrgWorker => ({
     id:        w.id,
     name:      w.name,
-    role:      w.role,
+    role:      w.role as WorkerRole,
     orgId,
     userId:    null,
     projectId: w.siteId,
