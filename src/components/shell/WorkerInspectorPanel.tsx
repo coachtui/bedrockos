@@ -3,10 +3,20 @@
 import { useState, useEffect } from "react";
 import { InspectorPanel } from "@/components/ui/InspectorPanel";
 import { useOrg } from "@/providers/OrgProvider";
+import { MOCK_ACTIVITY } from "@/lib/mock/activity";
 import type { UserRole } from "@/types/org";
 
 const CAN_EDIT           = new Set<UserRole>(["owner", "admin", "superintendent"]);
 const CAN_CHANGE_PROJECT = new Set<UserRole>(["owner", "admin"]);
+
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
 
 interface WorkerInspectorPanelProps {
   workerId: string | null;
@@ -16,7 +26,7 @@ interface WorkerInspectorPanelProps {
 export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanelProps) {
   const {
     workers, crews, projects, skillCatalog,
-    currentProject, role,
+    currentProject, role, emittedActivity,
     updateWorkerSkills, reassignWorker, addSkillToRole,
     toggleWorkerAvailability,
   } = useOrg();
@@ -64,6 +74,13 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
   // Skills not already on the worker (for picker)
   const availableSkills = worker
     ? (skillCatalog[worker.role] ?? []).filter((s) => !worker.skills.includes(s))
+    : [];
+
+  // Activity for this worker (mock + emitted)
+  const workerActivity = worker
+    ? [...MOCK_ACTIVITY, ...emittedActivity]
+        .filter((e) => e.entity_type === "worker" && e.entity_id === worker.id)
+        .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
     : [];
 
   function handleRemoveSkill(skill: string) {
@@ -355,6 +372,30 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
                 </button>
               )}
             </div>
+          </section>
+
+          {/* ── Activity ───────────────────────────────────────────────────── */}
+          <section className="border-t border-surface-border pt-4 pb-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-content-muted mb-3">
+              Activity
+            </h3>
+            {workerActivity.length === 0 ? (
+              <p className="text-xs text-content-muted italic">No activity on record</p>
+            ) : (
+              <ul className="space-y-3">
+                {workerActivity.map((event) => (
+                  <li key={event.id} className="flex items-start justify-between gap-3">
+                    <p className="text-xs text-content-secondary leading-snug">
+                      <span className="font-semibold text-content-primary">{event.actor_name}</span>
+                      {" "}{event.action}
+                    </p>
+                    <span className="text-[10px] text-content-muted whitespace-nowrap flex-shrink-0">
+                      {relativeTime(event.timestamp)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
 
         </div>
