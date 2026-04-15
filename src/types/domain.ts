@@ -59,6 +59,7 @@ export interface ActivityEvent {
   actor_name:   string;
   action:       string;
   entity_type:  string;
+  entity_id?:   string;
   entity_name:  string;
   project_id:   string;
   module:       ModuleId | "shell";
