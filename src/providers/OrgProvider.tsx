@@ -5,6 +5,7 @@ import type { OrgConfig, ProjectContext, ModuleId, UserRole } from "@/types/org"
 import type { ModuleFeatureMap } from "@/types/org";
 import type {
   Issue, ActivityEvent, Project, Asset, OrgWorker, OrgCrew,
+  AssetStatus, CrewStatus,
   CreateProjectInput, CreateAssetInput, CreateCrewInput,
   CreateWorkerInput, WorkerRole,
 } from "@/types/domain";
@@ -47,6 +48,8 @@ interface OrgContextValue {
   updateWorkerSkills: (workerId: string, skills: string[]) => void;
   reassignWorker:     (workerId: string, projectId: string | undefined, crewId: string | undefined) => void;
   toggleWorkerAvailability: (workerId: string) => void;
+  updateAssetStatus:  (assetId: string, status: AssetStatus) => void;
+  updateAssetProject: (assetId: string, projectId: string) => void;
 }
 
 const OrgContext = createContext<OrgContextValue | null>(null);
@@ -215,6 +218,41 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     return worker;
   }
 
+  function updateAssetStatus(assetId: string, status: AssetStatus): void {
+    const asset = assets.find((a) => a.id === assetId);
+    if (!asset) return;
+    setAssets((prev) => prev.map((a) => a.id === assetId ? { ...a, status } : a));
+    addEmittedActivity({
+      id:          crypto.randomUUID(),
+      actor_name:  config.currentUser.name,
+      action:      `updated ${asset.name} status to ${status}`,
+      entity_type: "equipment",
+      entity_id:   assetId,
+      entity_name: asset.name,
+      project_id:  asset.project_id,
+      module:      "shell",
+      timestamp:   new Date().toISOString(),
+    });
+  }
+
+  function updateAssetProject(assetId: string, projectId: string): void {
+    const asset   = assets.find((a) => a.id === assetId);
+    const project = projects.find((p) => p.id === projectId);
+    if (!asset) return;
+    setAssets((prev) => prev.map((a) => a.id === assetId ? { ...a, project_id: projectId } : a));
+    addEmittedActivity({
+      id:          crypto.randomUUID(),
+      actor_name:  config.currentUser.name,
+      action:      `moved ${asset.name} to ${project?.name ?? projectId}`,
+      entity_type: "equipment",
+      entity_id:   assetId,
+      entity_name: asset.name,
+      project_id:  projectId,
+      module:      "shell",
+      timestamp:   new Date().toISOString(),
+    });
+  }
+
   function addSkillToRole(role: WorkerRole, skill: string): void {
     setSkillCatalog((prev) => ({
       ...prev,
@@ -355,6 +393,8 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
         updateWorkerSkills,
         reassignWorker,
         toggleWorkerAvailability,
+        updateAssetStatus,
+        updateAssetProject,
       }}
     >
       {children}
