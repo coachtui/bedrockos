@@ -86,7 +86,10 @@ export function CreateCrewModal({ onClose, onCreated }: Props) {
               <label className="block text-xs font-medium text-content-secondary mb-1">Project</label>
               <select
                 value={projectId}
-                onChange={(e) => setProjectId(e.target.value)}
+                onChange={(e) => {
+                  setProjectId(e.target.value);
+                  setSelectedIds(new Set());
+                }}
                 className="w-full text-sm bg-surface-overlay border border-surface-border rounded px-3 py-2 text-content-primary focus:outline-none focus:border-gold"
               >
                 {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
