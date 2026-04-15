@@ -360,7 +360,7 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
                   className={`w-2 h-2 rounded-full flex-shrink-0 ${worker.available ? "bg-green-400" : "bg-content-muted"}`}
                 />
                 <span className="text-xs text-content-primary">
-                  {worker.available ? "Available" : "Unavailable"}
+                  {worker.available ? "Available" : "Needed on Site"}
                 </span>
               </div>
               {canEdit && (
@@ -368,7 +368,7 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
                   onClick={() => toggleWorkerAvailability(worker.id)}
                   className="text-[10px] font-semibold text-content-muted hover:text-teal transition-colors"
                 >
-                  {worker.available ? "Mark unavailable" : "Mark available"}
+                  {worker.available ? "Mark as needed on site" : "Mark as available"}
                 </button>
               )}
             </div>

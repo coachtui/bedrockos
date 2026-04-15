@@ -240,7 +240,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     addEmittedActivity({
       id:          crypto.randomUUID(),
       actor_name:  config.currentUser.name,
-      action:      `marked ${worker.name} as ${next ? "available" : "unavailable"}`,
+      action:      `marked ${worker.name} as ${next ? "available" : "needed on site"}`,
       entity_type: "worker",
       entity_id:   workerId,
       entity_name: worker.name,

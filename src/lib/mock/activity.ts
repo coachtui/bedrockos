@@ -174,7 +174,7 @@ export const MOCK_ACTIVITY: ActivityEvent[] = [
   {
     id:          "act_w_002",
     actor_name:  "Sarah Kim",
-    action:      "marked Priya Nair as unavailable",
+    action:      "marked Priya Nair as needed on site",
     entity_type: "worker",
     entity_id:   "worker_004",
     entity_name: "Priya Nair",

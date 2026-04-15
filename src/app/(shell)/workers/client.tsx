@@ -57,7 +57,7 @@ export function WorkersClient() {
                 </div>
                 <span
                   className={`w-2 h-2 rounded-full mt-1 ${worker.available ? "bg-green-400" : "bg-content-muted"}`}
-                  title={worker.available ? "Available" : "Unavailable"}
+                  title={worker.available ? "Available" : "Needed on Site"}
                 />
               </div>
               <p className="font-semibold text-content-primary text-sm">{worker.name}</p>
