@@ -7,18 +7,14 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { AddAssetModal } from "@/components/shell/AddAssetModal";
+import { AssetInspectorPanel } from "@/components/shell/AssetInspectorPanel";
 import { useOrg } from "@/providers/OrgProvider";
-
-function relativeTime(iso: string): string {
-  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-}
+import { relativeTime } from "@/lib/utils/time";
 
 export function AssetsClient() {
   const { assets } = useOrg();
-  const [showModal, setShowModal] = useState(false);
+  const [showModal,       setShowModal]       = useState(false);
+  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
 
   return (
     <PageContainer maxWidth="wide">
@@ -38,7 +34,12 @@ export function AssetsClient() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {assets.map((asset) => (
-          <Card key={asset.id} variant="default">
+          <Card
+            key={asset.id}
+            variant="default"
+            onClick={() => setSelectedAssetId(asset.id)}
+            className="cursor-pointer hover:ring-1 hover:ring-surface-border-hover transition-shadow"
+          >
             <div className="flex items-start justify-between mb-3">
               <div className="w-9 h-9 rounded-lg bg-surface-overlay border border-surface-border flex items-center justify-center">
                 <Truck size={16} className="text-content-secondary" />
@@ -60,6 +61,11 @@ export function AssetsClient() {
           onCreated={(_assetId) => setShowModal(false)}
         />
       )}
+
+      <AssetInspectorPanel
+        assetId={selectedAssetId}
+        onClose={() => setSelectedAssetId(null)}
+      />
     </PageContainer>
   );
 }
