@@ -84,7 +84,6 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
   }
 
   function setCurrentProject(project: ProjectContext) {
-    if (!projects.some((p) => p.id === project.id)) return;
     setConfig((prev) => ({ ...prev, currentProject: project }));
   }
 
