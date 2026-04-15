@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState } from "react";
 import type { OrgConfig, ProjectContext, ModuleId, UserRole } from "@/types/org";
 import type { ModuleFeatureMap } from "@/types/org";
 import type { Issue, ActivityEvent } from "@/types/domain";
-import { getOrgConfig, MOCK_PROJECTS, MOCK_USER_BY_ROLE, DEFAULT_USER } from "@/lib/config/org";
+import { getOrgConfig, MOCK_PROJECT_CONTEXTS, MOCK_USER_BY_ROLE, DEFAULT_USER } from "@/lib/config/org";
 import { getModulesForBundles } from "@/lib/modules/bundles";
 
 interface OrgContextValue {
@@ -70,7 +70,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
         role:                config.currentUser.role,
         enabledModules:      enabledModules,
         features:            config.features,
-        availableProjects:   MOCK_PROJECTS,
+        availableProjects:   MOCK_PROJECT_CONTEXTS,
         setCurrentProject,
         setRole,
         isModuleEnabled,

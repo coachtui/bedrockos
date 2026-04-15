@@ -26,7 +26,7 @@ export const MOCK_USER_BY_ROLE: Partial<Record<UserRole, OrgConfig["currentUser"
 /* ─────────────────────────────────────────────────────────
    Mock selectable projects (used by ProjectSelector)
    ───────────────────────────────────────────────────────── */
-export const MOCK_PROJECTS: ProjectContext[] = [
+export const MOCK_PROJECT_CONTEXTS: ProjectContext[] = [
   { id: "proj_highland_002",  name: "Highland Tower — Phase 2",    slug: "highland-tower-p2" },
   { id: "proj_oakridge_001",  name: "Oakridge Industrial Complex", slug: "oakridge-industrial" },
   { id: "proj_meridian_003",  name: "Meridian Bridge Rehab",       slug: "meridian-bridge" },
@@ -47,7 +47,7 @@ export const MOCK_ORG_CONFIG: OrgConfig = {
     // or: SELECT id FROM companies WHERE slug = 'aiga' (or similar)
     cruOrgId:  process.env.NEXT_PUBLIC_CRU_ORG_ID ?? undefined,
   },
-  currentProject: MOCK_PROJECTS[0],
+  currentProject: MOCK_PROJECT_CONTEXTS[0],
   currentUser: {
     id:     "user_owner_001",
     name:   "Marcus Webb",

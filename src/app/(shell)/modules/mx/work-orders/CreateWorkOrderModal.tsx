@@ -5,7 +5,7 @@ import { X } from "lucide-react";
 import { useOrg } from "@/providers/OrgProvider";
 import { useMx } from "@/providers/MxProvider";
 import { MOCK_ASSETS } from "@/lib/mock/assets";
-import { MOCK_PROJECTS } from "@/lib/config/org";
+import { MOCK_PROJECT_CONTEXTS } from "@/lib/config/org";
 import type { CreateMxWorkOrderInput, MxWorkOrderCategory, MxWorkOrderPriority, ReadinessStatus } from "@/lib/mx/types";
 import { CATEGORY_LABELS, PRIORITY_LABELS, READINESS_LABELS } from "@/lib/mx/rules";
 
@@ -56,7 +56,7 @@ export function CreateWorkOrderModal({ onClose, onCreated }: Props) {
   }
 
   const selectedAsset   = MOCK_ASSETS.find((a) => a.id === form.equipmentId);
-  const selectedProject = MOCK_PROJECTS.find((p) => p.id === form.projectId);
+  const selectedProject = MOCK_PROJECT_CONTEXTS.find((p) => p.id === form.projectId);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -205,7 +205,7 @@ export function CreateWorkOrderModal({ onClose, onCreated }: Props) {
               className="w-full text-sm bg-surface-overlay border border-surface-border rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-teal cursor-pointer"
             >
               <option value="">— No project —</option>
-              {MOCK_PROJECTS.map((p) => (
+              {MOCK_PROJECT_CONTEXTS.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
