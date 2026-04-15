@@ -44,6 +44,8 @@ interface OrgContextValue {
   skillCatalog:   Record<WorkerRole, string[]>;
   addWorker:      (input: CreateWorkerInput) => OrgWorker;
   addSkillToRole: (role: WorkerRole, skill: string) => void;
+  updateWorkerSkills: (workerId: string, skills: string[]) => void;
+  reassignWorker:     (workerId: string, projectId: string | undefined, crewId: string | undefined) => void;
 }
 
 const OrgContext = createContext<OrgContextValue | null>(null);
@@ -219,6 +221,69 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     }));
   }
 
+  function updateWorkerSkills(workerId: string, skills: string[]): void {
+    setWorkers((prev) =>
+      prev.map((w) => (w.id === workerId ? { ...w, skills } : w))
+    );
+  }
+
+  function reassignWorker(
+    workerId: string,
+    projectId: string | undefined,
+    crewId: string | undefined,
+  ): void {
+    const worker  = workers.find((w) => w.id === workerId);
+    if (!worker) return;
+
+    // 1. Update worker.projectId, clear siteName
+    setWorkers((prev) =>
+      prev.map((w) =>
+        w.id === workerId ? { ...w, projectId, siteName: undefined } : w,
+      ),
+    );
+
+    // 2. Remove worker from all crew memberIds
+    setCrews((prev) =>
+      prev.map((c) => ({
+        ...c,
+        memberIds: c.memberIds.filter((id) => id !== workerId),
+      })),
+    );
+
+    // 3. Add to new crew if provided
+    if (crewId) {
+      setCrews((prev) =>
+        prev.map((c) =>
+          c.id === crewId ? { ...c, memberIds: [...c.memberIds, workerId] } : c,
+        ),
+      );
+    }
+
+    // 4. Emit activity — read names from current state snapshot
+    const crew    = crewId    ? crews.find((c) => c.id === crewId)       : undefined;
+    const project = projectId ? projects.find((p) => p.id === projectId) : undefined;
+
+    let action: string;
+    if (crewId && crew) {
+      action = `reassigned ${worker.name} to ${crew.name}`;
+    } else if (projectId && project) {
+      action = `moved ${worker.name} to ${project.name}`;
+    } else {
+      action = `removed ${worker.name} from project assignment`;
+    }
+
+    addEmittedActivity({
+      id:          crypto.randomUUID(),
+      actor_name:  config.currentUser.name,
+      action,
+      entity_type: "worker",
+      entity_name: worker.name,
+      project_id:  projectId ?? config.currentProject.id,
+      module:      "shell",
+      timestamp:   new Date().toISOString(),
+    });
+  }
+
   const enabledModules = getModulesForBundles(config.purchasedBundles);
 
   function isModuleEnabled(id: ModuleId): boolean {
@@ -263,6 +328,8 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
         skillCatalog,
         addWorker,
         addSkillToRole,
+        updateWorkerSkills,
+        reassignWorker,
       }}
     >
       {children}
