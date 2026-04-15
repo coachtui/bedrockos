@@ -6,19 +6,27 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card } from "@/components/ui/Card";
 import { AddWorkerModal } from "@/components/shell/AddWorkerModal";
+import { WorkerInspectorPanel } from "@/components/shell/WorkerInspectorPanel";
 import { useOrg } from "@/providers/OrgProvider";
 
 export function WorkersClient() {
-  const { workers } = useOrg();
-  const [showModal, setShowModal] = useState(false);
+  const { workers, role, currentProject } = useOrg();
+  const [showModal,        setShowModal]        = useState(false);
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
 
-  const availableCount = workers.filter((w) => w.available).length;
+  // Superintendents see only workers on their current project
+  const filteredWorkers =
+    role === "superintendent"
+      ? workers.filter((w) => w.projectId === currentProject.id)
+      : workers;
+
+  const availableCount = filteredWorkers.filter((w) => w.available).length;
 
   return (
     <PageContainer maxWidth="wide">
       <SectionHeader
         title="Workers"
-        subtitle={`${workers.length} workers · ${availableCount} available`}
+        subtitle={`${filteredWorkers.length} workers · ${availableCount} available`}
         action={
           <button
             onClick={() => setShowModal(true)}
@@ -31,12 +39,18 @@ export function WorkersClient() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {workers.map((worker) => {
+        {filteredWorkers.map((worker) => {
           const visibleSkills = worker.skills.slice(0, 3);
           const extraCount    = worker.skills.length - visibleSkills.length;
+          const isSelected    = worker.id === selectedWorkerId;
 
           return (
-            <Card key={worker.id} variant="default">
+            <Card
+              key={worker.id}
+              variant="default"
+              onClick={() => setSelectedWorkerId(worker.id)}
+              className={`hover:border-surface-border-hover transition-colors ${isSelected ? "border-teal/50" : ""}`}
+            >
               <div className="flex items-start justify-between mb-3">
                 <div className="w-9 h-9 rounded-lg bg-surface-overlay border border-surface-border flex items-center justify-center">
                   <User size={16} className="text-content-secondary" />
@@ -80,6 +94,11 @@ export function WorkersClient() {
           onCreated={(_workerId) => setShowModal(false)}
         />
       )}
+
+      <WorkerInspectorPanel
+        workerId={selectedWorkerId}
+        onClose={() => setSelectedWorkerId(null)}
+      />
     </PageContainer>
   );
 }
