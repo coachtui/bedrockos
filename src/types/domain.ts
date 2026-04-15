@@ -97,6 +97,7 @@ export type WorkerRole =
   | "mechanic"
   | "driver"
   | "mason"
+  | "carpenter"
   | "foreman"
   | "superintendent"
   | "operator"
@@ -109,6 +110,7 @@ export interface OrgWorker {
   role:      WorkerRole;
   userId:    string | null;  // null until worker has an AIGACP login
   available: boolean;
+  skills:    string[];
   projectId?: string;
   siteName?:  string;
 }
@@ -144,4 +146,10 @@ export interface CreateCrewInput {
   name:      string;
   projectId: string;
   memberIds: string[];
+}
+
+export interface CreateWorkerInput {
+  name:   string;
+  role:   WorkerRole;
+  skills: string[];
 }

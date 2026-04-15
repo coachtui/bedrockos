@@ -16,7 +16,7 @@ import { MOCK_WORKERS } from "@/lib/mock/workers";
 import type { OrgWorker, WorkerRole } from "@/types/domain";
 
 const KNOWN_WORKER_ROLES = new Set<WorkerRole>([
-  "mechanic", "driver", "mason", "foreman", "superintendent", "operator", "laborer",
+  "mechanic", "driver", "mason", "carpenter", "foreman", "superintendent", "operator", "laborer",
 ]);
 
 function toWorkerRole(r: string): WorkerRole {
@@ -33,6 +33,7 @@ function toOrgWorker(orgId: string) {
     projectId: w.siteId,
     siteName:  w.siteName,
     available: w.available,
+    skills:    [],
   });
 }
 
@@ -41,7 +42,7 @@ export async function getOrgWorkforce(orgId: string, siteId?: string): Promise<O
   return workers.map(toOrgWorker(orgId));
 }
 
-export async function getOrgWorkersByRole(orgId: string, role: string): Promise<OrgWorker[]> {
+export async function getOrgWorkersByRole(orgId: string, role: WorkerRole): Promise<OrgWorker[]> {
   const workers = await getCruWorkersByRole(orgId, role);
   return workers.map(toOrgWorker(orgId));
 }
