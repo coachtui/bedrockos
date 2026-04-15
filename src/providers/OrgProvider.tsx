@@ -50,6 +50,10 @@ interface OrgContextValue {
   toggleWorkerAvailability: (workerId: string) => void;
   updateAssetStatus:  (assetId: string, status: AssetStatus) => void;
   updateAssetProject: (assetId: string, projectId: string) => void;
+  updateCrewStatus:     (crewId: string, status: CrewStatus) => void;
+  updateCrewName:       (crewId: string, name: string) => void;
+  addWorkerToCrew:      (crewId: string, workerId: string) => void;
+  removeWorkerFromCrew: (crewId: string, workerId: string) => void;
 }
 
 const OrgContext = createContext<OrgContextValue | null>(null);
@@ -253,6 +257,83 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     });
   }
 
+  function updateCrewStatus(crewId: string, status: CrewStatus): void {
+    const crew = crews.find((c) => c.id === crewId);
+    if (!crew) return;
+    setCrews((prev) => prev.map((c) => c.id === crewId ? { ...c, status } : c));
+    addEmittedActivity({
+      id:          crypto.randomUUID(),
+      actor_name:  config.currentUser.name,
+      action:      `updated ${crew.name} status to ${status === "on_site" ? "on site" : "off site"}`,
+      entity_type: "crew",
+      entity_id:   crewId,
+      entity_name: crew.name,
+      project_id:  crew.projectId,
+      module:      "shell",
+      timestamp:   new Date().toISOString(),
+    });
+  }
+
+  function updateCrewName(crewId: string, name: string): void {
+    const crew = crews.find((c) => c.id === crewId);
+    if (!crew) return;
+    setCrews((prev) => prev.map((c) => c.id === crewId ? { ...c, name } : c));
+    addEmittedActivity({
+      id:          crypto.randomUUID(),
+      actor_name:  config.currentUser.name,
+      action:      `renamed crew to ${name}`,
+      entity_type: "crew",
+      entity_id:   crewId,
+      entity_name: name,
+      project_id:  crew.projectId,
+      module:      "shell",
+      timestamp:   new Date().toISOString(),
+    });
+  }
+
+  function addWorkerToCrew(crewId: string, workerId: string): void {
+    const crew   = crews.find((c) => c.id === crewId);
+    const worker = workers.find((w) => w.id === workerId);
+    if (!crew || !worker) return;
+    if (crew.memberIds.includes(workerId)) return;
+    setCrews((prev) =>
+      prev.map((c) => c.id === crewId ? { ...c, memberIds: [...c.memberIds, workerId] } : c),
+    );
+    addEmittedActivity({
+      id:          crypto.randomUUID(),
+      actor_name:  config.currentUser.name,
+      action:      `added ${worker.name} to ${crew.name}`,
+      entity_type: "crew",
+      entity_id:   crewId,
+      entity_name: crew.name,
+      project_id:  crew.projectId,
+      module:      "shell",
+      timestamp:   new Date().toISOString(),
+    });
+  }
+
+  function removeWorkerFromCrew(crewId: string, workerId: string): void {
+    const crew   = crews.find((c) => c.id === crewId);
+    const worker = workers.find((w) => w.id === workerId);
+    if (!crew || !worker) return;
+    setCrews((prev) =>
+      prev.map((c) =>
+        c.id === crewId ? { ...c, memberIds: c.memberIds.filter((id) => id !== workerId) } : c,
+      ),
+    );
+    addEmittedActivity({
+      id:          crypto.randomUUID(),
+      actor_name:  config.currentUser.name,
+      action:      `removed ${worker.name} from ${crew.name}`,
+      entity_type: "crew",
+      entity_id:   crewId,
+      entity_name: crew.name,
+      project_id:  crew.projectId,
+      module:      "shell",
+      timestamp:   new Date().toISOString(),
+    });
+  }
+
   function addSkillToRole(role: WorkerRole, skill: string): void {
     setSkillCatalog((prev) => ({
       ...prev,
@@ -395,6 +476,10 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
         toggleWorkerAvailability,
         updateAssetStatus,
         updateAssetProject,
+        updateCrewStatus,
+        updateCrewName,
+        addWorkerToCrew,
+        removeWorkerFromCrew,
       }}
     >
       {children}
