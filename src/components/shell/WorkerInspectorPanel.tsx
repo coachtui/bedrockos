@@ -73,7 +73,7 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
   function handlePickerToggle(skill: string, checked: boolean) {
     setPickerSelected((prev) => {
       const next = new Set(prev);
-      checked ? next.add(skill) : next.delete(skill);
+      if (checked) { next.add(skill); } else { next.delete(skill); }
       return next;
     });
   }
@@ -236,7 +236,7 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
 
             {/* Skills tags */}
             {worker.skills.length === 0 && !editSkills && (
-              <p className="text-xs text-content-muted">No skills on file</p>
+              <p className="text-xs text-content-muted italic">No skills on file</p>
             )}
             {(worker.skills.length > 0 || editSkills) && (
               <div className="flex flex-wrap gap-1.5">
@@ -276,7 +276,7 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
                 </div>
                 <div className="p-2 max-h-48 overflow-y-auto space-y-0.5">
                   {availableSkills.length === 0 ? (
-                    <p className="text-xs text-content-muted py-2 text-center">All catalog skills already added.</p>
+                    <p className="text-xs text-content-muted italic py-2 text-center">All catalog skills already added.</p>
                   ) : (
                     availableSkills.map((skill) => (
                       <label
