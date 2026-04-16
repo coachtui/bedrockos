@@ -40,7 +40,9 @@ export function CrewInspectorPanel({ crewId, onClose }: CrewInspectorPanelProps)
   }, [crewId]);
 
   const memberWorkers    = workers.filter((w) => crew?.memberIds.includes(w.id));
-  const availableWorkers = workers.filter((w) => !crew?.memberIds.includes(w.id));
+  const availableWorkers = workers.filter(
+    (w) => !crew?.memberIds.includes(w.id) && w.projectId === crew?.projectId,
+  );
 
   function handleNameSave() {
     if (!crew || !nameInput.trim()) return;
@@ -142,7 +144,7 @@ export function CrewInspectorPanel({ crewId, onClose }: CrewInspectorPanelProps)
           {/* ── Members ──────────────────────────────────────────────── */}
           <section className="border-t border-surface-border pt-4 pb-2">
             <h3 className="text-[10px] font-bold uppercase tracking-widest text-content-muted mb-3">
-              Members ({crew.memberIds.length})
+              Members ({memberWorkers.length})
             </h3>
 
             {memberWorkers.length === 0 ? (
