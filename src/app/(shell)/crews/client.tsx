@@ -7,11 +7,13 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { CreateCrewModal } from "@/components/shell/CreateCrewModal";
+import { CrewInspectorPanel } from "@/components/shell/CrewInspectorPanel";
 import { useOrg } from "@/providers/OrgProvider";
 
 export function CrewsClient() {
   const { crews } = useOrg();
-  const [showModal, setShowModal] = useState(false);
+  const [showModal,      setShowModal]      = useState(false);
+  const [selectedCrewId, setSelectedCrewId] = useState<string | null>(null);
 
   const onSite  = crews.filter((c) => c.status === "on_site").length;
   const offSite = crews.filter((c) => c.status === "off_site").length;
@@ -34,7 +36,12 @@ export function CrewsClient() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {crews.map((crew) => (
-          <Card key={crew.id} variant="default">
+          <Card
+            key={crew.id}
+            variant="default"
+            onClick={() => setSelectedCrewId(crew.id)}
+            className="cursor-pointer hover:ring-1 hover:ring-surface-border-hover transition-shadow"
+          >
             <div className="flex items-start justify-between mb-3">
               <div className="w-9 h-9 rounded-lg bg-surface-overlay border border-surface-border flex items-center justify-center">
                 <HardHat size={16} className="text-content-secondary" />
@@ -61,6 +68,11 @@ export function CrewsClient() {
           onCreated={(_crewId) => setShowModal(false)}
         />
       )}
+
+      <CrewInspectorPanel
+        crewId={selectedCrewId}
+        onClose={() => setSelectedCrewId(null)}
+      />
     </PageContainer>
   );
 }
