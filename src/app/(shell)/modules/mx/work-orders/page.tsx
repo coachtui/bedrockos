@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PageContainer } from "@/components/ui/PageContainer";
@@ -60,7 +60,7 @@ const URGENCY_LABEL: Record<Urgency, string> = {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default function MxWorkOrdersPage() {
+function MxWorkOrdersContent() {
   const { workOrders } = useMx();
   const { role } = useOrg();
   const canCreate = canCreateWorkOrder(role);
@@ -301,5 +301,13 @@ export default function MxWorkOrdersPage() {
       />
 
     </PageContainer>
+  );
+}
+
+export default function MxWorkOrdersPage() {
+  return (
+    <Suspense>
+      <MxWorkOrdersContent />
+    </Suspense>
   );
 }

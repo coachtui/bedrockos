@@ -52,6 +52,8 @@ export default async function IssuesPage({ searchParams }: { searchParams: Searc
   const SEVERITY_FILTERS = ["all", "critical", "high", "medium", "low"];
   const SOURCE_FILTERS   = [
     { label: "All",     value: "all"     },
+    { label: "MX",      value: "mx"      },
+    { label: "OPS",     value: "ops"     },
     { label: "Fix",     value: "fix"     },
     { label: "Inspect", value: "inspect" },
   ];

@@ -29,9 +29,9 @@ export const MOCK_ASSETS: Asset[] = [
     id:         "asset_004",
     name:       "Crawler Crane #CR-7",
     type:       "Crane",
-    status:     "active",
+    status:     "offline",
     project_id: "proj_oakridge_001",
-    last_seen:  "2026-04-07T16:00:00Z",
+    last_seen:  "2026-04-11T07:00:00Z",
   },
   {
     id:         "asset_005",

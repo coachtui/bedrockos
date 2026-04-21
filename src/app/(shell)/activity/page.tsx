@@ -10,6 +10,8 @@ import type { ModuleId } from "@/types/org";
 
 const MODULE_FILTERS: { label: string; value: ModuleId | "all" }[] = [
   { label: "All",     value: "all"     },
+  { label: "MX",      value: "mx"      },
+  { label: "OPS",     value: "ops"     },
   { label: "Fix",     value: "fix"     },
   { label: "CRU",     value: "cru"     },
   { label: "Datum",   value: "datum"   },
