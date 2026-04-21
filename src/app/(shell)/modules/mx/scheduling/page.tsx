@@ -19,7 +19,7 @@ import { WoInspectorPanel } from "@/components/mx/WoInspectorPanel";
 import {
   ArrowLeft, User, CalendarDays, AlertTriangle,
   Inbox, Wrench, Clock, PackageX, Play, CheckCircle2,
-  XCircle, RotateCcw, X as XIcon, Send,
+  XCircle, RotateCcw, X as XIcon, Send, CheckCheck,
 } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -396,6 +396,7 @@ export default function MxSchedulingPage() {
   const [mechanics,    setMechanics]    = useState<OrgWorker[]>([]);
   const [loadingMechs, setLoadingMechs] = useState(true);
   const [draggedWoId,  setDraggedWoId]  = useState<string | null>(null);
+  const [pendingAssign, setPendingAssign] = useState<{ woId: string; mechanicId: string } | null>(null);
   // Inspector — WO detail panel without leaving the board
   const [inspectId,    setInspectId]    = useState<string | null>(null);
 
@@ -446,8 +447,18 @@ export default function MxSchedulingPage() {
 
   function handleDrop(mechanicId: string) {
     if (!draggedWoId || !canAssign) return;
-    assignMechanic(draggedWoId, mechanicId);
+    setPendingAssign({ woId: draggedWoId, mechanicId });
     setDraggedWoId(null);
+  }
+
+  function confirmAssign() {
+    if (!pendingAssign) return;
+    assignMechanic(pendingAssign.woId, pendingAssign.mechanicId);
+    setPendingAssign(null);
+  }
+
+  function cancelAssign() {
+    setPendingAssign(null);
   }
 
   function handleUnassign(woId: string, mechanicId: string) {
@@ -689,6 +700,66 @@ export default function MxSchedulingPage() {
         </div>
 
       </div>
+
+      {/* Assign confirmation dialog */}
+      {pendingAssign && (() => {
+        const wo       = workOrders.find((w) => w.id === pendingAssign.woId);
+        const mechanic = mechanicList.find((m) => m.id === pendingAssign.mechanicId);
+        if (!wo || !mechanic) return null;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="bg-surface-raised border border-surface-border rounded-[var(--radius-card)] shadow-2xl w-full max-w-sm mx-4 p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-teal/10 border border-teal/20 flex items-center justify-center flex-shrink-0">
+                  <User size={14} className="text-teal" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-content-primary">Assign Work Order</p>
+                  <p className="text-[10px] text-content-muted">Confirm before assigning</p>
+                </div>
+                <button
+                  onClick={cancelAssign}
+                  className="ml-auto p-1 rounded hover:bg-surface-border text-content-muted transition-colors"
+                >
+                  <XIcon size={13} />
+                </button>
+              </div>
+
+              <div className="bg-surface-overlay border border-surface-border rounded-lg p-3 mb-4 space-y-1.5">
+                <div className="flex items-start gap-2">
+                  <span className="text-[10px] text-content-muted w-16 flex-shrink-0 pt-0.5">WO</span>
+                  <p className="text-xs font-semibold text-content-primary leading-snug">{wo.title}</p>
+                </div>
+                {wo.equipmentLabel && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-[10px] text-content-muted w-16 flex-shrink-0 pt-0.5">Equipment</span>
+                    <p className="text-[11px] text-content-secondary">{wo.equipmentLabel}</p>
+                  </div>
+                )}
+                <div className="flex items-start gap-2">
+                  <span className="text-[10px] text-content-muted w-16 flex-shrink-0 pt-0.5">Assign to</span>
+                  <p className="text-[11px] font-semibold text-teal">{mechanic.name}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={confirmAssign}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold bg-teal text-white border border-teal rounded-lg hover:opacity-90 transition-opacity"
+                >
+                  <CheckCheck size={12} /> Confirm Assignment
+                </button>
+                <button
+                  onClick={cancelAssign}
+                  className="px-3 py-2 text-xs text-content-muted border border-surface-border rounded-lg hover:bg-surface-border transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Inspector panel — stays over board without losing context */}
       <WoInspectorPanel
