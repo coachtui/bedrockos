@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { useMx } from "@/providers/MxProvider";
 import { useOrg } from "@/providers/OrgProvider";
+import { useVisibleWorkOrders } from "@/hooks/mx/useVisibleWorkOrders";
 import { getOrgMechanicsAndDrivers } from "@/lib/registry";
 import type { OrgWorker } from "@/types/domain";
 import {
@@ -390,7 +391,8 @@ function Lane({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function MxSchedulingPage() {
-  const { workOrders, assignMechanic, unassignMechanic, updateWorkOrderStatus, updateWorkOrder } = useMx();
+  const { assignMechanic, unassignMechanic, updateWorkOrderStatus, updateWorkOrder } = useMx();
+  const workOrders = useVisibleWorkOrders();
   const { currentOrganization, role } = useOrg();
 
   const [mechanics,    setMechanics]    = useState<OrgWorker[]>([]);
