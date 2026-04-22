@@ -4,8 +4,8 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PageContainer } from "@/components/ui/PageContainer";
-import { useMx } from "@/providers/MxProvider";
 import { useOrg } from "@/providers/OrgProvider";
+import { useVisibleWorkOrders } from "@/hooks/mx/useVisibleWorkOrders";
 import { CreateWorkOrderModal } from "./CreateWorkOrderModal";
 import { WoInspectorPanel } from "@/components/mx/WoInspectorPanel";
 import {
@@ -61,7 +61,7 @@ const URGENCY_LABEL: Record<Urgency, string> = {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 function MxWorkOrdersContent() {
-  const { workOrders } = useMx();
+  const workOrders = useVisibleWorkOrders();
   const { role } = useOrg();
   const canCreate = canCreateWorkOrder(role);
 
