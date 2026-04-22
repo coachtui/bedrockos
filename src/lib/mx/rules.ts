@@ -70,7 +70,7 @@ export function filterWorkOrdersByVisibility(
   currentProjectId: string,
 ): MxWorkOrder[] {
   if (canSeeAllProjects(role)) return workOrders;
-  return workOrders.filter((wo) => wo.projectId === currentProjectId);
+  return workOrders.filter((wo) => wo.projectId !== undefined && wo.projectId === currentProjectId);
 }
 
 // ── Label maps ────────────────────────────────────────────────────────────────
