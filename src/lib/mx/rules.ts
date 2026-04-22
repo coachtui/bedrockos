@@ -5,7 +5,7 @@
  * Follows the pourRules.ts pattern — pure functions, no side effects.
  */
 
-import type { MxWorkOrderStatus, MxWorkOrderPriority, MxWorkOrderCategory, ReadinessStatus } from "./types";
+import type { MxWorkOrderStatus, MxWorkOrderPriority, MxWorkOrderCategory, ReadinessStatus, MxWorkOrder } from "./types";
 import type { UserRole } from "@/types/org";
 
 // ── Status transitions ────────────────────────────────────────────────────────
@@ -53,6 +53,21 @@ export function canAssignMechanic(role: UserRole): boolean {
 /** Can this actor update status on a work order? */
 export function canUpdateWorkOrderStatus(role: UserRole): boolean {
   return ["owner", "admin", "mechanic"].includes(role);
+}
+
+/** Roles that can see work orders across all projects (not just current jobsite) */
+export function canSeeAllProjects(role: UserRole): boolean {
+  return ["owner", "admin", "mechanic"].includes(role);
+}
+
+/** Returns work orders visible to the current role/project combination */
+export function filterWorkOrdersByVisibility(
+  workOrders: MxWorkOrder[],
+  role: UserRole,
+  currentProjectId: string,
+): MxWorkOrder[] {
+  if (canSeeAllProjects(role)) return workOrders;
+  return workOrders.filter((wo) => wo.projectId === currentProjectId);
 }
 
 // ── Label maps ────────────────────────────────────────────────────────────────
