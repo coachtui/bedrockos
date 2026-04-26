@@ -3,38 +3,39 @@
 import React, { useRef, useEffect, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import type { UIMessage } from "ai";
+import type { UIMessage, ChatStatus } from "ai";
 import { X, Sparkles, Send, Building, FolderOpen, ChevronRight, Loader2 } from "lucide-react";
 import { useUI }  from "@/providers/UIProvider";
 import { useOrg } from "@/providers/OrgProvider";
+
+const SUGGESTIONS = [
+  "Summarize open issues on this project",
+  "Show crew status for today",
+  "Latest inspection findings",
+];
 
 export function AssistantPanel() {
   const { isAssistantOpen, closeAssistant } = useUI();
   const { currentOrganization, currentProject, currentUser, enabledModules } = useOrg();
 
-  const { messages, sendMessage, status, error } = useChat({
+  const contextRef = useRef({ org: currentOrganization, project: currentProject, user: currentUser, enabledModules });
+  useEffect(() => {
+    contextRef.current = { org: currentOrganization, project: currentProject, user: currentUser, enabledModules };
+  }, [currentOrganization, currentProject, currentUser, enabledModules]);
+
+  const { messages, sendMessage, status, error, clearError } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/assistant",
-      body: {
-        org:            currentOrganization,
-        project:        currentProject,
-        user:           currentUser,
-        enabledModules,
-      },
+      body: () => contextRef.current,
     }),
   });
 
   const [input, setInput] = useState("");
   const isLoading = status === "submitted" || status === "streaming";
 
-  const SUGGESTIONS = [
-    "Summarize open issues on this project",
-    "Show crew status for today",
-    "Latest inspection findings",
-  ];
-
   function handleSend(text: string) {
     if (!text.trim() || isLoading) return;
+    clearError();
     sendMessage({ text });
     setInput("");
   }
@@ -90,7 +91,7 @@ interface ContentProps {
   input:        string;
   isLoading:    boolean;
   error:        Error | undefined;
-  status:       string;
+  status:       ChatStatus;
   onInputChange: (v: string) => void;
   onSend:       (text: string) => void;
   onClose:      () => void;
@@ -195,18 +196,20 @@ function AssistantContent({ orgName, projectName, messages, input, isLoading, er
 
       {/* Input */}
       <div className="px-4 py-3 border-t border-surface-border shrink-0">
-        <div className="flex items-center gap-2">
+        <form
+          onSubmit={(e) => { e.preventDefault(); onSend(input); }}
+          className="flex items-center gap-2"
+        >
           <input
             type="text"
             value={input}
             onChange={(e) => onInputChange(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && onSend(input)}
             disabled={isLoading}
             placeholder="Ask anything…"
             className="flex-1 bg-surface-overlay border border-surface-border rounded-lg px-3 py-2 text-sm text-content-primary placeholder:text-content-muted outline-none focus:border-gold/40 transition-colors disabled:opacity-50"
           />
           <button
-            onClick={() => onSend(input)}
+            type="submit"
             disabled={!input.trim() || isLoading}
             className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-gold hover:bg-gold-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
@@ -215,7 +218,7 @@ function AssistantContent({ orgName, projectName, messages, input, isLoading, er
               : <Send size={13} className="text-content-inverse" />
             }
           </button>
-        </div>
+        </form>
       </div>
     </>
   );
