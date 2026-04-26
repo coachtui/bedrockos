@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useMemo } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import type { UIMessage, ChatStatus } from "ai";
@@ -18,16 +18,18 @@ export function AssistantPanel() {
   const { isAssistantOpen, closeAssistant } = useUI();
   const { currentOrganization, currentProject, currentUser, enabledModules } = useOrg();
 
-  const contextRef = useRef({ org: currentOrganization, project: currentProject, user: currentUser, enabledModules });
-  useEffect(() => {
-    contextRef.current = { org: currentOrganization, project: currentProject, user: currentUser, enabledModules };
-  }, [currentOrganization, currentProject, currentUser, enabledModules]);
+  const transport = useMemo(() => new DefaultChatTransport({
+    api: "/api/assistant",
+    body: {
+      org: currentOrganization,
+      project: currentProject,
+      user: currentUser,
+      enabledModules,
+    },
+  }), [currentOrganization, currentProject, currentUser, enabledModules]);
 
   const { messages, sendMessage, status, error, clearError } = useChat({
-    transport: new DefaultChatTransport({
-      api: "/api/assistant",
-      body: () => contextRef.current,
-    }),
+    transport,
   });
 
   const [input, setInput] = useState("");
