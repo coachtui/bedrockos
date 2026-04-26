@@ -164,7 +164,7 @@ async function cruPost<T>(body: Record<string, unknown>): Promise<T> {
 const MOCK_CRU_WORKERS: CruWorker[] = [
   // Mechanics
   { id: "cru_w_001", name: "Tony Reeves",    role: "mechanic",       siteId: "proj_highland_002", siteName: "Highland Tower — Phase 2",    available: true  },
-  { id: "cru_w_002", name: "Derek Walsh",    role: "mechanic",       siteId: "proj_eastside_004", siteName: "Eastside Medical Campus",      available: true  },
+  { id: "cru_w_002", name: "Derek Walsh",    role: "mechanic",       siteId: "proj_eastside_007", siteName: "Eastside Medical Campus",      available: true  },
   { id: "cru_w_003", name: "Carlos Mejia",   role: "mechanic",                                                                              available: true  },
   { id: "cru_w_004", name: "Priya Nair",     role: "mechanic",                                                                              available: false },
 

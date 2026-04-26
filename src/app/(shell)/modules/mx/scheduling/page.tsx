@@ -412,11 +412,12 @@ function AiSuggestionsPanel({
     );
   }
 
-  const suggestions: Array<{ wo: MxWorkOrder; top: SuggestedAssignment | undefined }> =
-    unassignedWos.map((wo) => ({
+  const suggestions = unassignedWos
+    .map((wo) => ({
       wo,
       top: suggestAssignments(wo, mechanicsForScheduling, allWorkOrders, 1)[0],
-    })).filter((s) => s.top !== undefined);
+    }))
+    .filter((s): s is { wo: MxWorkOrder; top: SuggestedAssignment } => s.top !== undefined);
 
   if (suggestions.length === 0) {
     return (
@@ -428,10 +429,8 @@ function AiSuggestionsPanel({
 
   return (
     <div className="space-y-1.5">
-      {suggestions.map(({ wo, top }) => {
-        if (!top) return null;
-        return (
-          <div
+      {suggestions.map(({ wo, top }) => (
+        <div
             key={wo.id}
             className="bg-teal/5 border border-teal/20 rounded-[var(--radius-card)] px-3 py-2 flex items-start gap-2"
           >
@@ -448,8 +447,7 @@ function AiSuggestionsPanel({
               Assign
             </button>
           </div>
-        );
-      })}
+        ))}
     </div>
   );
 }
