@@ -1,4 +1,4 @@
-import { streamText, type ModelMessage } from "ai";
+import { streamText, convertToModelMessages } from "ai";
 import { anthropic }  from "@ai-sdk/anthropic";
 import { NextResponse } from "next/server";
 import { buildSystemPrompt } from "@/lib/assistant/system-prompt";
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
   const result = await streamText({
     model:           anthropic(MODEL_ID),
     system:          systemPrompt,
-    messages:        messages as ModelMessage[],
+    messages:        await convertToModelMessages(messages as Parameters<typeof convertToModelMessages>[0]),
     maxOutputTokens: 1024,
   });
 
