@@ -30,8 +30,8 @@ Client (AssistantPanel)             Server (route.ts)
 
 `src/app/api/assistant/route.ts`
 
-- Receives: `{ messages, org, project, user }` in the POST body
-- Builds system prompt server-side with context and serialized mock data
+- Receives: `{ messages, org, project, user, enabledModules }` in the POST body
+- Builds system prompt server-side with context and serialized mock data imported from `src/lib/mock/` (issues, alerts, crews, assets)
 - Calls `streamText` from `ai` with `@ai-sdk/anthropic` provider
 - Returns a streaming response via `result.toDataStreamResponse()`
 
@@ -40,7 +40,7 @@ Client (AssistantPanel)             Server (route.ts)
 `src/components/layout/AssistantPanel.tsx`
 
 - Removes manual `messages`, `input`, `handleSend` state
-- Adopts `useChat({ api: "/api/assistant", body: { org, project, user } })`
+- Adopts `useChat({ api: "/api/assistant", body: { org, project, user, enabledModules } })`
 - Uses `useOrg()` to populate the body context
 - Streaming renders naturally — `useChat` messages have the same `role: "user" | "assistant"` shape as the current mock
 
@@ -102,7 +102,7 @@ New env var (server-side only, no `NEXT_PUBLIC_` prefix):
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-Add to `.env.local`. Add `ANTHROPIC_API_KEY=` placeholder to `.env.example` if one exists.
+Add to `.env.local`.
 
 ---
 
