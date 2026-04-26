@@ -17,10 +17,13 @@ import {
 } from "@/lib/mx/rules";
 import type { MxWorkOrder, MxWorkOrderStatus } from "@/lib/mx/types";
 import { WoInspectorPanel } from "@/components/mx/WoInspectorPanel";
+import { suggestAssignments } from "@/lib/mx/scheduling";
+import type { MechanicForScheduling, SuggestedAssignment } from "@/lib/mx/scheduling";
 import {
   ArrowLeft, User, CalendarDays, AlertTriangle,
   Inbox, Wrench, Clock, PackageX, Play, CheckCircle2,
   XCircle, RotateCcw, X as XIcon, Send, CheckCheck,
+  Bot, ToggleLeft, ToggleRight, Zap,
 } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -388,22 +391,101 @@ function Lane({
   );
 }
 
+// ── AI Suggestions Panel ──────────────────────────────────────────────────────
+
+function AiSuggestionsPanel({
+  unassignedWos,
+  mechanicsForScheduling,
+  allWorkOrders,
+  onPreFillAssign,
+}: {
+  unassignedWos:           MxWorkOrder[];
+  mechanicsForScheduling:  MechanicForScheduling[];
+  allWorkOrders:           MxWorkOrder[];
+  onPreFillAssign:         (woId: string, mechanicId: string) => void;
+}) {
+  if (unassignedWos.length === 0 || mechanicsForScheduling.length === 0) {
+    return (
+      <div className="border border-dashed border-teal/20 rounded-[var(--radius-card)] p-3 text-center">
+        <p className="text-[10px] text-content-muted">No suggestions — assign mechanics manually.</p>
+      </div>
+    );
+  }
+
+  const suggestions: Array<{ wo: MxWorkOrder; top: SuggestedAssignment | undefined }> =
+    unassignedWos.map((wo) => ({
+      wo,
+      top: suggestAssignments(wo, mechanicsForScheduling, allWorkOrders, 1)[0],
+    })).filter((s) => s.top !== undefined);
+
+  if (suggestions.length === 0) {
+    return (
+      <div className="border border-dashed border-teal/20 rounded-[var(--radius-card)] p-3 text-center">
+        <p className="text-[10px] text-content-muted">No available mechanics to suggest.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {suggestions.map(({ wo, top }) => {
+        if (!top) return null;
+        return (
+          <div
+            key={wo.id}
+            className="bg-teal/5 border border-teal/20 rounded-[var(--radius-card)] px-3 py-2 flex items-start gap-2"
+          >
+            <Zap size={11} className="text-teal mt-0.5 flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold text-content-primary truncate">{wo.title}</p>
+              <p className="text-[10px] text-teal font-semibold">{top.mechanic.name}</p>
+              <p className="text-[10px] text-content-muted truncate">{top.reasons.join(" · ")}</p>
+            </div>
+            <button
+              onClick={() => onPreFillAssign(wo.id, top.mechanic.id)}
+              className="flex-shrink-0 px-2 py-0.5 text-[10px] font-semibold bg-teal text-white border border-teal rounded hover:opacity-90 transition-opacity"
+            >
+              Assign
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
+
+const AI_TOGGLE_KEY = "aigacp:mx:ai-scheduling-enabled";
 
 export default function MxSchedulingPage() {
   const { assignMechanic, unassignMechanic, updateWorkOrderStatus, updateWorkOrder } = useMx();
   const workOrders = useVisibleWorkOrders();
-  const { currentOrganization, role } = useOrg();
+  const { currentOrganization, role, features, workers: orgWorkers } = useOrg();
 
   const [mechanics,    setMechanics]    = useState<OrgWorker[]>([]);
   const [loadingMechs, setLoadingMechs] = useState(true);
   const [draggedWoId,  setDraggedWoId]  = useState<string | null>(null);
   const [pendingAssign, setPendingAssign] = useState<{ woId: string; mechanicId: string } | null>(null);
-  // Inspector — WO detail panel without leaving the board
   const [inspectId,    setInspectId]    = useState<string | null>(null);
 
-  const canAssign = canAssignMechanic(role);
-  const canAct    = canUpdateWorkOrderStatus(role);
+  // AI scheduling toggle — persisted in localStorage, off by default
+  const [aiEnabled, setAiEnabled] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(AI_TOGGLE_KEY) === "true";
+  });
+
+  const canAssign    = canAssignMechanic(role);
+  const canAct       = canUpdateWorkOrderStatus(role);
+  const aiAvailable  = canAssign && features.mx !== undefined;
+
+  function toggleAi() {
+    setAiEnabled((prev) => {
+      const next = !prev;
+      localStorage.setItem(AI_TOGGLE_KEY, String(next));
+      return next;
+    });
+  }
 
   useEffect(() => {
     getOrgMechanicsAndDrivers(currentOrganization.id)
@@ -433,6 +515,22 @@ export default function MxSchedulingPage() {
   );
 
   const mechanicList = mechanics.filter((m) => m.role === "mechanic");
+
+  // Merge CRU mechanics (for IDs) with orgWorkers (for skills) via userId bridge
+  const mechanicsForScheduling = useMemo<MechanicForScheduling[]>(
+    () =>
+      mechanicList.map((m) => {
+        const orgWorker = orgWorkers.find((w) => w.userId === m.id);
+        return {
+          id:        m.id,
+          name:      m.name,
+          available: m.available,
+          skills:    orgWorker?.skills ?? [],
+          projectId: m.projectId,
+        };
+      }),
+    [mechanicList, orgWorkers],
+  );
 
   function lanesForMechanic(mechanicId: string) {
     const all = workOrders.filter(
@@ -496,6 +594,21 @@ export default function MxSchedulingPage() {
             {unassigned.length} unassigned · {totalAssigned} assigned · {mechanicList.length} mechanics
           </p>
         </div>
+        {aiAvailable && (
+          <button
+            onClick={toggleAi}
+            className={`ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border rounded-lg transition-colors ${
+              aiEnabled
+                ? "bg-teal/10 border-teal/30 text-teal hover:bg-teal/20"
+                : "bg-surface-raised border-surface-border text-content-muted hover:border-teal/30 hover:text-teal"
+            }`}
+            title={aiEnabled ? "AI Suggestions: On — click to disable" : "AI Suggestions: Off — click to enable"}
+          >
+            <Bot size={13} />
+            {aiEnabled ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}
+            AI Suggestions
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -533,6 +646,22 @@ export default function MxSchedulingPage() {
               </div>
             )}
           </div>
+
+          {/* AI Suggestions */}
+          {aiEnabled && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Bot size={11} className="text-teal" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-teal">AI Suggestions</span>
+              </div>
+              <AiSuggestionsPanel
+                unassignedWos={unassigned}
+                mechanicsForScheduling={mechanicsForScheduling}
+                allWorkOrders={workOrders}
+                onPreFillAssign={(woId, mechanicId) => setPendingAssign({ woId, mechanicId })}
+              />
+            </div>
+          )}
 
           {/* Waiting Parts — unassigned, clearly excluded from workload */}
           {waitingPartsUnassigned.length > 0 && (
