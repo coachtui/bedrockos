@@ -29,5 +29,5 @@ export async function POST(request: Request) {
     maxOutputTokens: 1024,
   });
 
-  return result.toTextStreamResponse();
+  return result.toUIMessageStreamResponse();
 }
