@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, MapPin, User, Calendar,
@@ -23,6 +23,7 @@ import { getRoleGroup } from "@/lib/utils/roles";
 import { buildFixUrl } from "@/lib/modules/fix/launch";
 import { FixLaunchButton } from "@/components/modules/fix/FixLaunchButton";
 import type { ActivityEvent, Issue, Alert } from "@/types/domain";
+import { ScheduleTab } from "@/components/schedule/ScheduleTab";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -335,6 +336,7 @@ function ActivitySection({ events }: { events: ActivityEvent[] }) {
 
 export function ProjectCommandCenterClient({ projectId }: { projectId: string }) {
   const { role } = useOrg();
+  const [activeTab, setActiveTab] = useState<"overview" | "schedule">("overview");
   const roleGroup = getRoleGroup(role);
 
   const project = MOCK_PROJECTS.find((p) => p.id === projectId)!;
@@ -468,125 +470,150 @@ export function ProjectCommandCenterClient({ projectId }: { projectId: string })
         </div>
       </Card>
 
-      {/* ── Role CTA ──────────────────────────────────────────────────────── */}
-      <RoleCTABar projectId={projectId} />
-
-      {/* ── Main Grid ─────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-
-        {/* Left column */}
-        <div className="lg:col-span-3 space-y-4">
-          {leftSections}
-        </div>
-
-        {/* Right column */}
-        <div className="lg:col-span-2 space-y-4">
-
-          {/* Project Snapshot — de-emphasize for field/maintenance */}
-          <Card
-            variant="default"
-            className={roleGroup === "field" || roleGroup === "maintenance" ? "opacity-80" : undefined}
+      {/* ── Tab Bar ───────────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-1 mb-4 border-b border-surface-border">
+        {(["overview", "schedule"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 text-sm font-semibold capitalize transition-colors border-b-2 -mb-px ${
+              activeTab === tab
+                ? "border-gold text-content-primary"
+                : "border-transparent text-content-muted hover:text-content-secondary"
+            }`}
           >
-            <p className="text-[11px] font-bold uppercase tracking-widest text-content-muted mb-4">Project Snapshot</p>
-            <div className="grid grid-cols-2 gap-2.5">
-              {[
-                {
-                  label:  "Assets",
-                  value:  projectAssets.length,
-                  icon:   <Truck size={13} className="text-content-muted" />,
-                  accent: false,
-                },
-                {
-                  label:  "Crews",
-                  value:  projectCrews.length,
-                  icon:   <Users size={13} className="text-content-muted" />,
-                  accent: false,
-                },
-                {
-                  label:  "Open Issues",
-                  value:  openIssues.length,
-                  icon:   <AlertCircle size={13} className={hasCritical ? "text-status-critical" : "text-content-muted"} />,
-                  accent: hasCritical,
-                },
-                {
-                  label:  "Alerts",
-                  value:  projectAlerts.length,
-                  icon:   <Bell size={13} className={unreadAlerts.length > 0 ? "text-status-warning" : "text-content-muted"} />,
-                  accent: unreadAlerts.length > 0,
-                },
-              ].map(({ label, value, icon, accent }) => (
-                <div
-                  key={label}
-                  className={`rounded-lg p-3 border ${accent ? "border-status-critical/20 bg-status-critical/5" : "border-surface-border bg-surface-overlay"}`}
-                >
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    {icon}
-                    <span className="text-[11px] font-semibold uppercase tracking-widest text-content-muted">{label}</span>
-                  </div>
-                  <p className={`text-2xl font-bold tabular-nums ${accent ? "text-status-critical" : "text-content-primary"}`}>
-                    {value}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card variant="default" className="!p-0">
-            <div className="p-5 pb-3">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-content-muted">Project Actions</p>
-              <p className="text-xs text-content-muted mt-0.5">Launch a module for this job</p>
-            </div>
-            <div className="px-5 pb-5 grid grid-cols-2 gap-2">
-              {MODULE_ACTIONS.map((action) => {
-              const href = action.key === "fix"
-                ? buildFixUrl({ source: "project-command-center", projectId, returnTo: `/projects/${projectId}` })
-                : action.href;
-              return (
-                <Link
-                  key={action.key}
-                  href={href}
-                  className={`group flex items-start gap-2.5 p-3 rounded-lg border border-surface-border bg-surface-overlay transition-colors ${action.hover}`}
-                >
-                  <div className="mt-0.5 shrink-0">{action.icon}</div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-content-primary group-hover:text-white transition-colors">
-                      {action.label}
-                    </p>
-                    <p className="text-[11px] text-content-muted mt-0.5 leading-snug">{action.description}</p>
-                  </div>
-                </Link>
-              );
-            })}
-            </div>
-          </Card>
-
-          {/* Field Assets */}
-          {projectAssets.length > 0 && (
-            <Card variant="default" className="!p-0">
-              <div className="p-5 pb-3">
-                <SectionHeader
-                  title="Field Assets"
-                  subtitle={`${projectAssets.length} on this project`}
-                />
-              </div>
-              <div>
-                {projectAssets.slice(0, 4).map((asset) => (
-                  <div key={asset.id} className="flex items-center gap-3 px-5 py-2.5 border-t border-surface-border">
-                    <Truck size={13} className="shrink-0 text-content-muted" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-content-primary truncate">{asset.name}</p>
-                      <p className="text-xs text-content-muted">{asset.type}</p>
-                    </div>
-                    <StatusBadge status={asset.status} />
-                  </div>
-                ))}
-              </div>
-            </Card>
-          )}
-
-        </div>
+            {tab}
+          </button>
+        ))}
       </div>
+
+      {activeTab === "overview" && (
+        <>
+          {/* ── Role CTA ──────────────────────────────────────────────────────── */}
+          <RoleCTABar projectId={projectId} />
+
+          {/* ── Main Grid ─────────────────────────────────────────────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+
+            {/* Left column */}
+            <div className="lg:col-span-3 space-y-4">
+              {leftSections}
+            </div>
+
+            {/* Right column */}
+            <div className="lg:col-span-2 space-y-4">
+
+              {/* Project Snapshot — de-emphasize for field/maintenance */}
+              <Card
+                variant="default"
+                className={roleGroup === "field" || roleGroup === "maintenance" ? "opacity-80" : undefined}
+              >
+                <p className="text-[11px] font-bold uppercase tracking-widest text-content-muted mb-4">Project Snapshot</p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {[
+                    {
+                      label:  "Assets",
+                      value:  projectAssets.length,
+                      icon:   <Truck size={13} className="text-content-muted" />,
+                      accent: false,
+                    },
+                    {
+                      label:  "Crews",
+                      value:  projectCrews.length,
+                      icon:   <Users size={13} className="text-content-muted" />,
+                      accent: false,
+                    },
+                    {
+                      label:  "Open Issues",
+                      value:  openIssues.length,
+                      icon:   <AlertCircle size={13} className={hasCritical ? "text-status-critical" : "text-content-muted"} />,
+                      accent: hasCritical,
+                    },
+                    {
+                      label:  "Alerts",
+                      value:  projectAlerts.length,
+                      icon:   <Bell size={13} className={unreadAlerts.length > 0 ? "text-status-warning" : "text-content-muted"} />,
+                      accent: unreadAlerts.length > 0,
+                    },
+                  ].map(({ label, value, icon, accent }) => (
+                    <div
+                      key={label}
+                      className={`rounded-lg p-3 border ${accent ? "border-status-critical/20 bg-status-critical/5" : "border-surface-border bg-surface-overlay"}`}
+                    >
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        {icon}
+                        <span className="text-[11px] font-semibold uppercase tracking-widest text-content-muted">{label}</span>
+                      </div>
+                      <p className={`text-2xl font-bold tabular-nums ${accent ? "text-status-critical" : "text-content-primary"}`}>
+                        {value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              {/* Quick Actions */}
+              <Card variant="default" className="!p-0">
+                <div className="p-5 pb-3">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-content-muted">Project Actions</p>
+                  <p className="text-xs text-content-muted mt-0.5">Launch a module for this job</p>
+                </div>
+                <div className="px-5 pb-5 grid grid-cols-2 gap-2">
+                  {MODULE_ACTIONS.map((action) => {
+                  const href = action.key === "fix"
+                    ? buildFixUrl({ source: "project-command-center", projectId, returnTo: `/projects/${projectId}` })
+                    : action.href;
+                  return (
+                    <Link
+                      key={action.key}
+                      href={href}
+                      className={`group flex items-start gap-2.5 p-3 rounded-lg border border-surface-border bg-surface-overlay transition-colors ${action.hover}`}
+                    >
+                      <div className="mt-0.5 shrink-0">{action.icon}</div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-content-primary group-hover:text-white transition-colors">
+                          {action.label}
+                        </p>
+                        <p className="text-[11px] text-content-muted mt-0.5 leading-snug">{action.description}</p>
+                      </div>
+                    </Link>
+                  );
+                })}
+                </div>
+              </Card>
+
+              {/* Field Assets */}
+              {projectAssets.length > 0 && (
+                <Card variant="default" className="!p-0">
+                  <div className="p-5 pb-3">
+                    <SectionHeader
+                      title="Field Assets"
+                      subtitle={`${projectAssets.length} on this project`}
+                    />
+                  </div>
+                  <div>
+                    {projectAssets.slice(0, 4).map((asset) => (
+                      <div key={asset.id} className="flex items-center gap-3 px-5 py-2.5 border-t border-surface-border">
+                        <Truck size={13} className="shrink-0 text-content-muted" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-content-primary truncate">{asset.name}</p>
+                          <p className="text-xs text-content-muted">{asset.type}</p>
+                        </div>
+                        <StatusBadge status={asset.status} />
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
+
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeTab === "schedule" && (
+        <ScheduleTab projectId={projectId} role={role} />
+      )}
     </PageContainer>
   );
 }
