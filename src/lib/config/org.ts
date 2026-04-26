@@ -77,6 +77,9 @@ export const MOCK_ORG_CONFIG: OrgConfig = {
       map_overlays:   true,
       crew_alignment: true,
     },
+    mx: {
+      ai_scheduling: false,
+    },
   },
 };
 

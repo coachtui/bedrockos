@@ -2,10 +2,10 @@ import type { OrgWorker } from "@/types/domain";
 
 export const MOCK_WORKERS: OrgWorker[] = [
   // Mechanics
-  { id: "worker_001", orgId: "org_aiga_001", name: "Tony Reeves",    role: "mechanic",       userId: "cru_w_001", available: true,  skills: [], projectId: "proj_highland_002", siteName: "Highland Tower — Phase 2" },
-  { id: "worker_002", orgId: "org_aiga_001", name: "Derek Walsh",    role: "mechanic",       userId: null,        available: true,  skills: [], projectId: "proj_eastside_007", siteName: "Eastside Medical Campus" },
-  { id: "worker_003", orgId: "org_aiga_001", name: "Carlos Mejia",   role: "mechanic",       userId: null,        available: true,  skills: [] },
-  { id: "worker_004", orgId: "org_aiga_001", name: "Priya Nair",     role: "mechanic",       userId: null,        available: false, skills: [] },
+  { id: "worker_001", orgId: "org_aiga_001", name: "Tony Reeves",    role: "mechanic", userId: "cru_w_001", available: true,  skills: ["Hydraulic Systems", "Diesel Engine"],       projectId: "proj_highland_002", siteName: "Highland Tower — Phase 2" },
+  { id: "worker_002", orgId: "org_aiga_001", name: "Derek Walsh",    role: "mechanic", userId: "cru_w_002", available: true,  skills: ["Electrical Diagnostics", "Welding"],         projectId: "proj_eastside_007", siteName: "Eastside Medical Campus" },
+  { id: "worker_003", orgId: "org_aiga_001", name: "Carlos Mejia",   role: "mechanic", userId: "cru_w_003", available: true,  skills: ["Hydraulic Systems", "Electrical Diagnostics"] },
+  { id: "worker_004", orgId: "org_aiga_001", name: "Priya Nair",     role: "mechanic", userId: "cru_w_004", available: false, skills: ["Diesel Engine", "Welding"] },
 
   // Drivers
   { id: "worker_005", orgId: "org_aiga_001", name: "Marco Ruiz",     role: "driver",         userId: null,        available: true,  skills: [], projectId: "proj_riverside_006", siteName: "Riverside District Parking" },

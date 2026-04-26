@@ -83,6 +83,7 @@ export interface MxWorkOrder {
   requestedByUserId?:  string;
   requestedDate:       string;   // "YYYY-MM-DD"
   neededByDate?:       string;   // "YYYY-MM-DD"
+  requiredSkills?:     string[];
   /** Estimated hours to complete this work order */
   estimatedHours?:     number;
   // Schedule
@@ -118,6 +119,7 @@ export interface CreateMxWorkOrderInput {
   requestedByUserId?:  string;
   requestedDate:       string;
   neededByDate?:       string;
+  requiredSkills?:     string[];
   estimatedHours?:     number;
   readinessImpact:     ReadinessStatus | null;
   opsBlocking:         boolean;
