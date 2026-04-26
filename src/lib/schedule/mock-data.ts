@@ -108,6 +108,6 @@ export const MOCK_SCHEDULE_MESSAGES: ScheduleMessage[] = [
     id: "smsg_002", projectId: "proj_highland_002",
     type: "resource_alert", author: "agent", status: "pending",
     createdAt: "2026-04-21T07:00:02Z",
-    body: "**Crew gap — Week 2:** Steel Erection Level 1 starts May 5. You currently have 2 ironworkers assigned to this project. Structural steel typically requires 4–6. Consider requesting additional crew from the pool before end of this week.",
+    body: "**Crew gap — Week 3:** Steel Erection Level 1 starts May 5. You currently have 2 ironworkers assigned to this project. Structural steel typically requires 4–6. Consider requesting additional crew from the pool before end of this week.",
   },
 ];

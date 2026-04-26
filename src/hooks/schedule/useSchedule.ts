@@ -2,8 +2,8 @@
 
 import { useState, useCallback } from "react";
 import type {
-  ProjectSchedule, ScheduleMessage, ScheduleActivity,
-  ColumnMap, ParsedIntentType,
+  ProjectSchedule, ScheduleMessage,
+  ColumnMap,
 } from "@/lib/schedule/types";
 import {
   parseUserIntent, buildMarkCompleteProposal, buildPushDateProposal,

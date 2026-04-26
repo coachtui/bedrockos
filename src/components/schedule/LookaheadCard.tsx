@@ -2,8 +2,7 @@
 
 import React, { useState } from "react";
 import { CalendarDays, ChevronDown, ChevronRight, CheckCircle2, ArrowRight } from "lucide-react";
-import type { ScheduleMessage } from "@/lib/schedule/types";
-import type { ScheduleActivity } from "@/lib/schedule/types";
+import type { ScheduleMessage, ScheduleActivity } from "@/lib/schedule/types";
 import { formatDisplayDate } from "@/lib/schedule/utils";
 
 interface Props {
