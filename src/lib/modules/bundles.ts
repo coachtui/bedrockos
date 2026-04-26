@@ -20,7 +20,7 @@ export const BUNDLE_REGISTRY: BundleDefinition[] = [
   {
     id:      "operations",
     label:   "Operations",
-    modules: ["ops"],
+    modules: ["ops", "schedule"],
   },
 ];
 
