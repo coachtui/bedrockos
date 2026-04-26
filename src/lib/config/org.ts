@@ -80,6 +80,9 @@ export const MOCK_ORG_CONFIG: OrgConfig = {
     mx: {
       ai_scheduling: false,
     },
+    schedule: {
+      ai_agent: true,
+    },
   },
 };
 

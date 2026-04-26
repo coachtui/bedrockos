@@ -69,6 +69,16 @@ export const MODULE_ROLE_MANIFEST: Record<ModuleId, RoleManifestEntry> = {
     mechanic:         "hidden",
     viewer:           "hidden",
   },
+  schedule: {
+    owner:            "full",
+    admin:            "full",
+    pm:               "full",
+    project_engineer: "full",
+    superintendent:   "read",
+    foreman:          "read",
+    mechanic:         "hidden",
+    viewer:           "hidden",
+  },
 };
 
 /** Returns the scope a role has for a module. Defaults to "hidden". */

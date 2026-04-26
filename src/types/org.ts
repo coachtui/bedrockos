@@ -1,4 +1,4 @@
-export type ModuleId = "cru" | "fix" | "inspect" | "datum" | "ops" | "mx";
+export type ModuleId = "cru" | "fix" | "inspect" | "datum" | "ops" | "mx" | "schedule";
 
 export type BundleId = "field_ops" | "equipment" | "operations";
 

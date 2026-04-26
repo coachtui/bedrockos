@@ -11,21 +11,23 @@ import type { ModuleId } from "@/types/org";
 export const metadata = { title: "Issues" };
 
 const MODULE_LABEL: Record<ModuleId, string> = {
-  fix:     "Fix",
-  cru:     "CRU",
-  inspect: "Inspect",
-  datum:   "Datum",
-  ops:     "OPS",
-  mx:      "MX",
+  fix:      "Fix",
+  cru:      "CRU",
+  inspect:  "Inspect",
+  datum:    "Datum",
+  ops:      "OPS",
+  mx:       "MX",
+  schedule: "Schedule",
 };
 
 const MODULE_COLOR: Record<ModuleId, string> = {
-  fix:     "text-teal       border-teal/30       bg-teal/10",
-  cru:     "text-gold       border-gold/30       bg-gold/10",
-  inspect: "text-blue-brand border-blue-brand/30 bg-blue-brand/10",
-  datum:   "text-teal       border-teal/30       bg-teal/10",
-  ops:     "text-gold       border-gold/30       bg-gold/10",
-  mx:      "text-teal       border-teal/30       bg-teal/10",
+  fix:      "text-teal       border-teal/30       bg-teal/10",
+  cru:      "text-gold       border-gold/30       bg-gold/10",
+  inspect:  "text-blue-brand border-blue-brand/30 bg-blue-brand/10",
+  datum:    "text-teal       border-teal/30       bg-teal/10",
+  ops:      "text-gold       border-gold/30       bg-gold/10",
+  mx:       "text-teal       border-teal/30       bg-teal/10",
+  schedule: "text-teal       border-teal/30       bg-teal/10",
 };
 
 const SEVERITY_BAR: Record<IssueSeverity, string> = {
