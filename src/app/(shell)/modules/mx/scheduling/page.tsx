@@ -477,7 +477,7 @@ export default function MxSchedulingPage() {
 
   const canAssign    = canAssignMechanic(role);
   const canAct       = canUpdateWorkOrderStatus(role);
-  const aiAvailable  = canAssign && features.mx !== undefined;
+  const aiAvailable  = canAssign && features.mx?.ai_scheduling !== undefined;
 
   function toggleAi() {
     setAiEnabled((prev) => {
@@ -520,6 +520,7 @@ export default function MxSchedulingPage() {
   const mechanicsForScheduling = useMemo<MechanicForScheduling[]>(
     () =>
       mechanicList.map((m) => {
+        // orgWorkers.userId holds the CRU id (e.g. "cru_w_001") — matches m.id from CRU mechanics
         const orgWorker = orgWorkers.find((w) => w.userId === m.id);
         return {
           id:        m.id,
