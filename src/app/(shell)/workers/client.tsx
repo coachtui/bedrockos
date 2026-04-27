@@ -1,13 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, User } from "lucide-react";
+import { Plus } from "lucide-react";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card } from "@/components/ui/Card";
 import { AddWorkerModal } from "@/components/shell/AddWorkerModal";
 import { WorkerInspectorPanel } from "@/components/shell/WorkerInspectorPanel";
 import { useOrg } from "@/providers/OrgProvider";
+
+const AVATAR_COLORS = [
+  "bg-blue-500", "bg-violet-500", "bg-rose-500", "bg-amber-500",
+  "bg-teal-500", "bg-emerald-500", "bg-indigo-500", "bg-pink-500",
+];
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function getAvatarColor(name: string): string {
+  const index = name.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return AVATAR_COLORS[index % AVATAR_COLORS.length];
+}
 
 export function WorkersClient() {
   const { workers, role, currentProject } = useOrg();
@@ -38,7 +54,7 @@ export function WorkersClient() {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
         {filteredWorkers.map((worker) => {
           const visibleSkills = worker.skills.slice(0, 3);
           const extraCount    = worker.skills.length - visibleSkills.length;
@@ -52,8 +68,8 @@ export function WorkersClient() {
               className={`hover:border-surface-border-hover transition-colors ${isSelected ? "border-teal/50" : ""}`}
             >
               <div className="flex items-start justify-between mb-3">
-                <div className="w-9 h-9 rounded-lg bg-surface-overlay border border-surface-border flex items-center justify-center">
-                  <User size={16} className="text-content-secondary" />
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-white text-xs font-bold ${getAvatarColor(worker.name)}`}>
+                  {getInitials(worker.name)}
                 </div>
                 <span
                   className={`w-2 h-2 rounded-full mt-1 ${worker.available ? "bg-green-400" : "bg-content-muted"}`}
