@@ -41,7 +41,7 @@ async function fetchCruWorkers(): Promise<DbWorker[]> {
     method:  "POST",
     headers: {
       "Content-Type":       "application/json",
-      "x-internal-api-key": CRU_KEY,
+      "x-internal-api-key": CRU_KEY!,
     },
     body: JSON.stringify({ action: "getWorkersForOrg", orgId }),
   });

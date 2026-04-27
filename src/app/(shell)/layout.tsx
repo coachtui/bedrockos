@@ -1,9 +1,10 @@
 import { fetchOrgWorkers } from "@/lib/supabase/workers";
-import { MOCK_ORG_CONFIG } from "@/lib/config/org";
 import { ShellClientRoot } from "./shell-client";
 
+const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
+
 export default async function ShellRootLayout({ children }: { children: React.ReactNode }) {
-  const workers = await fetchOrgWorkers(MOCK_ORG_CONFIG.org.id);
+  const workers = await fetchOrgWorkers(ORG_ID);
   return (
     <ShellClientRoot initialWorkers={workers}>
       {children}
