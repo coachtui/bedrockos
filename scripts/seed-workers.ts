@@ -25,6 +25,17 @@ interface DbWorker {
   job_site:            { id: string; name: string } | null;
 }
 
+type WorkerRole = "mechanic" | "driver" | "mason" | "carpenter" | "foreman" | "superintendent" | "operator" | "laborer";
+
+const KNOWN_ROLES = new Set<WorkerRole>([
+  "mechanic", "driver", "mason", "carpenter",
+  "foreman", "superintendent", "operator", "laborer",
+]);
+
+function toWorkerRole(r: string): WorkerRole {
+  return KNOWN_ROLES.has(r as WorkerRole) ? (r as WorkerRole) : "laborer";
+}
+
 async function fetchCruWorkers(): Promise<DbWorker[]> {
   const res = await fetch(`${CRU_URL}/functions/v1/ops-api`, {
     method:  "POST",
@@ -35,12 +46,14 @@ async function fetchCruWorkers(): Promise<DbWorker[]> {
     body: JSON.stringify({ action: "getWorkersForOrg", orgId }),
   });
 
-  const json = await res.json() as { success?: boolean; data?: DbWorker[]; error?: string };
-
-  if (!res.ok || !json.success || !json.data) {
-    throw new Error(`CRU fetch failed: ${json.error ?? res.status}`);
+  const json = await res.json();
+  if (!res.ok) {
+    throw new Error(`CRU fetch failed: ${json?.error ?? res.status}`);
   }
-  return json.data;
+  if (json.success !== true || !Array.isArray(json.data)) {
+    throw new Error(`Invalid CRU response: ${JSON.stringify(json)}`);
+  }
+  return json.data as DbWorker[];
 }
 
 async function main() {
@@ -52,7 +65,7 @@ async function main() {
     id:         w.id,
     org_id:     orgId,
     name:       w.name,
-    role:       w.role,
+    role:       toWorkerRole(w.role),
     project_id: w.job_site_id ?? null,
     site_name:  w.job_site?.name ?? null,
     available:  w.availability_status === "available",
