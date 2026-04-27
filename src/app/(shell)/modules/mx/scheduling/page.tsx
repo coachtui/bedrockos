@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { useMx } from "@/providers/MxProvider";
 import { useOrg } from "@/providers/OrgProvider";
 import { useVisibleWorkOrders } from "@/hooks/mx/useVisibleWorkOrders";
-import { getOrgMechanicsAndDrivers } from "@/lib/registry";
-import type { OrgWorker } from "@/types/domain";
 import {
   STATUS_LABELS, STATUS_BADGE,
   PRIORITY_LABELS, PRIORITY_BADGE,
@@ -461,8 +459,6 @@ export default function MxSchedulingPage() {
   const workOrders = useVisibleWorkOrders();
   const { currentOrganization, role, features, workers: orgWorkers } = useOrg();
 
-  const [mechanics,    setMechanics]    = useState<OrgWorker[]>([]);
-  const [loadingMechs, setLoadingMechs] = useState(true);
   const [draggedWoId,  setDraggedWoId]  = useState<string | null>(null);
   const [pendingAssign, setPendingAssign] = useState<{ woId: string; mechanicId: string } | null>(null);
   const [inspectId,    setInspectId]    = useState<string | null>(null);
@@ -485,12 +481,6 @@ export default function MxSchedulingPage() {
     });
   }
 
-  useEffect(() => {
-    getOrgMechanicsAndDrivers(currentOrganization.id)
-      .then(setMechanics)
-      .finally(() => setLoadingMechs(false));
-  }, [currentOrganization.id]);
-
   // Unassigned active WOs — sorted: OPS-blocking → priority → neededByDate
   const unassigned = useMemo(
     () => sortQueue(
@@ -512,23 +502,17 @@ export default function MxSchedulingPage() {
     [workOrders],
   );
 
-  const mechanicList = mechanics.filter((m) => m.role === "mechanic");
+  const mechanicList = orgWorkers.filter((w) => w.role === "mechanic");
 
-  // Merge CRU mechanics (for IDs) with orgWorkers (for skills) via userId bridge
   const mechanicsForScheduling = useMemo<MechanicForScheduling[]>(
-    () =>
-      mechanicList.map((m) => {
-        // orgWorkers.userId holds the CRU id (e.g. "cru_w_001") — matches m.id from CRU mechanics
-        const orgWorker = orgWorkers.find((w) => w.userId === m.id);
-        return {
-          id:        m.id,
-          name:      m.name,
-          available: m.available,
-          skills:    orgWorker?.skills ?? [],
-          projectId: m.projectId,
-        };
-      }),
-    [mechanicList, orgWorkers],
+    () => mechanicList.map((w) => ({
+      id:        w.id,
+      name:      w.name,
+      available: w.available,
+      skills:    w.skills,
+      projectId: w.projectId,
+    })),
+    [mechanicList],
   );
 
   function lanesForMechanic(mechanicId: string) {
@@ -697,13 +681,9 @@ export default function MxSchedulingPage() {
             <span className="text-xs font-bold uppercase tracking-widest text-content-muted">Mechanics</span>
           </div>
 
-          {loadingMechs ? (
+          {mechanicList.length === 0 ? (
             <div className="border border-dashed border-surface-border rounded-[var(--radius-card)] p-8 text-center">
-              <p className="text-xs text-content-muted">Loading mechanics…</p>
-            </div>
-          ) : mechanicList.length === 0 ? (
-            <div className="border border-dashed border-surface-border rounded-[var(--radius-card)] p-8 text-center">
-              <p className="text-xs text-content-muted">No mechanics found in CRU.</p>
+              <p className="text-xs text-content-muted">No mechanics on roster.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

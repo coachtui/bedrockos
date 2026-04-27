@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, use } from "react";
 import Link from "next/link";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { Card } from "@/components/ui/Card";
@@ -15,7 +15,6 @@ import {
   canAssignMechanic, canUpdateWorkOrderStatus, canApproveWorkOrder,
 } from "@/lib/mx/rules";
 import { deriveReadiness } from "@/lib/mx/readiness";
-import { getOrgMechanicsAndDrivers } from "@/lib/registry";
 import type { MxWorkOrderStatus, MxWorkOrderPriority } from "@/lib/mx/types";
 import type { OrgWorker } from "@/types/domain";
 import {
@@ -56,22 +55,12 @@ export default function WorkOrderDetailPage({
 }) {
   const { id } = use(params);
   const { workOrders, updateWorkOrderStatus, updateWorkOrder, assignMechanic, unassignMechanic } = useMx();
-  const { currentOrganization, role } = useOrg();
+  const { role, workers } = useOrg();
 
   const wo = workOrders.find((w) => w.id === id);
 
   const [showAssignPanel, setShowAssignPanel] = useState(false);
-  // Load mechanics eagerly so assigned names resolve on first render
-  const [mechanics,       setMechanics]       = useState<OrgWorker[]>([]);
-  const [loadingMechs,    setLoadingMechs]    = useState(false);
-
-  useEffect(() => {
-    // Always load mechanics: needed for name resolution in assigned list
-    setLoadingMechs(true);
-    getOrgMechanicsAndDrivers(currentOrganization.id)
-      .then(setMechanics)
-      .finally(() => setLoadingMechs(false));
-  }, [currentOrganization.id]);
+  const mechanics = workers.filter((w) => w.role === "mechanic" || w.role === "driver");
 
   if (!wo) {
     return (
@@ -374,7 +363,7 @@ export default function WorkOrderDetailPage({
                         </div>
                         <div>
                           <p className="text-xs font-semibold text-content-primary">
-                            {loadingMechs ? "…" : (found?.name ?? mid)}
+                            {found?.name ?? mid}
                           </p>
                           {found?.role && (
                             <p className="text-[10px] text-content-muted capitalize">{found.role}</p>
@@ -439,10 +428,7 @@ export default function WorkOrderDetailPage({
               </button>
             </div>
             <div className="p-4 max-h-72 overflow-y-auto">
-              {loadingMechs ? (
-                <p className="text-xs text-content-muted text-center py-4">Loading mechanics…</p>
-              ) : (
-                <div className="space-y-2">
+              <div className="space-y-2">
                   {mechanics
                     .filter((m) => !assignedIds.includes(m.id))
                     .map((m) => (
@@ -469,7 +455,6 @@ export default function WorkOrderDetailPage({
                     <p className="text-xs text-content-muted text-center py-4">All mechanics already assigned.</p>
                   )}
                 </div>
-              )}
             </div>
           </div>
         </div>
