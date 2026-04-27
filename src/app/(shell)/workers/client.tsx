@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -29,12 +29,23 @@ export function WorkersClient() {
   const { workers, role, currentProject } = useOrg();
   const [showModal,        setShowModal]        = useState(false);
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
+  const [roleFilter,       setRoleFilter]       = useState<string>("all");
 
   // Superintendents see only workers on their current project
-  const filteredWorkers =
+  const scopedWorkers =
     role === "superintendent"
       ? workers.filter((w) => w.projectId === currentProject.id)
       : workers;
+
+  const uniqueRoles = useMemo(
+    () => [...new Set(scopedWorkers.map((w) => w.role))].sort(),
+    [scopedWorkers],
+  );
+
+  const filteredWorkers =
+    roleFilter === "all"
+      ? scopedWorkers
+      : scopedWorkers.filter((w) => w.role === roleFilter);
 
   const availableCount = filteredWorkers.filter((w) => w.available).length;
 
@@ -42,7 +53,7 @@ export function WorkersClient() {
     <PageContainer maxWidth="wide">
       <SectionHeader
         title="Workers"
-        subtitle={`${filteredWorkers.length} workers · ${availableCount} available`}
+        subtitle={`${filteredWorkers.length}${roleFilter !== "all" ? ` ${roleFilter}s` : " workers"} · ${availableCount} available`}
         action={
           <button
             onClick={() => setShowModal(true)}
@@ -53,6 +64,21 @@ export function WorkersClient() {
           </button>
         }
       />
+
+      <div className="flex items-center gap-3 mb-4">
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          className="text-sm bg-surface-overlay border border-surface-border rounded px-3 py-1.5 text-content-primary focus:outline-none focus:border-teal/50"
+        >
+          <option value="all">All Roles</option>
+          {uniqueRoles.map((r) => (
+            <option key={r} value={r}>
+              {r.charAt(0).toUpperCase() + r.slice(1)}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
         {filteredWorkers.map((worker) => {
