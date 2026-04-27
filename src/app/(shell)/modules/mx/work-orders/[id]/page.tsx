@@ -60,7 +60,7 @@ export default function WorkOrderDetailPage({
   const wo = workOrders.find((w) => w.id === id);
 
   const [showAssignPanel, setShowAssignPanel] = useState(false);
-  const mechanics = workers.filter((w) => w.role === "mechanic" || w.role === "driver");
+  const mechanics = workers.filter((w) => w.role === "mechanic");
 
   if (!wo) {
     return (
