@@ -27,7 +27,7 @@ export async function fetchOrgWorkers(orgId: string): Promise<OrgWorker[]> {
       userId:    null,
       projectId: row.project_id ?? undefined,
       siteName:  row.site_name ?? undefined,
-      available: row.available,
+      available: row.available === true,
       skills:    row.skills ?? [],
     }));
   } catch {
