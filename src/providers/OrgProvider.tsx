@@ -74,7 +74,13 @@ function slugify(name: string): string {
   return name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 }
 
-export function OrgProvider({ children }: { children: React.ReactNode }) {
+export function OrgProvider({
+  children,
+  initialWorkers = [],
+}: {
+  children:        React.ReactNode;
+  initialWorkers?: OrgWorker[];
+}) {
   const [config, setConfig] = useState<OrgConfig>(getOrgConfig);
 
   // Emitter state
@@ -87,7 +93,11 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
   // Phase 3: replace with org-scoped Supabase fetches.
   const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS);
   const [assets,   setAssets]   = useState<Asset[]>(MOCK_ASSETS);
-  const [workers, setWorkers]   = useState<OrgWorker[]>(MOCK_WORKERS.filter((w) => w.orgId === orgId));
+  const [workers, setWorkers] = useState<OrgWorker[]>(() =>
+    initialWorkers.length > 0
+      ? initialWorkers
+      : MOCK_WORKERS.filter((w) => w.orgId === orgId),
+  );
   const [crews,    setCrews]    = useState<OrgCrew[]>(seedCrews(orgId));
   const [skillCatalog, setSkillCatalog] = useState<Record<WorkerRole, string[]>>(
     () => ({

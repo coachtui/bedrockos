@@ -48,7 +48,6 @@ export function ShellClientRoot({
 }) {
   return (
     <ThemeProvider>
-      {/* @ts-expect-error -- initialWorkers prop added to OrgProvider in Task 5 */}
       <OrgProvider initialWorkers={initialWorkers}>
         <UIProvider>
           <MxProvider>
