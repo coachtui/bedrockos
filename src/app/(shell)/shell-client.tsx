@@ -1,0 +1,63 @@
+"use client";
+
+import { OrgProvider } from "@/providers/OrgProvider";
+import { UIProvider }  from "@/providers/UIProvider";
+import { MxProvider }  from "@/providers/MxProvider";
+import { OpsProvider } from "@/providers/OpsProvider";
+import { ThemeProvider } from "@/providers/ThemeProvider";
+import { Sidebar }     from "@/components/layout/Sidebar";
+import { Topbar }      from "@/components/layout/Topbar";
+import { MobileNav }   from "@/components/layout/MobileNav";
+import { AssistantPanel } from "@/components/layout/AssistantPanel";
+import { SearchModal } from "@/components/search/SearchModal";
+import { useUI }       from "@/providers/UIProvider";
+import { useMx }       from "@/providers/MxProvider";
+import type { OrgWorker } from "@/types/domain";
+
+function OpsLayer({ children }: { children: React.ReactNode }) {
+  const { createWorkOrder } = useMx();
+  return (
+    <OpsProvider onCreateMxWorkOrder={createWorkOrder}>
+      {children}
+    </OpsProvider>
+  );
+}
+
+function ShellLayout({ children }: { children: React.ReactNode }) {
+  const { sidebarCollapsed } = useUI();
+  return (
+    <>
+      <Sidebar />
+      <Topbar />
+      <main className={`min-h-screen pt-14 transition-all duration-200 ease-in-out pl-0 ${sidebarCollapsed ? "md:pl-16" : "md:pl-60"}`}>
+        <div className="pb-20 md:pb-0">{children}</div>
+      </main>
+      <AssistantPanel />
+      <SearchModal />
+      <MobileNav />
+    </>
+  );
+}
+
+export function ShellClientRoot({
+  children,
+  initialWorkers,
+}: {
+  children:       React.ReactNode;
+  initialWorkers: OrgWorker[];
+}) {
+  return (
+    <ThemeProvider>
+      {/* @ts-expect-error -- initialWorkers prop added to OrgProvider in Task 5 */}
+      <OrgProvider initialWorkers={initialWorkers}>
+        <UIProvider>
+          <MxProvider>
+            <OpsLayer>
+              <ShellLayout>{children}</ShellLayout>
+            </OpsLayer>
+          </MxProvider>
+        </UIProvider>
+      </OrgProvider>
+    </ThemeProvider>
+  );
+}
