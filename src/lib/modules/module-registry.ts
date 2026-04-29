@@ -13,7 +13,7 @@ export interface ModuleDefinition {
 export const MODULE_REGISTRY: ModuleDefinition[] = [
   {
     id:          "cru",
-    label:       "CRU",
+    label:       "CX",
     description: "Crew resource and utilization management",
     tagline:     "Schedule, track, and optimize your crews in the field.",
     route:       "/modules/cru",
@@ -22,7 +22,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   },
   {
     id:          "fix",
-    label:       "Fix",
+    label:       "FX",
     description: "AI-powered equipment diagnostic intelligence",
     tagline:     "Proactive diagnostics. Fewer breakdowns. More uptime.",
     route:       "/modules/fix",
@@ -31,7 +31,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   },
   {
     id:          "inspect",
-    label:       "Inspect",
+    label:       "IX",
     description: "Field inspection workflows and reporting",
     tagline:     "Capture, document, and sign off on inspections anywhere.",
     route:       "/modules/inspect",
@@ -40,7 +40,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   },
   {
     id:          "datum",
-    label:       "Datum",
+    label:       "DX",
     description: "GPS + map overlay for field layout and crew alignment",
     tagline:     "Fast field layout without the full survey setup.",
     route:       "/modules/datum",
@@ -49,7 +49,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   },
   {
     id:          "ops",
-    label:       "OPS",
+    label:       "OX",
     description: "Operations and workflow engine",
     tagline:     "Work orders, field requests, and pour schedules — coordinated.",
     route:       "/modules/ops",
