@@ -72,7 +72,7 @@ export function Sidebar() {
                   // Field roles manage workers and crews through CX module, not core shell views
                   if (
                     (item.href === "/workers" || item.href === "/crews") &&
-                    (role === "foreman" || role === "superintendent" || role === "project_engineer")
+                    (role === "foreman" || role === "superintendent" || role === "project_engineer" || role === "mechanic")
                   ) return false;
                   return true;
                 })
