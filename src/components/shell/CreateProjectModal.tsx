@@ -49,7 +49,7 @@ export function CreateProjectModal({ onClose, onCreated }: Props) {
       startDate:   form.startDate,
       endDate:     form.endDate,
       description: form.description.trim() || undefined,
-      awardPrice:  form.awardPrice ? Number(form.awardPrice) : undefined,
+      awardPrice:  form.awardPrice !== "" ? Number(form.awardPrice) : undefined,
     };
 
     const project = addProject(input);
@@ -158,6 +158,7 @@ export function CreateProjectModal({ onClose, onCreated }: Props) {
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted text-sm">$</span>
               <input
                 type="number"
+                min="0"
                 value={form.awardPrice}
                 onChange={(e) => set("awardPrice", e.target.value)}
                 placeholder="0"
