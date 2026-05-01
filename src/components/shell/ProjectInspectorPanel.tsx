@@ -71,9 +71,9 @@ export function ProjectInspectorPanel({ open, onClose, project }: ProjectInspect
       phase:       form.phase,
       pm_name:     form.pmName.trim() || project.pm_name,
       status:      form.status,
-      start_date:  form.startDate,
-      end_date:    form.endDate,
-      award_price: form.awardPrice !== "" ? Number(form.awardPrice) : undefined,
+      start_date:  form.startDate || project.start_date,
+      end_date:    form.endDate   || project.end_date,
+      award_price: form.awardPrice !== "" && Number(form.awardPrice) >= 0 ? Number(form.awardPrice) : undefined,
     };
     updateProject(project.id, patch);
     onClose();
@@ -202,6 +202,7 @@ export function ProjectInspectorPanel({ open, onClose, project }: ProjectInspect
             Cancel
           </button>
           <button
+            type="button"
             onClick={handleSave}
             disabled={!form.name.trim()}
             className="px-4 py-2 text-xs font-semibold bg-gold text-black rounded hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
