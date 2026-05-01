@@ -114,13 +114,14 @@ function CalendarView({ events, projectId, today, monday }: {
 
 // ── Gantt View ────────────────────────────────────────────────────────────────
 
-function GanttView({ tasks, projectId, workers, today, monday, onTaskClick }: {
+function GanttView({ tasks, projectId, workers, today, monday, onTaskClick, canEdit }: {
   tasks:       CxTask[];
   projectId:   string;
   workers:     ReturnType<typeof useOrg>["workers"];
   today:       string;
   monday:      string;
   onTaskClick: (task: CxTask) => void;
+  canEdit:     boolean;
 }) {
   const ganttDates   = Array.from({ length: 14 }, (_, i) => addDays(monday, i));
   const projectTasks = tasks.filter((t) => t.projectId === projectId && t.status !== "complete");
@@ -153,7 +154,7 @@ function GanttView({ tasks, projectId, workers, today, monday, onTaskClick }: {
         {projectTasks.map((task) => (
           <div key={task.id} className="flex border-b border-surface-border hover:bg-surface-raised/50 group">
             <div
-              className="w-40 flex-shrink-0 px-2 py-2 cursor-pointer"
+              className={`w-40 flex-shrink-0 px-2 py-2 ${canEdit ? "cursor-pointer" : "cursor-default"}`}
               onClick={() => onTaskClick(task)}
             >
               <p className="text-xs font-semibold text-content-primary truncate group-hover:text-gold transition-colors">
@@ -291,6 +292,7 @@ export default function SchedulePage() {
           today={today}
           monday={monday}
           onTaskClick={openEdit}
+          canEdit={canEdit}
         />
       )}
 
