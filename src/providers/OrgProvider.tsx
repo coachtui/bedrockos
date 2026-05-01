@@ -37,6 +37,7 @@ interface OrgContextValue {
   alerts:   Alert[];
   activity: ActivityEvent[];
   addEmittedIssue:    (issue: Issue) => void;
+  addEmittedAlert:    (alert: Alert) => void;
   addEmittedActivity: (event: ActivityEvent) => void;
   // Entity state
   projects:   Project[];
@@ -125,6 +126,10 @@ export function OrgProvider({
 
   function addEmittedIssue(issue: Issue): void {
     setIssues((prev) => [issue, ...prev]);
+  }
+
+  function addEmittedAlert(alert: Alert): void {
+    setAlerts((prev) => [alert, ...prev]);
   }
 
   function setCurrentProject(project: ProjectContext) {
@@ -491,6 +496,7 @@ export function OrgProvider({
         alerts,
         activity,
         addEmittedIssue,
+        addEmittedAlert,
         addEmittedActivity,
         projects,
         assets,
