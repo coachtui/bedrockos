@@ -4,6 +4,7 @@ import { OrgProvider } from "@/providers/OrgProvider";
 import { UIProvider }  from "@/providers/UIProvider";
 import { MxProvider }  from "@/providers/MxProvider";
 import { OpsProvider } from "@/providers/OpsProvider";
+import { CxProvider }  from "@/providers/CxProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { Sidebar }     from "@/components/layout/Sidebar";
 import { Topbar }      from "@/components/layout/Topbar";
@@ -50,11 +51,13 @@ export function ShellClientRoot({
     <ThemeProvider>
       <OrgProvider initialWorkers={initialWorkers}>
         <UIProvider>
-          <MxProvider>
-            <OpsLayer>
-              <ShellLayout>{children}</ShellLayout>
-            </OpsLayer>
-          </MxProvider>
+          <CxProvider>
+            <MxProvider>
+              <OpsLayer>
+                <ShellLayout>{children}</ShellLayout>
+              </OpsLayer>
+            </MxProvider>
+          </CxProvider>
         </UIProvider>
       </OrgProvider>
     </ThemeProvider>
