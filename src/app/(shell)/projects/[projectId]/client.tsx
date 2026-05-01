@@ -42,8 +42,8 @@ function relativeTime(iso: string): string {
 }
 
 function formatCurrency(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000)     return `$${(n / 1_000).toFixed(0)}K`;
+  if (n >= 999_500) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)   return `$${(n / 1_000).toFixed(0)}K`;
   return `$${n.toLocaleString()}`;
 }
 
@@ -454,7 +454,7 @@ export function ProjectCommandCenterClient({ projectId }: { projectId: string })
               {project.name}
             </h1>
             {project.description && (
-              <p className="text-sm text-content-secondary mt-1 mb-3 leading-relaxed max-w-xl">
+              <p className="text-sm text-content-secondary mb-3 leading-relaxed max-w-xl">
                 {project.description}
               </p>
             )}
