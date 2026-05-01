@@ -5,14 +5,14 @@ import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, MapPin, User, Calendar,
   Wrench, Users, ClipboardCheck, ChevronRight,
-  AlertCircle, Bell, Truck,
+  AlertCircle, Bell, Truck, DollarSign, Pencil,
 } from "lucide-react";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ActivityFeedItem } from "@/components/ui/ActivityFeedItem";
-import { MOCK_PROJECTS } from "@/lib/mock/projects";
+import { ProjectInspectorPanel } from "@/components/shell/ProjectInspectorPanel";
 import { MOCK_ISSUES } from "@/lib/mock/issues";
 import { MOCK_ALERTS } from "@/lib/mock/alerts";
 import { MOCK_ACTIVITY } from "@/lib/mock/activity";
@@ -39,6 +39,12 @@ function relativeTime(iso: string): string {
   if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return `${Math.floor(diff / 86400)}d ago`;
+}
+
+function formatCurrency(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)     return `$${(n / 1_000).toFixed(0)}K`;
+  return `$${n.toLocaleString()}`;
 }
 
 function getActivityHref(event: ActivityEvent): string | undefined {
@@ -335,11 +341,20 @@ function ActivitySection({ events }: { events: ActivityEvent[] }) {
 // ── main client component ─────────────────────────────────────────────────────
 
 export function ProjectCommandCenterClient({ projectId }: { projectId: string }) {
-  const { role } = useOrg();
+  const { role, projects } = useOrg();
   const [activeTab, setActiveTab] = useState<"overview" | "schedule">("overview");
+  const [editOpen, setEditOpen] = useState(false);
   const roleGroup = getRoleGroup(role);
+  const canEdit = roleGroup === "oversight" || roleGroup === "office";
 
-  const project = MOCK_PROJECTS.find((p) => p.id === projectId)!;
+  const project = projects.find((p) => p.id === projectId);
+  if (!project) {
+    return (
+      <PageContainer>
+        <p className="text-content-muted py-12 text-center text-sm">Project not found.</p>
+      </PageContainer>
+    );
+  }
 
   // Base project-scoped data
   const projectIssues   = MOCK_ISSUES.filter((i) => i.project_id === projectId);
@@ -438,6 +453,11 @@ export function ProjectCommandCenterClient({ projectId }: { projectId: string })
             <h1 className="text-2xl font-bold text-content-primary leading-tight mb-3">
               {project.name}
             </h1>
+            {project.description && (
+              <p className="text-sm text-content-secondary mt-1 mb-3 leading-relaxed max-w-xl">
+                {project.description}
+              </p>
+            )}
             <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-content-muted">
               <span className="flex items-center gap-1.5">
                 <MapPin size={11} />
@@ -451,10 +471,29 @@ export function ProjectCommandCenterClient({ projectId }: { projectId: string })
                 <Calendar size={11} />
                 {formatDate(project.start_date)} – {formatDate(project.end_date)}
               </span>
+              {project.award_price != null && (
+                <span className="flex items-center gap-1.5">
+                  <DollarSign size={11} />
+                  Contract:{" "}
+                  <span className="text-content-secondary font-medium ml-0.5">
+                    {formatCurrency(project.award_price)}
+                  </span>
+                </span>
+              )}
             </div>
           </div>
 
           <div className="shrink-0 md:text-right">
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => setEditOpen(true)}
+                className="mb-4 inline-flex items-center gap-1.5 text-xs text-content-muted hover:text-content-primary border border-surface-border hover:border-surface-border-hover rounded-lg px-3 py-1.5 transition-colors"
+              >
+                <Pencil size={11} />
+                Edit
+              </button>
+            )}
             <p className="text-[11px] font-bold uppercase tracking-widest text-content-muted mb-1.5">Progress</p>
             <p className="text-4xl font-bold text-gold tabular-nums leading-none mb-2.5">
               {project.progress_pct}
@@ -613,6 +652,15 @@ export function ProjectCommandCenterClient({ projectId }: { projectId: string })
 
       {activeTab === "schedule" && (
         <ScheduleTab projectId={projectId} role={role} />
+      )}
+
+      {canEdit && (
+        <ProjectInspectorPanel
+          key={project.id}
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          project={project}
+        />
       )}
     </PageContainer>
   );
