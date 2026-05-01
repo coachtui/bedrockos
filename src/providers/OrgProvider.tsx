@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState } from "react";
 import type { OrgConfig, ProjectContext, ModuleId, UserRole } from "@/types/org";
 import type { ModuleFeatureMap } from "@/types/org";
 import type {
-  Issue, ActivityEvent, Project, Asset, OrgWorker, OrgCrew,
+  Issue, ActivityEvent, Alert, Project, Asset, OrgWorker, OrgCrew,
   AssetStatus, CrewStatus,
   CreateProjectInput, CreateAssetInput, CreateCrewInput,
   CreateWorkerInput, WorkerRole,
@@ -17,6 +17,9 @@ import { MOCK_ASSETS }   from "@/lib/mock/assets";
 import { MOCK_WORKERS }  from "@/lib/mock/workers";
 import { MOCK_CREWS }    from "@/lib/mock/crews";
 import { SKILL_CATALOG } from "@/lib/mock/skills";
+import { MOCK_ISSUES }   from "@/lib/mock/issues";
+import { MOCK_ALERTS }   from "@/lib/mock/alerts";
+import { MOCK_ACTIVITY } from "@/lib/mock/activity";
 
 interface OrgContextValue {
   currentOrganization: OrgConfig["org"];
@@ -30,10 +33,11 @@ interface OrgContextValue {
   setRole:             (role: UserRole) => void;
   isModuleEnabled:     (id: ModuleId) => boolean;
   getModuleFeatures:   (id: ModuleId) => ModuleFeatureMap;
-  emittedIssues:       Issue[];
-  emittedActivity:     ActivityEvent[];
-  addEmittedIssue:     (issue: Issue) => void;
-  addEmittedActivity:  (event: ActivityEvent) => void;
+  issues:   Issue[];
+  alerts:   Alert[];
+  activity: ActivityEvent[];
+  addEmittedIssue:    (issue: Issue) => void;
+  addEmittedActivity: (event: ActivityEvent) => void;
   // Entity state
   projects:   Project[];
   assets:     Asset[];
@@ -85,9 +89,10 @@ export function OrgProvider({
 }) {
   const [config, setConfig] = useState<OrgConfig>(getOrgConfig);
 
-  // Emitter state
-  const [emittedIssues,   setEmittedIssues]   = useState<Issue[]>([]);
-  const [emittedActivity, setEmittedActivity] = useState<ActivityEvent[]>([]);
+  // Issues / alerts / activity — seeded from mock; module events prepend via addEmitted*
+  const [issues,   setIssues]   = useState<Issue[]>(MOCK_ISSUES);
+  const [alerts,   setAlerts]   = useState<Alert[]>(MOCK_ALERTS);
+  const [activity, setActivity] = useState<ActivityEvent[]>(MOCK_ACTIVITY);
 
   // Entity state — seeded from mock files
   const orgId = config.org.id;
@@ -115,11 +120,11 @@ export function OrgProvider({
   );
 
   function addEmittedActivity(event: ActivityEvent): void {
-    setEmittedActivity((prev) => [event, ...prev]);
+    setActivity((prev) => [event, ...prev]);
   }
 
   function addEmittedIssue(issue: Issue): void {
-    setEmittedIssues((prev) => [issue, ...prev]);
+    setIssues((prev) => [issue, ...prev]);
   }
 
   function setCurrentProject(project: ProjectContext) {
@@ -482,8 +487,9 @@ export function OrgProvider({
         setRole,
         isModuleEnabled,
         getModuleFeatures,
-        emittedIssues,
-        emittedActivity,
+        issues,
+        alerts,
+        activity,
         addEmittedIssue,
         addEmittedActivity,
         projects,

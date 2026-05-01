@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { InspectorPanel } from "@/components/ui/InspectorPanel";
 import { useOrg } from "@/providers/OrgProvider";
-import { MOCK_ACTIVITY } from "@/lib/mock/activity";
 import { relativeTime } from "@/lib/utils/time";
 import type { UserRole } from "@/types/org";
 
@@ -18,7 +17,7 @@ interface WorkerInspectorPanelProps {
 export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanelProps) {
   const {
     workers, crews, projects, skillCatalog,
-    currentProject, role, emittedActivity,
+    currentProject, role, activity,
     updateWorkerSkills, reassignWorker, addSkillToRole,
     toggleWorkerAvailability,
   } = useOrg();
@@ -70,7 +69,7 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
 
   // Activity for this worker (mock + emitted)
   const workerActivity = worker
-    ? [...MOCK_ACTIVITY, ...emittedActivity]
+    ? activity
         .filter((e) => e.entity_type === "worker" && e.entity_id === worker.id)
         .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
     : [];
