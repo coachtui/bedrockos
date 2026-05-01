@@ -8,6 +8,7 @@ import type {
   AssetStatus, CrewStatus,
   CreateProjectInput, CreateAssetInput, CreateCrewInput,
   CreateWorkerInput, WorkerRole,
+  UpdateProjectInput,
 } from "@/types/domain";
 import { getOrgConfig, MOCK_USER_BY_ROLE, DEFAULT_USER } from "@/lib/config/org";
 import { getModulesForBundles } from "@/lib/modules/bundles";
@@ -39,7 +40,8 @@ interface OrgContextValue {
   workers:    OrgWorker[];
   crews:      OrgCrew[];
   // Entity mutators
-  addProject: (input: CreateProjectInput) => Project;
+  addProject:    (input: CreateProjectInput) => Project;
+  updateProject: (id: string, patch: UpdateProjectInput) => void;
   addAsset:   (input: CreateAssetInput)   => Asset;
   addCrew:    (input: CreateCrewInput)    => OrgCrew;
   skillCatalog:   Record<WorkerRole, string[]>;
@@ -145,6 +147,8 @@ export function OrgProvider({
       last_activity: new Date().toISOString(),
       start_date:    input.startDate,
       end_date:      input.endDate,
+      description:   input.description,
+      award_price:   input.awardPrice,
     };
     setProjects((prev) => [project, ...prev]);
     addEmittedActivity({
@@ -158,6 +162,17 @@ export function OrgProvider({
       timestamp:   new Date().toISOString(),
     });
     return project;
+  }
+
+  function updateProject(id: string, patch: UpdateProjectInput): void {
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id !== id) return p;
+        const updated: Project = { ...p, ...patch };
+        if (patch.name) updated.slug = slugify(patch.name);
+        return updated;
+      }),
+    );
   }
 
   function addAsset(input: CreateAssetInput): Asset {
@@ -476,6 +491,7 @@ export function OrgProvider({
         workers,
         crews,
         addProject,
+        updateProject,
         addAsset,
         addCrew,
         skillCatalog,

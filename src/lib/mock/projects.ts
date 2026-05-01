@@ -14,6 +14,8 @@ export const MOCK_PROJECTS: Project[] = [
     last_activity: "2026-04-08T14:30:00Z",
     start_date:    "2025-09-01",
     end_date:      "2026-11-30",
+    description:  "Structural phase construction of a 24-story mixed-use tower. Includes concrete core, steel framing, and MEP rough-in.",
+    award_price:  48_500_000,
   },
   {
     id:            "proj_oakridge_001",
@@ -28,6 +30,8 @@ export const MOCK_PROJECTS: Project[] = [
     last_activity: "2026-04-07T09:15:00Z",
     start_date:    "2026-01-15",
     end_date:      "2027-06-30",
+    description:  "Industrial complex with three warehouse buildings and a 40,000 sq ft administrative facility.",
+    award_price:  22_750_000,
   },
   {
     id:            "proj_meridian_003",
