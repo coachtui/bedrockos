@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, MapPin, User, Calendar,
@@ -13,9 +13,6 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ActivityFeedItem } from "@/components/ui/ActivityFeedItem";
 import { ProjectInspectorPanel } from "@/components/shell/ProjectInspectorPanel";
-import { MOCK_ISSUES } from "@/lib/mock/issues";
-import { MOCK_ALERTS } from "@/lib/mock/alerts";
-import { MOCK_ACTIVITY } from "@/lib/mock/activity";
 import { MOCK_ASSETS } from "@/lib/mock/assets";
 import { MOCK_CREWS } from "@/lib/mock/crews";
 import { useOrg } from "@/providers/OrgProvider";
@@ -341,13 +338,21 @@ function ActivitySection({ events }: { events: ActivityEvent[] }) {
 // ── main client component ─────────────────────────────────────────────────────
 
 export function ProjectCommandCenterClient({ projectId }: { projectId: string }) {
-  const { role, projects } = useOrg();
+  const { role, projects, setCurrentProject, issues, alerts, activity } = useOrg();
   const [activeTab, setActiveTab] = useState<"overview" | "schedule">("overview");
   const [editOpen, setEditOpen] = useState(false);
   const roleGroup = getRoleGroup(role);
   const canEdit = roleGroup === "oversight" || roleGroup === "office";
 
   const project = projects.find((p) => p.id === projectId);
+
+  useEffect(() => {
+    if (project) {
+      setCurrentProject({ id: project.id, name: project.name, slug: project.slug });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project?.id]);
+
   if (!project) {
     return (
       <PageContainer>
@@ -357,9 +362,9 @@ export function ProjectCommandCenterClient({ projectId }: { projectId: string })
   }
 
   // Base project-scoped data
-  const projectIssues   = MOCK_ISSUES.filter((i) => i.project_id === projectId);
-  const projectAlerts   = MOCK_ALERTS.filter((a) => a.project_id === projectId);
-  const projectActivity = MOCK_ACTIVITY.filter((e) => e.project_id === projectId).slice(0, 8);
+  const projectIssues   = issues.filter((i) => i.project_id === projectId);
+  const projectAlerts   = alerts.filter((a) => a.project_id === projectId);
+  const projectActivity = activity.filter((e) => e.project_id === projectId).slice(0, 8);
   const projectAssets   = MOCK_ASSETS.filter((a) => a.project_id === projectId);
   const projectCrews    = MOCK_CREWS.filter((c) => c.project_id === projectId);
 
