@@ -1,15 +1,15 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Building2, Truck, HardHat, Activity,
-  MapPin, Wrench, Users, BarChart3, ClipboardCheck, ClipboardList,
+  MapPin, Wrench, Users, ClipboardCheck, ClipboardList,
   Building, UserCog, Lock, ChevronLeft, ChevronRight,
   AlertCircle, Bell,
 } from "lucide-react";
 import { useUI } from "@/providers/UIProvider";
+import { useOrg } from "@/providers/OrgProvider";
 import { NAV_SECTIONS } from "@/lib/nav/nav-config";
 
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -21,7 +21,6 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   MapPin:          <MapPin          size={16} />,
   Wrench:          <Wrench          size={16} />,
   Users:           <Users           size={16} />,
-  BarChart3:       <BarChart3       size={16} />,
   ClipboardCheck:  <ClipboardCheck  size={16} />,
   Building:        <Building        size={16} />,
   UserCog:         <UserCog         size={16} />,
@@ -34,6 +33,7 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 export function Sidebar() {
   const pathname          = usePathname();
   const { sidebarCollapsed, toggleSidebar } = useUI();
+  const { role } = useOrg();
 
   return (
     <aside
@@ -67,7 +67,16 @@ export function Sidebar() {
             )}
             {sidebarCollapsed && <div className="h-px bg-surface-border mx-2 mb-2" />}
             <ul className="space-y-0.5">
-              {section.items.map((item) => {
+              {section.items
+                .filter((item) => {
+                  // Field roles manage workers and crews through CX module, not core shell views
+                  if (
+                    (item.href === "/workers" || item.href === "/crews") &&
+                    (role === "foreman" || role === "superintendent" || role === "project_engineer")
+                  ) return false;
+                  return true;
+                })
+                .map((item) => {
                 const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
                 return (
                   <li key={item.href}>

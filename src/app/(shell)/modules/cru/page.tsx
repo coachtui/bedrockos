@@ -1,43 +1,62 @@
 "use client";
 
 import Link from "next/link";
+import { type ReactNode } from "react";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { Card } from "@/components/ui/Card";
-import { Users, CalendarDays, Truck, LayoutGrid, ArrowUpRight } from "lucide-react";
+import { Users, CalendarDays, Truck, LayoutGrid, HardHat, ArrowUpRight } from "lucide-react";
 import { useOrg } from "@/providers/OrgProvider";
 
-const FEATURES = [
+interface FeatureCard {
+  icon:  ReactNode;
+  title: string;
+  desc:  string;
+  href:  string;
+  roles: string[];
+}
+
+const FEATURES: FeatureCard[] = [
   {
     icon:  <Users        size={16} className="text-gold" />,
     title: "Roster",
     desc:  "Live workforce for this project — primary and borrowed workers, grouped by role.",
     href:  "/modules/cru/roster",
+    roles: ["all", "foreman"],
+  },
+  {
+    icon:  <HardHat      size={16} className="text-gold" />,
+    title: "Crews",
+    desc:  "Organize workers into named teams. Manage crew composition and assignments.",
+    href:  "/modules/cru/crews",
+    roles: ["superintendent", "project_engineer", "pm", "owner", "admin"],
   },
   {
     icon:  <LayoutGrid   size={16} className="text-gold" />,
     title: "Assignments",
     desc:  "Weekly worker schedule across projects. See where masons and shared crews are each day.",
     href:  "/modules/cru/assignments",
+    roles: ["all"],
   },
   {
     icon:  <CalendarDays size={16} className="text-gold" />,
     title: "Schedule",
     desc:  "4-week site calendar with Gantt view and per-day staffing status.",
     href:  "/modules/cru/schedule",
+    roles: ["all"],
   },
   {
     icon:  <Truck        size={16} className="text-gold" />,
     title: "Equipment",
     desc:  "Equipment and assets currently assigned to this project.",
     href:  "/modules/cru/equipment",
+    roles: ["all"],
   },
 ];
 
 export default function CxPage() {
   const { role } = useOrg();
-  const features = role === "foreman"
-    ? FEATURES.filter((f) => f.href === "/modules/cru/roster")
-    : FEATURES;
+
+  const features = FEATURES.filter((f) => f.roles.includes("all") || f.roles.includes(role));
 
   return (
     <PageContainer>
