@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -103,7 +102,6 @@ export function TaskInspectorPanel({
   const setLocation = (val: string) => setFormState((prev) => ({ ...prev, location: val }));
   const setStatus = (val: CxTaskStatus) => setFormState((prev) => ({ ...prev, status: val }));
   const setNotes = (val: string) => setFormState((prev) => ({ ...prev, notes: val }));
-  const setReqs = (val: CxCrewRequirement[]) => setFormState((prev) => ({ ...prev, reqs: val }));
 
   useEffect(() => {
     if (open) {
@@ -112,15 +110,21 @@ export function TaskInspectorPanel({
   }, [open, task]);
 
   function addReq() {
-    setReqs((prev) => [...prev, { role: "laborer", count: 1 }]);
+    setFormState((prev) => ({ ...prev, reqs: [...prev.reqs, { role: "laborer" as WorkerRole, count: 1 }] }));
   }
 
   function updateReq(i: number, patch: Partial<CxCrewRequirement>) {
-    setReqs((prev) => prev.map((r, idx) => idx === i ? { ...r, ...patch } : r));
+    setFormState((prev) => ({
+      ...prev,
+      reqs: prev.reqs.map((r, idx) => idx === i ? { ...r, ...patch } : r),
+    }));
   }
 
   function removeReq(i: number) {
-    setReqs((prev) => prev.filter((_, idx) => idx !== i));
+    setFormState((prev) => ({
+      ...prev,
+      reqs: prev.reqs.filter((_, idx) => idx !== i),
+    }));
   }
 
   function handleSave() {
