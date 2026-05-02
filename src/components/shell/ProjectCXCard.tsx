@@ -5,6 +5,8 @@ import { Users, CalendarDays, ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { useOrg } from "@/providers/OrgProvider";
 import { useCx } from "@/providers/CxProvider";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
+import { localDateString } from "@/lib/utils/time";
 
 interface ProjectCXCardProps {
   projectId: string;
@@ -13,10 +15,11 @@ interface ProjectCXCardProps {
 export function ProjectCXCard({ projectId }: ProjectCXCardProps) {
   const { workers } = useOrg();
   const { tasks, events } = useCx();
+  const { isModuleEnabled } = useModuleAccess();
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = localDateString();
 
-  const onSiteCount = workers.filter((w) => w.projectId === projectId).length;
+  const assignedCount = workers.filter((w) => w.projectId === projectId).length;
 
   const activeTasks = tasks.filter(
     (t) => t.projectId === projectId && t.startDate <= today && t.endDate >= today,
@@ -26,25 +29,31 @@ export function ProjectCXCard({ projectId }: ProjectCXCardProps) {
     .filter((e) => e.projectId === projectId && e.date >= today)
     .sort((a, b) => a.date.localeCompare(b.date))[0];
 
+  const cruEnabled = isModuleEnabled("cru");
+
   return (
     <Card variant="default" className="!p-0">
       <div className="p-5 pb-3 flex items-center justify-between">
         <p className="text-[11px] font-bold uppercase tracking-widest text-content-muted">CX — Crew Operations</p>
-        <Link
-          href="/modules/cru"
-          className="text-xs text-content-muted hover:text-gold transition-colors flex items-center gap-1"
-        >
-          Open <ChevronRight size={11} />
-        </Link>
+        {cruEnabled ? (
+          <Link
+            href={`/modules/cru?projectId=${projectId}&source=project-cx-card`}
+            className="text-xs text-content-muted hover:text-gold transition-colors flex items-center gap-1"
+          >
+            Open <ChevronRight size={11} />
+          </Link>
+        ) : (
+          <span className="text-xs text-content-muted opacity-40">Locked</span>
+        )}
       </div>
 
       <div className="px-5 pb-5 space-y-3">
         <div className="flex items-center gap-3">
           <Users size={13} className="text-gold shrink-0" />
           <span className="text-sm text-content-primary">
-            <span className="font-semibold">{onSiteCount}</span>{" "}
+            <span className="font-semibold">{assignedCount}</span>{" "}
             <span className="text-content-muted">
-              worker{onSiteCount !== 1 ? "s" : ""} assigned
+              worker{assignedCount !== 1 ? "s" : ""} assigned
             </span>
           </span>
         </div>
