@@ -20,6 +20,8 @@ import { SKILL_CATALOG } from "@/lib/mock/skills";
 import { MOCK_ISSUES }   from "@/lib/mock/issues";
 import { MOCK_ALERTS }   from "@/lib/mock/alerts";
 import { MOCK_ACTIVITY } from "@/lib/mock/activity";
+import { serverCreateProject, serverUpdateProject } from "@/lib/actions/projects";
+import { serverCreateCrew, serverAddCrewMember, serverRemoveCrewMember } from "@/lib/actions/crews";
 
 interface OrgContextValue {
   currentOrganization: OrgConfig["org"];
@@ -169,6 +171,7 @@ export function OrgProvider({
       award_price:   input.awardPrice,
     };
     setProjects((prev) => [project, ...prev]);
+    serverCreateProject(project).catch(console.error);
     addEmittedActivity({
       id:          crypto.randomUUID(),
       actor_name:  config.currentUser.name,
@@ -191,6 +194,7 @@ export function OrgProvider({
         return updated;
       }),
     );
+    serverUpdateProject(id, patch).catch(console.error);
   }
 
   function addAsset(input: CreateAssetInput): Asset {
@@ -228,6 +232,7 @@ export function OrgProvider({
       status:    "on_site",
     };
     setCrews((prev) => [crew, ...prev]);
+    serverCreateCrew(crew).catch(console.error);
     addEmittedActivity({
       id:          crypto.randomUUID(),
       actor_name:  config.currentUser.name,
@@ -342,6 +347,7 @@ export function OrgProvider({
     setCrews((prev) =>
       prev.map((c) => c.id === crewId ? { ...c, memberIds: [...c.memberIds, workerId] } : c),
     );
+    serverAddCrewMember(crewId, workerId).catch(console.error);
     addEmittedActivity({
       id:          crypto.randomUUID(),
       actor_name:  config.currentUser.name,
@@ -364,6 +370,7 @@ export function OrgProvider({
         c.id === crewId ? { ...c, memberIds: c.memberIds.filter((id) => id !== workerId) } : c,
       ),
     );
+    serverRemoveCrewMember(crewId, workerId).catch(console.error);
     addEmittedActivity({
       id:          crypto.randomUUID(),
       actor_name:  config.currentUser.name,
