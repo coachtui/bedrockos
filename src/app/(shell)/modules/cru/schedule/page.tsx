@@ -9,6 +9,7 @@ import { TaskInspectorPanel } from "@/components/cx/TaskInspectorPanel";
 import { useOrg } from "@/providers/OrgProvider";
 import { useCx } from "@/providers/CxProvider";
 import { getStaffingStatus } from "@/lib/cx/staffing";
+import { localDateString } from "@/lib/utils/time";
 import type { CxTask, CxEvent, CreateCxTaskInput } from "@/lib/cx/types";
 import { ArrowLeft, Plus, CalendarDays, BarChart2, MapPin } from "lucide-react";
 
@@ -208,7 +209,7 @@ export default function SchedulePage() {
   const { workers, currentProject, role } = useOrg();
   const { tasks, events, addTask, updateTask } = useCx();
 
-  const today  = useMemo(() => new Date().toISOString().split("T")[0], []);
+  const today  = useMemo(() => localDateString(), []);
   const monday = useMemo(() => getMonday(today), [today]);
 
   const [tab,          setTab]          = useState<ScheduleTab>("calendar");

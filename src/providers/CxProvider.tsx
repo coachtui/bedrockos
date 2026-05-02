@@ -84,6 +84,10 @@ export function CxProvider({ children }: { children: React.ReactNode }) {
   }
 
   function addAssignment(input: Omit<CxDayAssignment, "id">): CxDayAssignment {
+    const existing = state.assignments.find(
+      (a) => a.workerId === input.workerId && a.date === input.date,
+    );
+    if (existing) return existing;
     const assignment: CxDayAssignment = { ...input, id: `cx_asgn_${Date.now()}` };
     dispatch({ type: "ADD_ASSIGNMENT", assignment });
     return assignment;
