@@ -4,7 +4,7 @@ import Link from "next/link";
 import { type ReactNode } from "react";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { Card } from "@/components/ui/Card";
-import { Users, CalendarDays, Truck, LayoutGrid, HardHat, ArrowUpRight } from "lucide-react";
+import { Users, CalendarDays, Truck, LayoutGrid, HardHat, ArrowUpRight, BookOpen } from "lucide-react";
 import { useOrg } from "@/providers/OrgProvider";
 
 interface FeatureCard {
@@ -42,6 +42,13 @@ const FEATURES: FeatureCard[] = [
     title: "Schedule",
     desc:  "4-week site calendar with Gantt view and per-day staffing status.",
     href:  "/modules/cru/schedule",
+    roles: ["all"],
+  },
+  {
+    icon:  <BookOpen size={16} className="text-gold" />,
+    title: "Task Bank",
+    desc:  "All project tasks — drafts and scheduled. Import from CSV or create tasks manually.",
+    href:  "/modules/cru/task-bank",
     roles: ["all"],
   },
   {
