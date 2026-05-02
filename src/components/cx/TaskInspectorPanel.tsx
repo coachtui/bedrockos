@@ -54,38 +54,34 @@ interface TaskInspectorPanelProps {
 }
 
 interface FormState {
-  name: string;
-  type: CxTaskType;
-  startDate: string;
-  endDate: string;
-  location: string;
-  status: CxTaskStatus;
-  notes: string;
-  reqs: CxCrewRequirement[];
+  name:       string;
+  type:       CxTaskType;
+  startDate:  string;
+  endDate:    string;
+  location:   string;
+  status:     CxTaskStatus;
+  notes:      string;
+  externalId: string;
+  reqs:       CxCrewRequirement[];
 }
 
 function getInitialState(task?: CxTask): FormState {
   if (task) {
     return {
-      name: task.name,
-      type: task.type,
-      startDate: task.startDate ?? "",
-      endDate: task.endDate ?? "",
-      location: task.location ?? "",
-      status: task.status,
-      notes: task.notes ?? "",
-      reqs: task.crewRequirements,
+      name:       task.name,
+      type:       task.type,
+      startDate:  task.startDate ?? "",
+      endDate:    task.endDate ?? "",
+      location:   task.location ?? "",
+      status:     task.status,
+      notes:      task.notes ?? "",
+      externalId: task.externalId ?? "",
+      reqs:       task.crewRequirements,
     };
   }
   return {
-    name: "",
-    type: "pour",
-    startDate: "",
-    endDate: "",
-    location: "",
-    status: "not_started",
-    notes: "",
-    reqs: [],
+    name: "", type: "pour", startDate: "", endDate: "",
+    location: "", status: "not_started", notes: "", externalId: "", reqs: [],
   };
 }
 
@@ -122,7 +118,7 @@ export function TaskInspectorPanel({
 
   const [formState, setFormState] = useState<FormState>(() => getInitialState(task));
 
-  const { name, type, startDate, endDate, location, status, notes, reqs } = formState;
+  const { name, type, startDate, endDate, location, status, notes, externalId, reqs } = formState;
 
   const setName = (val: string) => setFormState((prev) => ({ ...prev, name: val }));
   const setType = (val: CxTaskType) => setFormState((prev) => ({ ...prev, type: val }));
@@ -131,6 +127,7 @@ export function TaskInspectorPanel({
   const setLocation = (val: string) => setFormState((prev) => ({ ...prev, location: val }));
   const setStatus = (val: CxTaskStatus) => setFormState((prev) => ({ ...prev, status: val }));
   const setNotes = (val: string) => setFormState((prev) => ({ ...prev, notes: val }));
+  const setExternalId = (val: string) => setFormState((prev) => ({ ...prev, externalId: val }));
 
   useEffect(() => {
     if (open) {
@@ -157,18 +154,19 @@ export function TaskInspectorPanel({
   }
 
   function handleSave() {
-    if (!name.trim() || !startDate || !endDate) return;
+    if (!name.trim()) return;
     onSave({
       projectId,
       name:              name.trim(),
       type,
-      startDate,
-      endDate,
+      startDate:         startDate || undefined,
+      endDate:           endDate || undefined,
       location:          location.trim() || undefined,
       status,
       crewRequirements:  reqs,
-      assignedWorkerIds: task?.assignedWorkerIds ?? [], // live from CxProvider via derived selectedTask prop
+      assignedWorkerIds: task?.assignedWorkerIds ?? [],
       notes:             notes.trim() || undefined,
+      externalId:        externalId.trim() || undefined,
     });
     onClose();
   }
@@ -231,6 +229,16 @@ export function TaskInspectorPanel({
           placeholder="e.g. Grid B-4, 2nd floor east"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
+        />
+      </div>
+
+      <div className={sectionClass}>
+        <label className={labelClass}>External Task ID</label>
+        <input
+          className={fieldClass}
+          placeholder="e.g. TK-001 (from spreadsheet)"
+          value={externalId}
+          onChange={(e) => setExternalId(e.target.value)}
         />
       </div>
 
@@ -355,13 +363,21 @@ export function TaskInspectorPanel({
       </div>
 
       <div className="px-5 py-4">
-        <button
-          onClick={handleSave}
-          disabled={!name.trim() || !startDate || !endDate}
-          className="w-full py-2.5 rounded-lg bg-gold hover:bg-gold/90 text-black text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {isEdit ? "Save Changes" : "Create Task"}
-        </button>
+        {(() => {
+          const isDraft = !startDate || !endDate;
+          const saveLabel = isEdit
+            ? (isDraft ? "Save Draft" : "Save Changes")
+            : (isDraft ? "Create Draft" : "Schedule Task");
+          return (
+            <button
+              onClick={handleSave}
+              disabled={!name.trim()}
+              className="w-full py-2.5 rounded-lg bg-gold hover:bg-gold/90 text-black text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {saveLabel}
+            </button>
+          );
+        })()}
       </div>
     </InspectorPanel>
   );
