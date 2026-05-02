@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback } from "react";
 import type { OrgConfig, ProjectContext, ModuleId, UserRole } from "@/types/org";
+import type { OrgUserRow } from "@/lib/supabase/org-users";
 import type { ModuleFeatureMap } from "@/types/org";
 import type {
   Issue, ActivityEvent, Alert, Project, Asset, OrgWorker, OrgCrew,
@@ -88,13 +89,30 @@ export function OrgProvider({
   initialWorkers  = [],
   initialProjects,
   initialCrews,
+  initialUser,
 }: {
   children:         React.ReactNode;
   initialWorkers?:  OrgWorker[];
   initialProjects?: Project[];
   initialCrews?:    OrgCrew[];
+  initialUser?:     OrgUserRow;
 }) {
-  const [config, setConfig] = useState<OrgConfig>(getOrgConfig);
+  const [config, setConfig] = useState<OrgConfig>(() => {
+    const base = getOrgConfig();
+    if (initialUser) {
+      return {
+        ...base,
+        currentUser: {
+          id:     initialUser.auth_id,
+          name:   initialUser.name,
+          email:  initialUser.email,
+          role:   initialUser.role,
+          avatar: null,
+        },
+      };
+    }
+    return base;
+  });
 
   // Issues / alerts / activity — seeded from mock; module events prepend via addEmitted*
   const [issues,   setIssues]   = useState<Issue[]>(MOCK_ISSUES);

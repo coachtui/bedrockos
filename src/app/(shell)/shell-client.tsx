@@ -14,6 +14,7 @@ import { SearchModal } from "@/components/search/SearchModal";
 import { useUI }       from "@/providers/UIProvider";
 import { useMx }       from "@/providers/MxProvider";
 import type { OrgWorker, Project, OrgCrew } from "@/types/domain";
+import type { OrgUserRow } from "@/lib/supabase/org-users";
 
 function OpsLayer({ children }: { children: React.ReactNode }) {
   const { createWorkOrder } = useMx();
@@ -45,15 +46,17 @@ export function ShellClientRoot({
   initialWorkers,
   initialProjects,
   initialCrews,
+  initialUser,
 }: {
   children:        React.ReactNode;
   initialWorkers:  OrgWorker[];
   initialProjects: Project[];
   initialCrews:    OrgCrew[];
+  initialUser?:    OrgUserRow;
 }) {
   return (
     <ThemeProvider>
-      <OrgProvider initialWorkers={initialWorkers} initialProjects={initialProjects} initialCrews={initialCrews}>
+      <OrgProvider initialWorkers={initialWorkers} initialProjects={initialProjects} initialCrews={initialCrews} initialUser={initialUser}>
         <UIProvider>
           <CxProvider>
             <MxProvider>
