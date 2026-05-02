@@ -2,7 +2,8 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
-import { Search, Sparkles } from "lucide-react";
+import { Search, Sparkles, LogOut } from "lucide-react";
+import { serverSignOut } from "@/lib/actions/auth";
 import { useUI } from "@/providers/UIProvider";
 import { useOrg } from "@/providers/OrgProvider";
 import { ProjectSelector } from "./ProjectSelector";
@@ -87,7 +88,7 @@ export function Topbar() {
           <span className="hidden sm:inline">AI</span>
         </button>
 
-        {/* User avatar */}
+        {/* User avatar + sign-out */}
         <div className="flex items-center gap-2 pl-1">
           <div className="w-7 h-7 rounded-full bg-gold/20 border border-gold/30 flex items-center justify-center">
             <span className="text-gold text-[11px] font-bold">{initials}</span>
@@ -96,6 +97,15 @@ export function Topbar() {
             <span className="text-xs font-semibold text-content-primary leading-none">{currentUser.name.split(" ")[0]}</span>
             <span className="text-[10px] text-content-muted">{roleLabel}</span>
           </div>
+          <form action={serverSignOut}>
+            <button
+              type="submit"
+              title="Sign out"
+              className="p-1.5 text-content-muted hover:text-content-primary transition-colors rounded hover:bg-surface-overlay"
+            >
+              <LogOut size={13} />
+            </button>
+          </form>
         </div>
       </div>
     </header>
