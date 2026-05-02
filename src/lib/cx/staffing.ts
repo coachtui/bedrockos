@@ -10,7 +10,7 @@ export function getStaffingStatus(
   const assigned: Partial<Record<WorkerRole, number>> = {};
 
   for (const task of tasks) {
-    if (task.startDate > date || task.endDate < date) continue;
+    if (!task.startDate || !task.endDate || task.startDate > date || task.endDate < date) continue;
     if (task.status === "complete" || task.status === "on_hold") continue;
 
     for (const req of task.crewRequirements) {

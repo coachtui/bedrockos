@@ -12,6 +12,7 @@ interface CxState {
 
 type CxAction =
   | { type: "ADD_TASK";          task:       CxTask }
+  | { type: "ADD_TASKS";         tasks:      CxTask[] }
   | { type: "UPDATE_TASK";       id:         string; patch: Partial<CxTask> }
   | { type: "ADD_EVENT";         event:      CxEvent }
   | { type: "ADD_ASSIGNMENT";    assignment: CxDayAssignment }
@@ -21,6 +22,9 @@ function cxReducer(state: CxState, action: CxAction): CxState {
   switch (action.type) {
     case "ADD_TASK":
       return { ...state, tasks: [...state.tasks, action.task] };
+
+    case "ADD_TASKS":
+      return { ...state, tasks: [...state.tasks, ...action.tasks] };
 
     case "UPDATE_TASK":
       return {
@@ -49,6 +53,7 @@ interface CxContextValue {
   events:           CxEvent[];
   assignments:      CxDayAssignment[];
   addTask:          (input: CreateCxTaskInput) => CxTask;
+  addTasks:         (inputs: CreateCxTaskInput[]) => CxTask[];
   updateTask:       (id: string, patch: Partial<CxTask>) => void;
   addEvent:         (input: Omit<CxEvent, "id">) => CxEvent;
   addAssignment:    (input: Omit<CxDayAssignment, "id">) => CxDayAssignment;
@@ -71,6 +76,15 @@ export function CxProvider({ children }: { children: React.ReactNode }) {
     };
     dispatch({ type: "ADD_TASK", task });
     return task;
+  }
+
+  function addTasks(inputs: CreateCxTaskInput[]): CxTask[] {
+    const tasks: CxTask[] = inputs.map((input) => ({
+      ...input,
+      id: `cx_task_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    }));
+    dispatch({ type: "ADD_TASKS", tasks });
+    return tasks;
   }
 
   function updateTask(id: string, patch: Partial<CxTask>) {
@@ -98,7 +112,7 @@ export function CxProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <CxContext.Provider value={{ ...state, addTask, updateTask, addEvent, addAssignment, removeAssignment }}>
+    <CxContext.Provider value={{ ...state, addTask, addTasks, updateTask, addEvent, addAssignment, removeAssignment }}>
       {children}
     </CxContext.Provider>
   );

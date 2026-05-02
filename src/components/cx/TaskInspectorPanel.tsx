@@ -10,7 +10,8 @@ import { useCx } from "@/providers/CxProvider";
 
 const TASK_TYPES: CxTaskType[] = [
   "pour", "inspection", "delivery", "grading",
-  "concrete", "framing", "electrical", "other",
+  "concrete", "framing", "electrical", "excavation",
+  "utility", "paving", "demolition", "other",
 ];
 
 const TASK_TYPE_LABEL: Record<CxTaskType, string> = {
@@ -21,6 +22,10 @@ const TASK_TYPE_LABEL: Record<CxTaskType, string> = {
   concrete:    "Concrete Work",
   framing:     "Framing",
   electrical:  "Electrical",
+  excavation:  "Excavation",
+  utility:     "Utility",
+  paving:      "Paving",
+  demolition:  "Demolition",
   other:       "Other",
 };
 
@@ -64,8 +69,8 @@ function getInitialState(task?: CxTask): FormState {
     return {
       name: task.name,
       type: task.type,
-      startDate: task.startDate,
-      endDate: task.endDate,
+      startDate: task.startDate ?? "",
+      endDate: task.endDate ?? "",
       location: task.location ?? "",
       status: task.status,
       notes: task.notes ?? "",

@@ -8,6 +8,10 @@ export type CxTaskType =
   | "concrete"
   | "framing"
   | "electrical"
+  | "excavation"
+  | "utility"
+  | "paving"
+  | "demolition"
   | "other";
 
 export type CxTaskStatus =
@@ -32,46 +36,48 @@ export interface CxCrewRequirement {
 }
 
 export interface CxTask {
-  id: string;
-  projectId: string;
-  name: string;
-  type: CxTaskType;
-  startDate: string;   // YYYY-MM-DD
-  endDate: string;   // YYYY-MM-DD
-  location?: string;
-  status: CxTaskStatus;
-  crewRequirements: CxCrewRequirement[];
-  assignedWorkerIds: string[];
-  notes?: string;
+  id:                 string;
+  projectId:          string;
+  name:               string;
+  type:               CxTaskType;
+  startDate?:         string;   // YYYY-MM-DD — undefined = draft
+  endDate?:           string;   // YYYY-MM-DD — undefined = draft
+  location?:          string;
+  status:             CxTaskStatus;
+  crewRequirements:   CxCrewRequirement[];
+  assignedWorkerIds:  string[];
+  notes?:             string;
+  externalId?:        string;   // ID from imported spreadsheet
 }
 
 export interface CxEvent {
-  id: string;
-  projectId: string;
-  name: string;
-  type: CxEventType;
-  date: string;   // YYYY-MM-DD
-  time?: string;   // HH:MM
-  location?: string;
-  notes?: string;
+  id:         string;
+  projectId:  string;
+  name:       string;
+  type:       CxEventType;
+  date:       string;   // YYYY-MM-DD
+  time?:      string;   // HH:MM
+  location?:  string;
+  notes?:     string;
 }
 
 export interface CxDayAssignment {
-  id: string;
-  workerId: string;
-  projectId: string;
-  date: string;   // YYYY-MM-DD
+  id:         string;
+  workerId:   string;
+  projectId:  string;
+  date:       string;   // YYYY-MM-DD
 }
 
 export interface CreateCxTaskInput {
-  projectId: string;
-  name: string;
-  type: CxTaskType;
-  startDate: string;
-  endDate: string;
-  location?: string;
-  status: CxTaskStatus;
-  crewRequirements: CxCrewRequirement[];
-  assignedWorkerIds: string[];
-  notes?: string;
+  projectId:          string;
+  name:               string;
+  type:               CxTaskType;
+  startDate?:         string;
+  endDate?:           string;
+  location?:          string;
+  status:             CxTaskStatus;
+  crewRequirements:   CxCrewRequirement[];
+  assignedWorkerIds:  string[];
+  notes?:             string;
+  externalId?:        string;
 }

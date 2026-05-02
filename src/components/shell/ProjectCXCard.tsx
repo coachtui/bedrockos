@@ -22,7 +22,7 @@ export function ProjectCXCard({ projectId }: ProjectCXCardProps) {
   const assignedCount = workers.filter((w) => w.projectId === projectId).length;
 
   const activeTasks = tasks.filter(
-    (t) => t.projectId === projectId && t.startDate <= today && t.endDate >= today,
+    (t) => t.projectId === projectId && !!t.startDate && !!t.endDate && t.startDate <= today && t.endDate >= today,
   );
 
   const nextEvent = events

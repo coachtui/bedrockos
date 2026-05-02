@@ -25,6 +25,8 @@ export function TodayView() {
   const todayTasks = tasks.filter(
     (t) =>
       t.projectId === currentProject.id &&
+      !!t.startDate &&
+      !!t.endDate &&
       t.startDate <= today &&
       t.endDate   >= today &&
       t.status !== "complete" &&
