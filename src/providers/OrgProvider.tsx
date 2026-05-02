@@ -83,10 +83,14 @@ function slugify(name: string): string {
 
 export function OrgProvider({
   children,
-  initialWorkers = [],
+  initialWorkers  = [],
+  initialProjects,
+  initialCrews,
 }: {
-  children:        React.ReactNode;
-  initialWorkers?: OrgWorker[];
+  children:         React.ReactNode;
+  initialWorkers?:  OrgWorker[];
+  initialProjects?: Project[];
+  initialCrews?:    OrgCrew[];
 }) {
   const [config, setConfig] = useState<OrgConfig>(getOrgConfig);
 
@@ -99,14 +103,18 @@ export function OrgProvider({
   const orgId = config.org.id;
   // Phase 1: MOCK_PROJECTS and MOCK_ASSETS have no orgId field — single-org, no filter needed.
   // Phase 3: replace with org-scoped Supabase fetches.
-  const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS);
+  const [projects, setProjects] = useState<Project[]>(
+    initialProjects ?? MOCK_PROJECTS,
+  );
   const [assets,   setAssets]   = useState<Asset[]>(MOCK_ASSETS);
   const [workers, setWorkers] = useState<OrgWorker[]>(() =>
     initialWorkers.length > 0
       ? initialWorkers
       : MOCK_WORKERS.filter((w) => w.orgId === orgId),
   );
-  const [crews,    setCrews]    = useState<OrgCrew[]>(seedCrews(orgId));
+  const [crews, setCrews] = useState<OrgCrew[]>(
+    initialCrews ?? seedCrews(orgId),
+  );
   const [skillCatalog, setSkillCatalog] = useState<Record<WorkerRole, string[]>>(
     () => ({
       operator:       [...SKILL_CATALOG.operator],

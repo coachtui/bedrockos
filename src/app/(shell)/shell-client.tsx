@@ -13,7 +13,7 @@ import { AssistantPanel } from "@/components/layout/AssistantPanel";
 import { SearchModal } from "@/components/search/SearchModal";
 import { useUI }       from "@/providers/UIProvider";
 import { useMx }       from "@/providers/MxProvider";
-import type { OrgWorker } from "@/types/domain";
+import type { OrgWorker, Project, OrgCrew } from "@/types/domain";
 
 function OpsLayer({ children }: { children: React.ReactNode }) {
   const { createWorkOrder } = useMx();
@@ -43,13 +43,17 @@ function ShellLayout({ children }: { children: React.ReactNode }) {
 export function ShellClientRoot({
   children,
   initialWorkers,
+  initialProjects,
+  initialCrews,
 }: {
-  children:       React.ReactNode;
-  initialWorkers: OrgWorker[];
+  children:        React.ReactNode;
+  initialWorkers:  OrgWorker[];
+  initialProjects: Project[];
+  initialCrews:    OrgCrew[];
 }) {
   return (
     <ThemeProvider>
-      <OrgProvider initialWorkers={initialWorkers}>
+      <OrgProvider initialWorkers={initialWorkers} initialProjects={initialProjects} initialCrews={initialCrews}>
         <UIProvider>
           <CxProvider>
             <MxProvider>
