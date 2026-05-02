@@ -6,7 +6,8 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { useOrg } from "@/providers/OrgProvider";
 import { useCx } from "@/providers/CxProvider";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
+import { localDateString } from "@/lib/utils/time";
 
 function getWeekDates(anchor: Date): string[] {
   const day    = anchor.getDay();
@@ -15,15 +16,15 @@ function getWeekDates(anchor: Date): string[] {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
-    return d.toISOString().split("T")[0];
+    return localDateString(d);
   });
 }
 
 const DAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default function AssignmentsPage() {
-  const { workers, projects, currentProject } = useOrg();
-  const { assignments } = useCx();
+  const { workers, projects, currentProject, role } = useOrg();
+  const { assignments, addAssignment, removeAssignment } = useCx();
 
   const weekDates = useMemo(() => getWeekDates(new Date()), []);
 
@@ -40,18 +41,23 @@ export default function AssignmentsPage() {
 
   const relevantWorkers = workers.filter((w) => relevantWorkerIds.has(w.id));
 
-  const assignmentMap = useMemo(() => {
-    const map: Record<string, Record<string, string>> = {};
+  const assignmentDetailMap = useMemo(() => {
+    const map: Record<string, Record<string, { id: string; projectName: string; isThisProject: boolean }>> = {};
     for (const a of assignments) {
       if (!weekDates.includes(a.date)) continue;
       if (!map[a.workerId]) map[a.workerId] = {};
       const project = projects.find((p) => p.id === a.projectId);
-      map[a.workerId][a.date] = project?.name ?? a.projectId;
+      map[a.workerId][a.date] = {
+        id:            a.id,
+        projectName:   project?.name ?? a.projectId,
+        isThisProject: a.projectId === currentProject.id,
+      };
     }
     return map;
-  }, [assignments, weekDates, projects]);
+  }, [assignments, weekDates, projects, currentProject.id]);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = localDateString();
+  const canEdit = role === "superintendent" || role === "project_engineer" || role === "pm" || role === "owner" || role === "admin";
 
   return (
     <PageContainer maxWidth="wide">
@@ -96,24 +102,48 @@ export default function AssignmentsPage() {
                   <p className="text-[10px] text-content-muted capitalize">{worker.role}</p>
                 </td>
                 {weekDates.map((date) => {
-                  const projectName   = assignmentMap[worker.id]?.[date];
-                  const isThisProject = projectName === projects.find((p) => p.id === currentProject.id)?.name;
                   return (
                     <td key={date} className={`text-center py-2 px-1 ${date === today ? "bg-gold/5" : ""}`}>
-                      {projectName ? (
-                        <span
-                          className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded truncate max-w-[80px] ${
-                            isThisProject
-                              ? "text-gold bg-gold/10 border border-gold/20"
-                              : "text-content-muted bg-surface-overlay border border-surface-border"
-                          }`}
-                          title={projectName}
-                        >
-                          {projectName.split(" ")[0]}
-                        </span>
-                      ) : (
-                        <span className="text-content-muted text-[10px]">—</span>
-                      )}
+                      {(() => {
+                        const detail = assignmentDetailMap[worker.id]?.[date];
+                        if (detail) {
+                          if (detail.isThisProject && canEdit) {
+                            return (
+                              <button
+                                onClick={() => removeAssignment(detail.id)}
+                                className="inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded truncate max-w-[80px] text-gold bg-gold/10 border border-gold/20 hover:border-red-400/40 hover:text-red-400 hover:bg-red-400/10 transition-colors cursor-pointer"
+                                title={`Remove ${worker.name} from ${detail.projectName} on ${date}`}
+                              >
+                                {detail.projectName.split(" ")[0]}
+                              </button>
+                            );
+                          }
+                          return (
+                            <span
+                              className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded truncate max-w-[80px] cursor-default ${
+                                detail.isThisProject
+                                  ? "text-gold bg-gold/10 border border-gold/20"
+                                  : "text-content-muted bg-surface-overlay border border-surface-border"
+                              }`}
+                              title={detail.projectName}
+                            >
+                              {detail.projectName.split(" ")[0]}
+                            </span>
+                          );
+                        }
+                        if (canEdit) {
+                          return (
+                            <button
+                              onClick={() => addAssignment({ workerId: worker.id, projectId: currentProject.id, date })}
+                              className="w-full h-6 flex items-center justify-center text-content-muted opacity-0 hover:opacity-100 hover:text-gold transition-all"
+                              title={`Assign ${worker.name} to ${currentProject.name} on ${date}`}
+                            >
+                              <Plus size={11} />
+                            </button>
+                          );
+                        }
+                        return <span className="text-content-muted text-[10px]">—</span>;
+                      })()}
                     </td>
                   );
                 })}
