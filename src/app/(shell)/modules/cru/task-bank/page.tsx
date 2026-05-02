@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { TaskInspectorPanel } from "@/components/cx/TaskInspectorPanel";
 import { CsvImportModal } from "@/components/cx/CsvImportModal";
+import { GanttPanel } from "@/components/cx/GanttPanel";
 import { useOrg } from "@/providers/OrgProvider";
 import { useCx } from "@/providers/CxProvider";
+import { localDateString } from "@/lib/utils/time";
 import type { CxTask, CreateCxTaskInput } from "@/lib/cx/types";
-import { ArrowLeft, Plus, Upload } from "lucide-react";
+import { ArrowLeft, Plus, Upload, BarChart2, ChevronDown, ChevronUp } from "lucide-react";
 
 const STATUS_LABEL: Record<string, string> = {
   not_started: "Not Started",
@@ -33,12 +35,23 @@ const TYPE_LABEL: Record<string, string> = {
   other:       "Other",
 };
 
+function getMonday(dateStr: string): string {
+  const d    = new Date(dateStr + "T12:00:00");
+  const diff = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - diff);
+  return d.toISOString().split("T")[0];
+}
+
 export default function TaskBankPage() {
-  const { currentProject, role } = useOrg();
+  const { currentProject, workers, role } = useOrg();
   const { tasks, addTask, addTasks, updateTask } = useCx();
+
+  const today  = useMemo(() => localDateString(), []);
+  const monday = useMemo(() => getMonday(today), [today]);
 
   const [panelOpen,      setPanelOpen]      = useState(false);
   const [importOpen,     setImportOpen]     = useState(false);
+  const [ganttOpen,      setGanttOpen]      = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>();
 
   const selectedTask = selectedTaskId ? tasks.find((t) => t.id === selectedTaskId) : undefined;
@@ -77,9 +90,12 @@ export default function TaskBankPage() {
 
   return (
     <PageContainer maxWidth="wide">
-      <div className="mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <Link href="/modules/cru" className="inline-flex items-center gap-1.5 text-xs text-content-muted hover:text-content-primary transition-colors">
           <ArrowLeft size={12} /> CX
+        </Link>
+        <Link href="/modules/cru/schedule" className="inline-flex items-center gap-1.5 text-xs text-content-muted hover:text-content-primary transition-colors">
+          Schedule <ArrowLeft size={12} className="rotate-180" />
         </Link>
       </div>
 
@@ -166,6 +182,35 @@ export default function TaskBankPage() {
               })}
             </tbody>
           </table>
+        )}
+      </div>
+
+      {/* Schedule toggle */}
+      <div className="mt-6">
+        <button
+          onClick={() => setGanttOpen((v) => !v)}
+          className="flex items-center gap-1.5 text-xs font-semibold text-content-muted hover:text-content-primary transition-colors"
+        >
+          <BarChart2 size={13} />
+          {ganttOpen ? "Hide Schedule" : "Show Schedule"}
+          {ganttOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        </button>
+
+        {ganttOpen && (
+          <div className="mt-3 border border-surface-border rounded-xl p-4 bg-surface-raised">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted mb-3">
+              2-Week Gantt · Set dates on draft tasks to schedule them
+            </p>
+            <GanttPanel
+              tasks={tasks}
+              projectId={currentProject.id}
+              workers={workers}
+              today={today}
+              monday={monday}
+              onTaskClick={openEdit}
+              canEdit={canEdit}
+            />
+          </div>
         )}
       </div>
 

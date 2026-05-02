@@ -4,14 +4,13 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { StaffingBadge } from "@/components/cx/StaffingBadge";
 import { TaskInspectorPanel } from "@/components/cx/TaskInspectorPanel";
+import { GanttPanel } from "@/components/cx/GanttPanel";
 import { useOrg } from "@/providers/OrgProvider";
 import { useCx } from "@/providers/CxProvider";
-import { getStaffingStatus } from "@/lib/cx/staffing";
 import { localDateString } from "@/lib/utils/time";
 import type { CxTask, CxEvent, CreateCxTaskInput } from "@/lib/cx/types";
-import { ArrowLeft, Plus, CalendarDays, BarChart2, MapPin } from "lucide-react";
+import { ArrowLeft, Plus, CalendarDays, BarChart2 } from "lucide-react";
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
@@ -113,100 +112,6 @@ function CalendarView({ events, projectId, today, monday }: {
   );
 }
 
-// ── Gantt View ────────────────────────────────────────────────────────────────
-
-function GanttView({ tasks, projectId, workers, today, monday, onTaskClick, canEdit }: {
-  tasks:       CxTask[];
-  projectId:   string;
-  workers:     ReturnType<typeof useOrg>["workers"];
-  today:       string;
-  monday:      string;
-  onTaskClick: (task: CxTask) => void;
-  canEdit:     boolean;
-}) {
-  const ganttDates   = Array.from({ length: 14 }, (_, i) => addDays(monday, i));
-  const projectTasks = tasks.filter(
-    (t): t is CxTask & { startDate: string; endDate: string } =>
-      t.projectId === projectId &&
-      t.status !== "complete" &&
-      !!t.startDate &&
-      !!t.endDate,
-  );
-
-  return (
-    <div className="mt-4 overflow-x-auto">
-      <div style={{ minWidth: "700px" }}>
-        {/* Date header */}
-        <div className="flex border-b border-surface-border">
-          <div className="w-40 flex-shrink-0" />
-          {ganttDates.map((date) => {
-            const { dow, date: dateNum } = formatDayHeader(date);
-            const staffing = getStaffingStatus(projectTasks, date, workers);
-            return (
-              <div
-                key={date}
-                className={`flex-1 text-center py-1 px-0.5 border-l border-surface-border ${date === today ? "bg-gold/5" : ""}`}
-              >
-                <p className={`text-[9px] font-bold ${date === today ? "text-gold" : "text-content-muted"}`}>{dow}</p>
-                <p className={`text-[9px] ${date === today ? "text-gold" : "text-content-muted"}`}>{dateNum}</p>
-                <div className="mt-0.5 flex justify-center">
-                  <StaffingBadge status={staffing} size="xs" />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Task rows */}
-        {projectTasks.map((task) => (
-          <div key={task.id} className="flex border-b border-surface-border hover:bg-surface-raised/50 group">
-            <div
-              className={`w-40 flex-shrink-0 px-2 py-2 ${canEdit ? "cursor-pointer" : "cursor-default"}`}
-              onClick={() => onTaskClick(task)}
-            >
-              <p className="text-xs font-semibold text-content-primary truncate group-hover:text-gold transition-colors">
-                {task.name}
-              </p>
-              {task.location && (
-                <p className="text-[9px] text-content-muted flex items-center gap-0.5 mt-0.5">
-                  <MapPin size={8} />{task.location}
-                </p>
-              )}
-            </div>
-            {ganttDates.map((date) => {
-              const active  = date >= task.startDate && date <= task.endDate;
-              const isStart = date === task.startDate;
-              const isEnd   = date === task.endDate;
-              return (
-                <div
-                  key={date}
-                  className={`flex-1 border-l border-surface-border py-2 flex items-center ${date === today ? "bg-gold/5" : ""}`}
-                >
-                  {active && (
-                    <div
-                      className={[
-                        "h-4 w-full bg-gold/25 border-t border-b border-gold/40",
-                        isStart ? "rounded-l-full ml-1 border-l border-gold/40" : "",
-                        isEnd   ? "rounded-r-full mr-1 border-r border-gold/40" : "",
-                      ].join(" ")}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ))}
-
-        {projectTasks.length === 0 && (
-          <p className="text-sm text-content-muted py-8 text-center">
-            No scheduled tasks. Add dates to tasks in the Task Bank to see them here.
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 type ScheduleTab = "calendar" | "gantt";
@@ -246,9 +151,12 @@ export default function SchedulePage() {
 
   return (
     <PageContainer maxWidth="wide">
-      <div className="mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <Link href="/modules/cru" className="inline-flex items-center gap-1.5 text-xs text-content-muted hover:text-content-primary transition-colors">
           <ArrowLeft size={12} /> CX
+        </Link>
+        <Link href="/modules/cru/task-bank" className="inline-flex items-center gap-1.5 text-xs text-content-muted hover:text-content-primary transition-colors">
+          Task Bank <ArrowLeft size={12} className="rotate-180" />
         </Link>
       </div>
 
@@ -293,15 +201,17 @@ export default function SchedulePage() {
           monday={monday}
         />
       ) : (
-        <GanttView
-          tasks={tasks}
-          projectId={currentProject.id}
-          workers={workers}
-          today={today}
-          monday={monday}
-          onTaskClick={openEdit}
-          canEdit={canEdit}
-        />
+        <div className="mt-4">
+          <GanttPanel
+            tasks={tasks}
+            projectId={currentProject.id}
+            workers={workers}
+            today={today}
+            monday={monday}
+            onTaskClick={openEdit}
+            canEdit={canEdit}
+          />
+        </div>
       )}
 
       <TaskInspectorPanel
