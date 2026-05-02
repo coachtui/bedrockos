@@ -72,7 +72,7 @@ export function CxProvider({ children }: { children: React.ReactNode }) {
   function addTask(input: CreateCxTaskInput): CxTask {
     const task: CxTask = {
       ...input,
-      id: `cx_task_${Date.now()}`,
+      id: `cx_task_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     };
     dispatch({ type: "ADD_TASK", task });
     return task;

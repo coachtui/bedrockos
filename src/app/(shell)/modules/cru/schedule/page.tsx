@@ -125,7 +125,13 @@ function GanttView({ tasks, projectId, workers, today, monday, onTaskClick, canE
   canEdit:     boolean;
 }) {
   const ganttDates   = Array.from({ length: 14 }, (_, i) => addDays(monday, i));
-  const projectTasks = tasks.filter((t) => t.projectId === projectId && t.status !== "complete" && !!t.startDate && !!t.endDate);
+  const projectTasks = tasks.filter(
+    (t): t is CxTask & { startDate: string; endDate: string } =>
+      t.projectId === projectId &&
+      t.status !== "complete" &&
+      !!t.startDate &&
+      !!t.endDate,
+  );
 
   return (
     <div className="mt-4 overflow-x-auto">
@@ -168,7 +174,7 @@ function GanttView({ tasks, projectId, workers, today, monday, onTaskClick, canE
               )}
             </div>
             {ganttDates.map((date) => {
-              const active  = date >= task.startDate! && date <= task.endDate!;
+              const active  = date >= task.startDate && date <= task.endDate;
               const isStart = date === task.startDate;
               const isEnd   = date === task.endDate;
               return (
