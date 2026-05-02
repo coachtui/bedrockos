@@ -11,7 +11,7 @@ export async function serverCreateCrew(crew: OrgCrew): Promise<void> {
     project_id: crew.projectId,
     name:       crew.name,
     lead_name:  crew.leadName ?? null,
-    status:     crew.status ?? "on_site",
+    status:     crew.status ?? null,
   });
 }
 
@@ -21,7 +21,7 @@ export async function serverAddCrewMember(
 ): Promise<void> {
   await supabase
     .from("crew_members")
-    .upsert({ crew_id: crewId, worker_id: workerId });
+    .upsert({ crew_id: crewId, worker_id: workerId }, { onConflict: "crew_id,worker_id" });
 }
 
 export async function serverRemoveCrewMember(
