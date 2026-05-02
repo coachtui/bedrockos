@@ -199,7 +199,7 @@ function GanttView({ tasks, projectId, workers, today, monday, onTaskClick, canE
 
         {projectTasks.length === 0 && (
           <p className="text-sm text-content-muted py-8 text-center">
-            No active tasks. Create one to see it on the Gantt.
+            No scheduled tasks. Add dates to tasks in the Task Bank to see them here.
           </p>
         )}
       </div>
