@@ -7,6 +7,7 @@ import {
   detectMapping,
   mapRowsToTasks,
   FIELD_LABELS,
+  EMPTY_MAPPING,
   CSV_TEMPLATE_EXAMPLE,
   type ColumnMapping,
 } from "@/lib/cx/csv-import";
@@ -40,8 +41,7 @@ export function CsvImportModal({ open, onClose, projectId, onImport }: CsvImport
   function reset() {
     setStep("upload");
     setHeaders([]); setRows([]); setPreview([]); setError(null);
-    setMapping({ name: null, type: null, startDate: null, endDate: null,
-      location: null, status: null, notes: null, externalId: null });
+    setMapping({ ...EMPTY_MAPPING });
   }
 
   function handleClose() { reset(); onClose(); }
