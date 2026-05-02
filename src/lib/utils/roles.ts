@@ -15,6 +15,8 @@ export function getRoleGroup(role: UserRole): RoleGroup {
       return "field";
     case "mechanic":
       return "maintenance";
+    case "viewer":
+      return "office";
     default:
       return "oversight";
   }

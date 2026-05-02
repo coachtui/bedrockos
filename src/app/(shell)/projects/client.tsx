@@ -29,7 +29,7 @@ export function ProjectsClient() {
             : `${projects.length} projects across your organization`
         }
         action={
-          roleGroup !== "field" && roleGroup !== "maintenance" ? (
+          roleGroup !== "field" && roleGroup !== "maintenance" && role !== "viewer" ? (
             <button
               onClick={() => setShowModal(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gold text-black rounded hover:bg-gold/90 transition-colors"
