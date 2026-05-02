@@ -21,6 +21,7 @@ import { buildFixUrl } from "@/lib/modules/fix/launch";
 import { FixLaunchButton } from "@/components/modules/fix/FixLaunchButton";
 import type { ActivityEvent, Issue, Alert } from "@/types/domain";
 import { ScheduleTab } from "@/components/schedule/ScheduleTab";
+import { ProjectCXCard } from "@/components/shell/ProjectCXCard";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -545,6 +546,9 @@ export function ProjectCommandCenterClient({ projectId }: { projectId: string })
 
             {/* Right column */}
             <div className="lg:col-span-2 space-y-4">
+
+              {/* CX Summary */}
+              <ProjectCXCard projectId={projectId} />
 
               {/* Project Snapshot — de-emphasize for field/maintenance */}
               <Card
