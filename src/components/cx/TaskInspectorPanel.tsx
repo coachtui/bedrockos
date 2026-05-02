@@ -96,7 +96,12 @@ export function TaskInspectorPanel({
   const { workers, role } = useOrg();
   const { updateTask } = useCx();
 
-  const canAssign = isEdit && role !== "foreman" && role !== "mechanic";
+  const canAssign = isEdit && (
+    role === "superintendent" ||
+    role === "project_engineer" ||
+    role === "owner" ||
+    role === "admin"
+  );
 
   const assignedWorkerIds = task?.assignedWorkerIds ?? [];
   const projectRoster = workers.filter((w) => w.projectId === projectId);
@@ -157,7 +162,7 @@ export function TaskInspectorPanel({
       location:          location.trim() || undefined,
       status,
       crewRequirements:  reqs,
-      assignedWorkerIds: task?.assignedWorkerIds ?? [],
+      assignedWorkerIds: task?.assignedWorkerIds ?? [], // live from CxProvider via derived selectedTask prop
       notes:             notes.trim() || undefined,
     });
     onClose();
