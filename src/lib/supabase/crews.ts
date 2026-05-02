@@ -4,17 +4,20 @@ import type { OrgCrew, CrewStatus } from "@/types/domain";
 
 export async function fetchOrgCrews(orgId: string): Promise<OrgCrew[]> {
   try {
-    const [{ data: crewData, error }, { data: memberData }] = await Promise.all([
-      supabase
-        .from("crews")
-        .select("id, org_id, project_id, name, lead_name, status")
-        .eq("org_id", orgId),
-      supabase
-        .from("crew_members")
-        .select("crew_id, worker_id"),
-    ]);
+    const { data: crewData, error } = await supabase
+      .from("crews")
+      .select("id, org_id, project_id, name, lead_name, status")
+      .eq("org_id", orgId);
 
     if (error || !crewData) return [];
+
+    const crewIds = crewData.map((c) => c.id);
+    const { data: memberData } = crewIds.length > 0
+      ? await supabase
+          .from("crew_members")
+          .select("crew_id, worker_id")
+          .in("crew_id", crewIds)
+      : { data: [] };
 
     const membersByCrewId: Record<string, string[]> = {};
     for (const m of memberData ?? []) {
@@ -29,7 +32,7 @@ export async function fetchOrgCrews(orgId: string): Promise<OrgCrew[]> {
       name:      row.name,
       memberIds: membersByCrewId[row.id] ?? [],
       leadName:  row.lead_name ?? undefined,
-      status:    (row.status as CrewStatus) ?? undefined,
+      status:    row.status != null ? (row.status as CrewStatus) : undefined,
     }));
   } catch {
     return [];

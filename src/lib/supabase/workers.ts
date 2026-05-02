@@ -1,3 +1,4 @@
+import "server-only";
 import { supabase } from "./client";
 import type { OrgWorker, WorkerRole } from "@/types/domain";
 

@@ -2,11 +2,19 @@ import "server-only";
 import { supabase } from "./client";
 import type { Project, ProjectStatus } from "@/types/domain";
 
+const KNOWN_PROJECT_STATUSES = new Set<ProjectStatus>([
+  "active", "on_hold", "completed", "planning",
+]);
+
+function toProjectStatus(s: string): ProjectStatus {
+  return KNOWN_PROJECT_STATUSES.has(s as ProjectStatus) ? (s as ProjectStatus) : "planning";
+}
+
 export async function fetchOrgProjects(orgId: string): Promise<Project[]> {
   try {
     const { data, error } = await supabase
       .from("projects")
-      .select("id, org_id, name, slug, status, phase, location, pm_name, progress_pct, open_issues, last_activity, start_date, end_date, description, award_price")
+      .select("id, name, slug, status, phase, location, pm_name, progress_pct, open_issues, last_activity, start_date, end_date, description, award_price")
       .eq("org_id", orgId)
       .order("created_at", { ascending: false });
 
@@ -16,7 +24,7 @@ export async function fetchOrgProjects(orgId: string): Promise<Project[]> {
       id:            row.id,
       name:          row.name,
       slug:          row.slug,
-      status:        row.status as ProjectStatus,
+      status:        toProjectStatus(row.status),
       phase:         row.phase,
       location:      row.location,
       pm_name:       row.pm_name,
