@@ -1,0 +1,34 @@
+import "server-only";
+import { supabase } from "./client";
+import type { Project, ProjectStatus } from "@/types/domain";
+
+export async function fetchOrgProjects(orgId: string): Promise<Project[]> {
+  try {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("id, org_id, name, slug, status, phase, location, pm_name, progress_pct, open_issues, last_activity, start_date, end_date, description, award_price")
+      .eq("org_id", orgId)
+      .order("created_at", { ascending: false });
+
+    if (error || !data) return [];
+
+    return data.map((row) => ({
+      id:            row.id,
+      name:          row.name,
+      slug:          row.slug,
+      status:        row.status as ProjectStatus,
+      phase:         row.phase,
+      location:      row.location,
+      pm_name:       row.pm_name,
+      progress_pct:  row.progress_pct,
+      open_issues:   row.open_issues,
+      last_activity: row.last_activity,
+      start_date:    row.start_date,
+      end_date:      row.end_date,
+      description:   row.description ?? undefined,
+      award_price:   row.award_price != null ? Number(row.award_price) : undefined,
+    }));
+  } catch {
+    return [];
+  }
+}
