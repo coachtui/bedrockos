@@ -15,7 +15,7 @@ export function ProjectsClient() {
   const [showModal, setShowModal] = useState(false);
 
   const roleGroup       = getRoleGroup(role);
-  const visibleProjects = roleGroup === "field"
+  const visibleProjects = (roleGroup === "field" || roleGroup === "maintenance")
     ? projects.filter((p) => p.id === currentProject.id)
     : projects;
 
@@ -24,12 +24,12 @@ export function ProjectsClient() {
       <SectionHeader
         title="Projects"
         subtitle={
-          roleGroup === "field"
+          roleGroup === "field" || roleGroup === "maintenance"
             ? "Your assigned project"
             : `${projects.length} projects across your organization`
         }
         action={
-          roleGroup !== "field" ? (
+          roleGroup !== "field" && roleGroup !== "maintenance" ? (
             <button
               onClick={() => setShowModal(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gold text-black rounded hover:bg-gold/90 transition-colors"
