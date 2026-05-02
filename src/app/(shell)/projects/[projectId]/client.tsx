@@ -350,8 +350,7 @@ export function ProjectCommandCenterClient({ projectId }: { projectId: string })
     if (project) {
       setCurrentProject({ id: project.id, name: project.name, slug: project.slug });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project?.id]);
+  }, [project?.id, setCurrentProject]);
 
   if (!project) {
     return (

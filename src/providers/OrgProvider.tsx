@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useCallback } from "react";
 import type { OrgConfig, ProjectContext, ModuleId, UserRole } from "@/types/org";
 import type { ModuleFeatureMap } from "@/types/org";
 import type {
@@ -132,9 +132,9 @@ export function OrgProvider({
     setAlerts((prev) => [alert, ...prev]);
   }
 
-  function setCurrentProject(project: ProjectContext) {
+  const setCurrentProject = useCallback((project: ProjectContext) => {
     setConfig((prev) => ({ ...prev, currentProject: project }));
-  }
+  }, []);
 
   function setRole(role: UserRole) {
     setConfig((prev) => ({
