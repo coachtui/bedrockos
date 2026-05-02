@@ -11,9 +11,11 @@ interface CxState {
 }
 
 type CxAction =
-  | { type: "ADD_TASK";    task:  CxTask }
-  | { type: "UPDATE_TASK"; id:    string; patch: Partial<CxTask> }
-  | { type: "ADD_EVENT";   event: CxEvent };
+  | { type: "ADD_TASK";          task:       CxTask }
+  | { type: "UPDATE_TASK";       id:         string; patch: Partial<CxTask> }
+  | { type: "ADD_EVENT";         event:      CxEvent }
+  | { type: "ADD_ASSIGNMENT";    assignment: CxDayAssignment }
+  | { type: "REMOVE_ASSIGNMENT"; id:         string };
 
 function cxReducer(state: CxState, action: CxAction): CxState {
   switch (action.type) {
@@ -31,18 +33,26 @@ function cxReducer(state: CxState, action: CxAction): CxState {
     case "ADD_EVENT":
       return { ...state, events: [...state.events, action.event] };
 
+    case "ADD_ASSIGNMENT":
+      return { ...state, assignments: [...state.assignments, action.assignment] };
+
+    case "REMOVE_ASSIGNMENT":
+      return { ...state, assignments: state.assignments.filter((a) => a.id !== action.id) };
+
     default:
       return state;
   }
 }
 
 interface CxContextValue {
-  tasks:       CxTask[];
-  events:      CxEvent[];
-  assignments: CxDayAssignment[];
-  addTask:     (input: CreateCxTaskInput) => CxTask;
-  updateTask:  (id: string, patch: Partial<CxTask>) => void;
-  addEvent:    (input: Omit<CxEvent, "id">) => CxEvent;
+  tasks:            CxTask[];
+  events:           CxEvent[];
+  assignments:      CxDayAssignment[];
+  addTask:          (input: CreateCxTaskInput) => CxTask;
+  updateTask:       (id: string, patch: Partial<CxTask>) => void;
+  addEvent:         (input: Omit<CxEvent, "id">) => CxEvent;
+  addAssignment:    (input: Omit<CxDayAssignment, "id">) => CxDayAssignment;
+  removeAssignment: (id: string) => void;
 }
 
 const CxContext = createContext<CxContextValue | null>(null);
@@ -73,8 +83,18 @@ export function CxProvider({ children }: { children: React.ReactNode }) {
     return event;
   }
 
+  function addAssignment(input: Omit<CxDayAssignment, "id">): CxDayAssignment {
+    const assignment: CxDayAssignment = { ...input, id: `cx_asgn_${Date.now()}` };
+    dispatch({ type: "ADD_ASSIGNMENT", assignment });
+    return assignment;
+  }
+
+  function removeAssignment(id: string) {
+    dispatch({ type: "REMOVE_ASSIGNMENT", id });
+  }
+
   return (
-    <CxContext.Provider value={{ ...state, addTask, updateTask, addEvent }}>
+    <CxContext.Provider value={{ ...state, addTask, updateTask, addEvent, addAssignment, removeAssignment }}>
       {children}
     </CxContext.Provider>
   );
