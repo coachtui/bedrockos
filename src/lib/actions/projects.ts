@@ -1,5 +1,5 @@
 "use server";
-import { supabase } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase/server";
 import type { Project, UpdateProjectInput } from "@/types/domain";
 
 const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";

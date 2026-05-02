@@ -1,5 +1,5 @@
 import "server-only";
-import { supabase } from "./client";
+import { supabase } from "./server";
 import type { OrgWorker, WorkerRole } from "@/types/domain";
 
 const KNOWN_ROLES = new Set<WorkerRole>([

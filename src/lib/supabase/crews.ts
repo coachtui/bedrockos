@@ -1,5 +1,5 @@
 import "server-only";
-import { supabase } from "./client";
+import { supabase } from "./server";
 import type { OrgCrew, CrewStatus } from "@/types/domain";
 
 export async function fetchOrgCrews(orgId: string): Promise<OrgCrew[]> {

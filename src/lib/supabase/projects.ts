@@ -1,5 +1,5 @@
 import "server-only";
-import { supabase } from "./client";
+import { supabase } from "./server";
 import type { Project, ProjectStatus } from "@/types/domain";
 
 const KNOWN_PROJECT_STATUSES = new Set<ProjectStatus>([
