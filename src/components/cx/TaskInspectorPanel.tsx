@@ -4,7 +4,9 @@ import { useState, useEffect } from "react";
 import { InspectorPanel } from "@/components/ui/InspectorPanel";
 import type { CxTask, CxTaskType, CxTaskStatus, CxCrewRequirement, CreateCxTaskInput } from "@/lib/cx/types";
 import type { WorkerRole } from "@/types/domain";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, UserMinus } from "lucide-react";
+import { useOrg } from "@/providers/OrgProvider";
+import { useCx } from "@/providers/CxProvider";
 
 const TASK_TYPES: CxTaskType[] = [
   "pour", "inspection", "delivery", "grading",
@@ -90,6 +92,23 @@ export function TaskInspectorPanel({
   onSave,
 }: TaskInspectorPanelProps) {
   const isEdit = !!task;
+
+  const { workers, role } = useOrg();
+  const { updateTask } = useCx();
+
+  const canAssign = isEdit && role !== "foreman" && role !== "mechanic";
+
+  const assignedWorkerIds = task?.assignedWorkerIds ?? [];
+  const projectRoster = workers.filter((w) => w.projectId === projectId);
+
+  function toggleWorker(workerId: string) {
+    if (!task) return;
+    const current = task.assignedWorkerIds;
+    const next = current.includes(workerId)
+      ? current.filter((id) => id !== workerId)
+      : [...current, workerId];
+    updateTask(task.id, { assignedWorkerIds: next });
+  }
 
   const [formState, setFormState] = useState<FormState>(() => getInitialState(task));
 
@@ -246,6 +265,73 @@ export function TaskInspectorPanel({
           </div>
         ))}
       </div>
+
+      {isEdit && (
+        <div className={sectionClass}>
+          <div className="flex items-center justify-between mb-2">
+            <label className={labelClass} style={{ marginBottom: 0 }}>
+              Assigned Workers · {assignedWorkerIds.length}
+            </label>
+          </div>
+
+          {assignedWorkerIds.length === 0 && (
+            <p className="text-xs text-content-muted italic mb-2">No workers assigned yet.</p>
+          )}
+
+          {assignedWorkerIds.map((id) => {
+            const w = workers.find((x) => x.id === id);
+            if (!w) return null;
+            return (
+              <div
+                key={id}
+                className="flex items-center justify-between py-2 border-b border-surface-border last:border-0"
+              >
+                <div>
+                  <p className="text-sm font-medium text-content-primary">{w.name}</p>
+                  <p className="text-xs text-content-muted capitalize">{w.role}</p>
+                </div>
+                {canAssign && (
+                  <button
+                    onClick={() => toggleWorker(id)}
+                    className="p-1 text-content-muted hover:text-status-critical transition-colors"
+                    title="Remove from task"
+                  >
+                    <UserMinus size={14} />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+
+          {canAssign && projectRoster.filter((w) => !assignedWorkerIds.includes(w.id)).length > 0 && (
+            <>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted mt-3 mb-1">
+                Add from Roster
+              </p>
+              {projectRoster
+                .filter((w) => !assignedWorkerIds.includes(w.id))
+                .map((w) => (
+                  <div
+                    key={w.id}
+                    className="flex items-center justify-between py-2 border-b border-surface-border last:border-0"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-content-primary">{w.name}</p>
+                      <p className="text-xs text-content-muted capitalize">{w.role}</p>
+                    </div>
+                    <button
+                      onClick={() => toggleWorker(w.id)}
+                      className="p-1 text-content-muted hover:text-gold transition-colors"
+                      title="Add to task"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                ))}
+            </>
+          )}
+        </div>
+      )}
 
       <div className={sectionClass}>
         <label className={labelClass}>Notes</label>

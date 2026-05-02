@@ -212,25 +212,26 @@ export default function SchedulePage() {
   const monday = useMemo(() => getMonday(today), [today]);
 
   const [tab,          setTab]          = useState<ScheduleTab>("calendar");
-  const [panelOpen,    setPanelOpen]    = useState(false);
-  const [selectedTask, setSelectedTask] = useState<CxTask | undefined>();
+  const [panelOpen,      setPanelOpen]    = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>();
+  const selectedTask = selectedTaskId ? tasks.find((t) => t.id === selectedTaskId) : undefined;
 
   const canEdit = role === "project_engineer" || role === "superintendent" || role === "owner" || role === "admin";
 
   function openCreate() {
-    setSelectedTask(undefined);
+    setSelectedTaskId(undefined);
     setPanelOpen(true);
   }
 
   function openEdit(task: CxTask) {
     if (!canEdit) return;
-    setSelectedTask(task);
+    setSelectedTaskId(task.id);
     setPanelOpen(true);
   }
 
   function handleSave(data: CreateCxTaskInput) {
-    if (selectedTask) {
-      updateTask(selectedTask.id, data);
+    if (selectedTaskId) {
+      updateTask(selectedTaskId, data);
     } else {
       addTask(data);
     }
@@ -298,7 +299,7 @@ export default function SchedulePage() {
 
       <TaskInspectorPanel
         open={panelOpen}
-        onClose={() => setPanelOpen(false)}
+        onClose={() => { setPanelOpen(false); setSelectedTaskId(undefined); }}
         projectId={currentProject.id}
         task={selectedTask}
         onSave={handleSave}
