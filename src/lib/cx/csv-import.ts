@@ -103,14 +103,11 @@ function coerceStatus(raw: string): CxTaskStatus {
   const normalized = raw.toLowerCase().replace(/\s+/g, "_").replace(/-/g, "_");
   if (STATUS_VALUES.has(normalized as CxTaskStatus)) return normalized as CxTaskStatus;
   const statusMap: Record<string, CxTaskStatus> = {
-    "not started":  "not_started",
-    "in progress":  "in_progress",
-    "on hold":      "on_hold",
-    scheduled:      "not_started",
-    pending:        "not_started",
-    active:         "in_progress",
-    done:           "complete",
-    completed:      "complete",
+    scheduled:  "not_started",
+    pending:    "not_started",
+    active:     "in_progress",
+    done:       "complete",
+    completed:  "complete",
   };
   return statusMap[normalized] ?? "not_started";
 }
