@@ -233,6 +233,7 @@ export function OrgProvider({
     };
     setCrews((prev) => [crew, ...prev]);
     serverCreateCrew(crew).catch(console.error);
+    crew.memberIds.forEach((wid) => serverAddCrewMember(crew.id, wid).catch(console.error));
     addEmittedActivity({
       id:          crypto.randomUUID(),
       actor_name:  config.currentUser.name,
