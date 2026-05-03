@@ -84,7 +84,7 @@ export function PlatformShell({
       </aside>
 
       {/* Main — offset by sidebar width */}
-      <main className="flex-1 md:pl-56 overflow-auto">{children}</main>
+      <main className="flex-1 md:pl-56 min-h-screen">{children}</main>
     </div>
   );
 }
