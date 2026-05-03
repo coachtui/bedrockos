@@ -41,6 +41,7 @@ export async function serverUpdateTask(id: string, patch: Partial<CxTask>): Prom
   if (patch.crewRequirements  !== undefined) update.crew_requirements   = patch.crewRequirements;
   if (patch.assignedWorkerIds !== undefined) update.assigned_worker_ids = patch.assignedWorkerIds;
   if (patch.notes             !== undefined) update.notes               = patch.notes     ?? null;
+  if (patch.externalId        !== undefined) update.external_id         = patch.externalId ?? null;
   if (Object.keys(update).length === 0) return;
   await supabase.from("cx_tasks").update(update).eq("id", id);
 }
