@@ -8,15 +8,18 @@ export default async function PlatformLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getSessionUser();
-  if (!user || !PLATFORM_ADMIN_EMAILS.includes(user.email ?? "")) {
+  // Phase 1-2: no auth — bypass in dev, enforce in production
+  const isDev = process.env.NODE_ENV !== "production";
+  const user  = isDev ? null : await getSessionUser();
+
+  if (!isDev && (!user || !PLATFORM_ADMIN_EMAILS.includes(user?.email ?? ""))) {
     redirect("/login");
   }
 
   const userName =
-    (user.user_metadata?.full_name as string | undefined) ??
-    user.email ??
-    "Admin";
+    (user?.user_metadata?.full_name as string | undefined) ??
+    user?.email ??
+    "Tui Alailima";
 
   return <PlatformShell userName={userName}>{children}</PlatformShell>;
 }

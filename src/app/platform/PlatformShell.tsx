@@ -3,6 +3,7 @@
 import Link        from "next/link";
 import { usePathname } from "next/navigation";
 import { Building2, BarChart2, DollarSign } from "lucide-react";
+import { BedrockGrid } from "@/components/brand/BedrockGrid";
 
 const NAV = [
   { href: "/platform/orgs",      label: "Organizations", icon: Building2, available: true  },
@@ -25,11 +26,9 @@ export function PlatformShell({
       <aside className="hidden md:flex flex-col w-56 bg-surface-raised border-r border-surface-border shrink-0 fixed top-0 bottom-0 left-0 z-30">
         {/* Brand */}
         <div className="flex items-center gap-3 px-4 h-14 border-b border-surface-border">
-          <div className="w-6 h-6 rounded bg-[#1a1f35] border border-[#2d3561] flex items-center justify-center shrink-0">
-            <span className="text-[#7c83e8] text-[10px] font-black">B</span>
-          </div>
+          <BedrockGrid variant="icon" size="sm" className="shrink-0" />
           <div>
-            <p className="text-content-primary text-[12px] font-bold leading-none">BedrockOS</p>
+            <p className="text-content-primary text-[12px] font-bold leading-none tracking-wide">BedrockOS</p>
             <p className="text-content-muted text-[9px] uppercase tracking-widest leading-tight mt-0.5">
               Platform Admin
             </p>
