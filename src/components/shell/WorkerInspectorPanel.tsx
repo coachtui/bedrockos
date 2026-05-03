@@ -5,7 +5,7 @@ import { InspectorPanel } from "@/components/ui/InspectorPanel";
 import { useOrg } from "@/providers/OrgProvider";
 import { relativeTime } from "@/lib/utils/time";
 import type { UserRole } from "@/types/org";
-import type { WorkerRole } from "@/types/domain";
+import type { ProjectPosition, WorkerProjectRole, WorkerRole } from "@/types/domain";
 
 const WORKER_ROLES: WorkerRole[] = [
   "mason", "laborer", "operator", "carpenter",
@@ -26,6 +26,7 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
     currentProject, role, activity,
     updateWorkerBasicInfo, updateWorkerSkills, reassignWorker, addSkillToRole,
     toggleWorkerAvailability,
+    workerProjectRoles, assignProjectPosition, removeProjectPosition,
   } = useOrg();
 
   const worker = workerId ? (workers.find((w) => w.id === workerId) ?? null) : null;
@@ -39,6 +40,11 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
   const [showReassign,      setShowReassign]      = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
   const [selectedCrewId,    setSelectedCrewId]    = useState<string | undefined>();
+
+  // Project position form state
+  const [showAddPosition,     setShowAddPosition]     = useState(false);
+  const [addPositionProjectId, setAddPositionProjectId] = useState("");
+  const [addPositionRole,     setAddPositionRole]     = useState<ProjectPosition>("foreman");
 
   // Skills edit state
   const [editSkills,       setEditSkills]       = useState(false);
@@ -58,6 +64,9 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
     setCustomSkillInput("");
     setSelectedProjectId(worker?.projectId);
     setSelectedCrewId(undefined);
+    setShowAddPosition(false);
+    setAddPositionProjectId("");
+    setAddPositionRole("foreman");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workerId]);
 
@@ -75,6 +84,11 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
   // Crews available in the reassign form — scoped to the selected (or current) project
   const reassignProjectId = canChangeProject ? selectedProjectId : currentProject.id;
   const projectCrews = crews.filter((c) => c.projectId === reassignProjectId);
+
+  // This worker's project-scoped position assignments
+  const workerPositions: WorkerProjectRole[] = worker
+    ? workerProjectRoles.filter((r) => r.workerId === worker.id)
+    : [];
 
   // Skills not already on the worker (for picker)
   const availableSkills = worker
@@ -128,6 +142,14 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
     if (!worker) return;
     reassignWorker(worker.id, reassignProjectId, selectedCrewId);
     setShowReassign(false);
+  }
+
+  function handleAddPosition(): void {
+    if (!worker || !addPositionProjectId) return;
+    assignProjectPosition(worker.id, addPositionProjectId, addPositionRole);
+    setAddPositionProjectId("");
+    setAddPositionRole("foreman");
+    setShowAddPosition(false);
   }
 
   const subtitle = worker
@@ -310,6 +332,91 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
               </div>
             )}
           </section>
+
+          {/* ── Project Position ───────────────────────────────────────── */}
+          {canEdit && (
+            <section className="border-t border-surface-border pt-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-content-secondary uppercase tracking-wide">
+                  Project Position
+                </span>
+                {!showAddPosition && (
+                  <button
+                    onClick={() => setShowAddPosition(true)}
+                    className="text-xs text-blue-brand hover:underline"
+                  >
+                    + Assign
+                  </button>
+                )}
+              </div>
+
+              {workerPositions.length === 0 && !showAddPosition && (
+                <p className="text-xs text-content-tertiary">No project positions assigned.</p>
+              )}
+              <ul className="space-y-1 mb-2">
+                {workerPositions.map((pos) => {
+                  const project = projects.find((p) => p.id === pos.projectId);
+                  return (
+                    <li key={pos.id} className="flex items-center justify-between text-xs">
+                      <span className="text-content-primary">
+                        {project?.name ?? pos.projectId}
+                        <span className="ml-1 text-content-secondary capitalize">
+                          — {pos.position}
+                        </span>
+                      </span>
+                      <button
+                        onClick={() => worker && removeProjectPosition(worker.id, pos.projectId)}
+                        className="text-content-tertiary hover:text-red-500 ml-2"
+                        aria-label="Remove position"
+                      >
+                        ×
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {showAddPosition && (
+                <div className="space-y-2">
+                  <select
+                    value={addPositionProjectId}
+                    onChange={(e) => setAddPositionProjectId(e.target.value)}
+                    className="w-full text-xs border border-surface-border rounded px-2 py-1 bg-surface-base text-content-primary"
+                  >
+                    <option value="">Select project…</option>
+                    {projects
+                      .filter((p) => !workerPositions.some((r) => r.projectId === p.id))
+                      .map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                  </select>
+                  <select
+                    value={addPositionRole}
+                    onChange={(e) => setAddPositionRole(e.target.value as ProjectPosition)}
+                    className="w-full text-xs border border-surface-border rounded px-2 py-1 bg-surface-base text-content-primary"
+                  >
+                    <option value="foreman">Foreman</option>
+                    <option value="superintendent">Superintendent</option>
+                  </select>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleAddPosition}
+                      disabled={!addPositionProjectId}
+                      className="flex-1 text-xs bg-blue-brand text-white rounded px-2 py-1 disabled:opacity-40"
+                    >
+                      Assign
+                    </button>
+                    <button
+                      onClick={() => setShowAddPosition(false)}
+                      className="text-xs text-content-secondary hover:underline px-2"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
 
           {/* ── Skills ─────────────────────────────────────────────────── */}
           <section className="border-t border-surface-border pt-4">
