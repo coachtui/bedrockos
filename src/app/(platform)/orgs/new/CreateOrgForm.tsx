@@ -6,6 +6,8 @@ import { serverCreateOrg }   from "@/lib/actions/platform";
 import type { ModuleId }     from "@/types/org";
 import type { PlatformOrgStatus } from "@/types/platform";
 
+type CreateOrgStatus = Exclude<PlatformOrgStatus, "inactive">;
+
 const ALL_MODULES: { id: ModuleId; label: string }[] = [
   { id: "cru",     label: "Crew & Field Ops" },
   { id: "fix",     label: "Diagnostics"      },
@@ -23,7 +25,8 @@ export function CreateOrgForm() {
   const router = useRouter();
   const [name,           setName]           = useState("");
   const [slug,           setSlug]           = useState("");
-  const [status,         setStatus]         = useState<PlatformOrgStatus>("trial");
+  const [status,         setStatus]         = useState<CreateOrgStatus>("trial");
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [enabledModules, setEnabledModules] = useState<ModuleId[]>([]);
   const [adminName,      setAdminName]      = useState("");
   const [adminEmail,     setAdminEmail]     = useState("");
@@ -32,7 +35,7 @@ export function CreateOrgForm() {
 
   function handleNameChange(value: string) {
     setName(value);
-    setSlug(toSlug(value));
+    if (!slugManuallyEdited) setSlug(toSlug(value));
   }
 
   function toggleModule(id: ModuleId) {
@@ -49,12 +52,17 @@ export function CreateOrgForm() {
     }
     setLoading(true);
     setError(null);
-    const result = await serverCreateOrg({
-      name, slug, status, enabledModules, adminName, adminEmail,
-    });
-    setLoading(false);
-    if (result.error) { setError(result.error); return; }
-    router.push("/platform/orgs");
+    try {
+      const result = await serverCreateOrg({
+        name, slug, status, enabledModules, adminName, adminEmail,
+      });
+      if (result.error) { setError(result.error); return; }
+      router.push("/platform/orgs");
+    } catch {
+      setError("Unexpected error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -82,7 +90,10 @@ export function CreateOrgForm() {
               <input
                 className="w-full bg-surface-raised border border-surface-border rounded-md px-3 py-2 text-[#7c83e8] text-sm font-mono focus:outline-none focus:border-[#7c83e8]"
                 value={slug}
-                onChange={e => setSlug(e.target.value)}
+                onChange={e => {
+                  setSlug(e.target.value);
+                  setSlugManuallyEdited(true);
+                }}
                 required
               />
             </div>
@@ -91,7 +102,7 @@ export function CreateOrgForm() {
               <select
                 className="w-full bg-surface-raised border border-surface-border rounded-md px-3 py-2 text-content-primary text-sm focus:outline-none focus:border-[#7c83e8]"
                 value={status}
-                onChange={e => setStatus(e.target.value as PlatformOrgStatus)}
+                onChange={e => setStatus(e.target.value as CreateOrgStatus)}
               >
                 <option value="trial">Trial</option>
                 <option value="active">Active</option>
