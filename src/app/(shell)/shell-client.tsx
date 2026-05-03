@@ -1,20 +1,21 @@
 "use client";
 
-import { OrgProvider } from "@/providers/OrgProvider";
-import { UIProvider }  from "@/providers/UIProvider";
-import { MxProvider }  from "@/providers/MxProvider";
-import { OpsProvider } from "@/providers/OpsProvider";
-import { CxProvider }  from "@/providers/CxProvider";
-import { ThemeProvider } from "@/providers/ThemeProvider";
-import { Sidebar }     from "@/components/layout/Sidebar";
-import { Topbar }      from "@/components/layout/Topbar";
-import { MobileNav }   from "@/components/layout/MobileNav";
+import { OrgProvider }    from "@/providers/OrgProvider";
+import { UIProvider }     from "@/providers/UIProvider";
+import { MxProvider }     from "@/providers/MxProvider";
+import { OpsProvider }    from "@/providers/OpsProvider";
+import { CxProvider }     from "@/providers/CxProvider";
+import { ThemeProvider }  from "@/providers/ThemeProvider";
+import { Sidebar }        from "@/components/layout/Sidebar";
+import { Topbar }         from "@/components/layout/Topbar";
+import { MobileNav }      from "@/components/layout/MobileNav";
 import { AssistantPanel } from "@/components/layout/AssistantPanel";
-import { SearchModal } from "@/components/search/SearchModal";
-import { useUI }       from "@/providers/UIProvider";
-import { useMx }       from "@/providers/MxProvider";
+import { SearchModal }    from "@/components/search/SearchModal";
+import { useUI }          from "@/providers/UIProvider";
+import { useMx }          from "@/providers/MxProvider";
 import type { OrgWorker, Project, OrgCrew } from "@/types/domain";
-import type { OrgUserRow } from "@/lib/supabase/org-users";
+import type { OrgUserRow }                  from "@/lib/supabase/org-users";
+import type { CxTask, CxDayAssignment }     from "@/lib/cx/types";
 
 function OpsLayer({ children }: { children: React.ReactNode }) {
   const { createWorkOrder } = useMx();
@@ -46,19 +47,23 @@ export function ShellClientRoot({
   initialWorkers,
   initialProjects,
   initialCrews,
+  initialTasks,
+  initialAssignments,
   initialUser,
 }: {
-  children:        React.ReactNode;
-  initialWorkers:  OrgWorker[];
-  initialProjects: Project[];
-  initialCrews:    OrgCrew[];
-  initialUser?:    OrgUserRow;
+  children:           React.ReactNode;
+  initialWorkers:     OrgWorker[];
+  initialProjects:    Project[];
+  initialCrews:       OrgCrew[];
+  initialTasks:       CxTask[];
+  initialAssignments: CxDayAssignment[];
+  initialUser?:       OrgUserRow;
 }) {
   return (
     <ThemeProvider>
       <OrgProvider initialWorkers={initialWorkers} initialProjects={initialProjects} initialCrews={initialCrews} initialUser={initialUser}>
         <UIProvider>
-          <CxProvider>
+          <CxProvider initialTasks={initialTasks} initialAssignments={initialAssignments}>
             <MxProvider>
               <OpsLayer>
                 <ShellLayout>{children}</ShellLayout>
