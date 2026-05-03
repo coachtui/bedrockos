@@ -25,12 +25,18 @@ export function OrgTable({ orgs }: { orgs: PlatformOrg[] }) {
       <table className="w-full">
         <thead>
           <tr className="border-b border-surface-border bg-surface-raised">
-            {["Company", "Modules", "Status", "Added", ""].map(h => (
+            {[
+              { key: "company", label: "Company" },
+              { key: "modules", label: "Modules" },
+              { key: "status",  label: "Status"  },
+              { key: "added",   label: "Added"   },
+              { key: "actions", label: ""        },
+            ].map(({ key, label }) => (
               <th
-                key={h}
+                key={key}
                 className="text-left text-[9px] font-bold uppercase tracking-widest text-content-muted px-4 py-3"
               >
-                {h}
+                {label}
               </th>
             ))}
           </tr>
@@ -64,7 +70,12 @@ export function OrgTable({ orgs }: { orgs: PlatformOrg[] }) {
                   {org.status}
                 </span>
               </td>
-              <td className="px-4 py-4 text-content-muted text-[11px]">{org.createdAt}</td>
+              <td className="px-4 py-4 text-content-muted text-[11px]">
+                {new Date(org.createdAt + "-01").toLocaleDateString("en-US", {
+                  month: "short",
+                  year:  "numeric",
+                })}
+              </td>
               <td className="px-4 py-4 text-right">
                 <Link
                   href={`/platform/orgs/${org.id}`}
