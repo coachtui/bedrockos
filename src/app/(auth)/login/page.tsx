@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { BedrockGrid } from "@/components/brand/BedrockGrid";
 
 export default function LoginPage() {
   const [email,    setEmail]    = useState("");
@@ -31,9 +32,9 @@ export default function LoginPage() {
 
   return (
     <div className="w-full max-w-sm">
-      <div className="mb-8 text-center">
-        <h1 className="text-xl font-bold text-content-primary">BedrockOS</h1>
-        <p className="text-sm text-content-muted mt-1">Sign in to your organization</p>
+      <div className="mb-8 flex flex-col items-center gap-4">
+        <BedrockGrid size="sm" className="mx-auto" />
+        <p className="text-sm text-content-muted">Sign in to your organization</p>
       </div>
 
       <form onSubmit={handleSignIn} className="space-y-4">

@@ -11,6 +11,7 @@ import {
 import { useUI } from "@/providers/UIProvider";
 import { useOrg } from "@/providers/OrgProvider";
 import { NAV_SECTIONS } from "@/lib/nav/nav-config";
+import { BedrockGrid } from "@/components/brand/BedrockGrid";
 
 const ICON_MAP: Record<string, React.ReactNode> = {
   LayoutDashboard: <LayoutDashboard size={16} />,
@@ -45,13 +46,11 @@ export function Sidebar() {
       `}
     >
       {/* Logo / brand mark */}
-      <div className="flex items-center gap-3 px-4 h-14 border-b border-surface-border shrink-0">
-        <div className="w-7 h-7 rounded-lg bg-gold flex items-center justify-center shrink-0">
-          <span className="text-content-inverse text-[11px] font-black tracking-tighter">AC</span>
-        </div>
+      <div className="flex items-center gap-2.5 px-4 h-14 border-b border-surface-border shrink-0">
+        <BedrockGrid size="sm" variant="icon" className="shrink-0" />
         {!sidebarCollapsed && (
-          <span className="font-bold text-sm text-content-primary tracking-tight whitespace-nowrap overflow-hidden">
-            AIGA Construction
+          <span className="font-mono font-bold text-[13px] uppercase tracking-[0.18em] text-content-primary leading-none whitespace-nowrap overflow-hidden">
+            BEDROCK<span className="text-gold">OS</span>
           </span>
         )}
       </div>
