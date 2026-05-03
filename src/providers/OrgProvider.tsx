@@ -23,6 +23,7 @@ import { MOCK_ALERTS }   from "@/lib/mock/alerts";
 import { MOCK_ACTIVITY } from "@/lib/mock/activity";
 import { serverCreateProject, serverUpdateProject } from "@/lib/actions/projects";
 import { serverCreateCrew, serverAddCrewMember, serverRemoveCrewMember } from "@/lib/actions/crews";
+import { serverCreateWorker, serverUpdateWorker } from "@/lib/actions/workers";
 
 interface OrgContextValue {
   currentOrganization: OrgConfig["org"];
@@ -276,6 +277,7 @@ export function OrgProvider({
       skills:    input.skills,
     };
     setWorkers((prev) => [worker, ...prev]);
+    serverCreateWorker(worker).catch(console.error);
     addEmittedActivity({
       id:          crypto.randomUUID(),
       actor_name:  config.currentUser.name,
@@ -414,6 +416,7 @@ export function OrgProvider({
     setWorkers((prev) =>
       prev.map((w) => (w.id === workerId ? { ...w, skills } : w))
     );
+    serverUpdateWorker(workerId, { skills }).catch(console.error);
   }
 
   function toggleWorkerAvailability(workerId: string): void {
@@ -424,6 +427,7 @@ export function OrgProvider({
     setWorkers((prev) =>
       prev.map((w) => (w.id === workerId ? { ...w, available: next } : w))
     );
+    serverUpdateWorker(workerId, { available: next }).catch(console.error);
 
     addEmittedActivity({
       id:          crypto.randomUUID(),
@@ -452,6 +456,7 @@ export function OrgProvider({
         w.id === workerId ? { ...w, projectId, siteName: undefined } : w,
       ),
     );
+    serverUpdateWorker(workerId, { projectId: projectId ?? null, siteName: null }).catch(console.error);
 
     // 2. Remove worker from all crew memberIds
     setCrews((prev) =>
