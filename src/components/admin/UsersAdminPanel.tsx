@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, MailCheck } from "lucide-react";
 import type { OrgUserRow } from "@/lib/supabase/org-users";
-import { serverInviteUser, serverUpdateUserRole, serverRemoveUser } from "@/lib/actions/org-users";
+import { serverInviteUser, serverResendInvite, serverUpdateUserRole, serverRemoveUser } from "@/lib/actions/org-users";
 import { ROLE_LABELS, ROLE_BADGE_COLORS } from "@/lib/constants/roles";
 import type { UserRole } from "@/types/org";
 
@@ -22,7 +22,9 @@ export function UsersAdminPanel({ users }: { users: OrgUserRow[] }) {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName,  setInviteName]  = useState("");
   const [inviteRole,  setInviteRole]  = useState<UserRole>("viewer");
-  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [inviteError, setInviteError]   = useState<string | null>(null);
+  const [resendError, setResendError]   = useState<string | null>(null);
+  const [resendOk,    setResendOk]      = useState<string | null>(null);
   const [inviteOpen,  setInviteOpen]  = useState(false);
 
   function handleInvite(e: React.FormEvent) {
@@ -43,6 +45,19 @@ export function UsersAdminPanel({ users }: { users: OrgUserRow[] }) {
     startTransition(async () => {
       await serverUpdateUserRole(orgUserId, role);
       router.refresh();
+    });
+  }
+
+  function handleResendInvite(email: string) {
+    setResendError(null);
+    setResendOk(null);
+    startTransition(async () => {
+      const result = await serverResendInvite(email);
+      if (result.error) {
+        setResendError(result.error);
+      } else {
+        setResendOk(`Invite resent to ${email}`);
+      }
     });
   }
 
@@ -113,6 +128,9 @@ export function UsersAdminPanel({ users }: { users: OrgUserRow[] }) {
         )}
       </div>
 
+      {resendError && <p className="text-xs text-red-400">{resendError}</p>}
+      {resendOk    && <p className="text-xs text-green-400">{resendOk}</p>}
+
       {/* Users table */}
       <div className="rounded-[var(--radius-card)] border border-surface-border overflow-hidden">
         <table className="w-full text-sm">
@@ -160,14 +178,24 @@ export function UsersAdminPanel({ users }: { users: OrgUserRow[] }) {
                     </select>
                   </td>
                   <td className="px-4 py-3.5 text-right">
-                    <button
-                      onClick={() => handleRemove(user.id)}
-                      disabled={isPending}
-                      className="p-1 text-content-muted hover:text-red-400 transition-colors disabled:opacity-40"
-                      title="Remove user"
-                    >
-                      <Trash2 size={13} />
-                    </button>
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => handleResendInvite(user.email)}
+                        disabled={isPending}
+                        className="p-1 text-content-muted hover:text-gold transition-colors disabled:opacity-40"
+                        title="Resend invite"
+                      >
+                        <MailCheck size={13} />
+                      </button>
+                      <button
+                        onClick={() => handleRemove(user.id)}
+                        disabled={isPending}
+                        className="p-1 text-content-muted hover:text-red-400 transition-colors disabled:opacity-40"
+                        title="Remove user"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );

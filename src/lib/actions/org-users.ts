@@ -23,7 +23,11 @@ export async function serverInviteUser(input: {
 }): Promise<{ error?: string }> {
   const authCheck = await assertAdmin();
   if (authCheck.error) return authCheck;
-  const { data, error } = await supabase.auth.admin.inviteUserByEmail(input.email);
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const { data, error } = await supabase.auth.admin.inviteUserByEmail(input.email, {
+    redirectTo: `${siteUrl}/accept-invite`,
+  });
   if (error || !data.user) {
     return { error: error?.message ?? "Invite failed" };
   }
@@ -35,6 +39,18 @@ export async function serverInviteUser(input: {
     role:    input.role,
   });
   if (insertError) return { error: insertError.message };
+  return {};
+}
+
+export async function serverResendInvite(email: string): Promise<{ error?: string }> {
+  const authCheck = await assertAdmin();
+  if (authCheck.error) return authCheck;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  // Use password recovery flow — inviteUserByEmail rejects existing users
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${siteUrl}/accept-invite`,
+  });
+  if (error) return { error: error.message };
   return {};
 }
 
