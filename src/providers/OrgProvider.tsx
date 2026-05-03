@@ -56,6 +56,7 @@ interface OrgContextValue {
   skillCatalog:   Record<WorkerRole, string[]>;
   addWorker:      (input: CreateWorkerInput) => OrgWorker;
   addSkillToRole: (role: WorkerRole, skill: string) => void;
+  updateWorkerBasicInfo: (workerId: string, patch: { name?: string; role?: WorkerRole }) => void;
   updateWorkerSkills: (workerId: string, skills: string[]) => void;
   reassignWorker:     (workerId: string, projectId: string | undefined, crewId: string | undefined) => void;
   toggleWorkerAvailability: (workerId: string) => void;
@@ -412,6 +413,13 @@ export function OrgProvider({
     }));
   }
 
+  function updateWorkerBasicInfo(workerId: string, patch: { name?: string; role?: WorkerRole }): void {
+    setWorkers((prev) =>
+      prev.map((w) => (w.id === workerId ? { ...w, ...patch } : w))
+    );
+    serverUpdateWorker(workerId, patch).catch(console.error);
+  }
+
   function updateWorkerSkills(workerId: string, skills: string[]): void {
     setWorkers((prev) =>
       prev.map((w) => (w.id === workerId ? { ...w, skills } : w))
@@ -548,6 +556,7 @@ export function OrgProvider({
         skillCatalog,
         addWorker,
         addSkillToRole,
+        updateWorkerBasicInfo,
         updateWorkerSkills,
         reassignWorker,
         toggleWorkerAvailability,

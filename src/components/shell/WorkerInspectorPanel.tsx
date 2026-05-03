@@ -5,6 +5,12 @@ import { InspectorPanel } from "@/components/ui/InspectorPanel";
 import { useOrg } from "@/providers/OrgProvider";
 import { relativeTime } from "@/lib/utils/time";
 import type { UserRole } from "@/types/org";
+import type { WorkerRole } from "@/types/domain";
+
+const WORKER_ROLES: WorkerRole[] = [
+  "mason", "laborer", "operator", "carpenter",
+  "foreman", "superintendent", "mechanic", "driver",
+];
 
 const CAN_EDIT           = new Set<UserRole>(["owner", "admin", "superintendent"]);
 const CAN_CHANGE_PROJECT = new Set<UserRole>(["owner", "admin"]);
@@ -18,11 +24,16 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
   const {
     workers, crews, projects, skillCatalog,
     currentProject, role, activity,
-    updateWorkerSkills, reassignWorker, addSkillToRole,
+    updateWorkerBasicInfo, updateWorkerSkills, reassignWorker, addSkillToRole,
     toggleWorkerAvailability,
   } = useOrg();
 
   const worker = workerId ? (workers.find((w) => w.id === workerId) ?? null) : null;
+
+  // Edit details state
+  const [editDetails,    setEditDetails]    = useState(false);
+  const [editName,       setEditName]       = useState("");
+  const [editRole,       setEditRole]       = useState<WorkerRole>("laborer");
 
   // Reassign form state
   const [showReassign,      setShowReassign]      = useState(false);
@@ -37,6 +48,9 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
 
   // Reset all panel state whenever the selected worker changes
   useEffect(() => {
+    setEditDetails(false);
+    setEditName(worker?.name ?? "");
+    setEditRole((worker?.role ?? "laborer") as WorkerRole);
     setShowReassign(false);
     setEditSkills(false);
     setShowSkillPicker(false);
@@ -104,6 +118,12 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
     setCustomSkillInput("");
   }
 
+  function handleSaveDetails() {
+    if (!worker) return;
+    updateWorkerBasicInfo(worker.id, { name: editName, role: editRole });
+    setEditDetails(false);
+  }
+
   function handleConfirmReassign() {
     if (!worker) return;
     reassignWorker(worker.id, reassignProjectId, selectedCrewId);
@@ -123,6 +143,78 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
     >
       {worker && (
         <div className="px-5 py-4 space-y-5">
+
+          {/* ── Details ────────────────────────────────────────────────── */}
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-content-muted">
+                Details
+              </h3>
+              {canEdit && !editDetails && (
+                <button
+                  onClick={() => setEditDetails(true)}
+                  className="text-[10px] font-semibold text-content-muted hover:text-teal transition-colors"
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+
+            {!editDetails ? (
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-content-muted">Name</span>
+                  <span className="font-semibold text-content-primary">{worker.name}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-content-muted">Role</span>
+                  <span className="font-semibold text-content-primary capitalize">{worker.role}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-content-muted mb-1.5">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full text-xs bg-surface-overlay border border-surface-border rounded-lg px-2.5 py-1.5 text-content-primary focus:outline-none focus:border-teal"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-content-muted mb-1.5">
+                    Role
+                  </label>
+                  <select
+                    value={editRole}
+                    onChange={(e) => setEditRole(e.target.value as WorkerRole)}
+                    className="w-full text-xs bg-surface-overlay border border-surface-border rounded-lg px-2.5 py-1.5 text-content-primary focus:outline-none focus:border-teal"
+                  >
+                    {WORKER_ROLES.map((r) => (
+                      <option key={r} value={r} className="capitalize">{r.charAt(0).toUpperCase() + r.slice(1)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={handleSaveDetails}
+                    className="px-3 py-1 text-[10px] font-semibold bg-teal text-white rounded hover:opacity-90 transition-opacity"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => { setEditDetails(false); setEditName(worker.name); setEditRole(worker.role as WorkerRole); }}
+                    className="text-[10px] text-content-muted hover:text-content-primary transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
 
           {/* ── Assignment ─────────────────────────────────────────────── */}
           <section>

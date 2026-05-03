@@ -20,9 +20,11 @@ export async function serverCreateWorker(worker: OrgWorker): Promise<void> {
 
 export async function serverUpdateWorker(
   id: string,
-  patch: { projectId?: string | null; siteName?: string | null; available?: boolean; skills?: string[] },
+  patch: { name?: string; role?: string; projectId?: string | null; siteName?: string | null; available?: boolean; skills?: string[] },
 ): Promise<void> {
   const update: Record<string, unknown> = {};
+  if (patch.name       !== undefined) update.name       = patch.name;
+  if (patch.role       !== undefined) update.role       = patch.role;
   if (patch.projectId  !== undefined) update.project_id = patch.projectId ?? null;
   if (patch.siteName   !== undefined) update.site_name  = patch.siteName  ?? null;
   if (patch.available  !== undefined) update.available  = patch.available;
