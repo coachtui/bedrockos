@@ -135,15 +135,14 @@ function RoleCTABar({ projectId }: { projectId: string }) {
 
   if (roleGroup === "field") {
     return (
-      <div className="mb-4 flex items-center gap-3">
-        <button
-          className="inline-flex items-center gap-2 text-sm font-semibold text-gold border border-gold/30 bg-gold/5 px-4 py-2 rounded-lg cursor-not-allowed opacity-60"
-          disabled
+      <div className="mb-4">
+        <Link
+          href={`/modules/cru/crews?source=project-command-center&projectId=${projectId}`}
+          className="inline-flex items-center gap-2 text-sm font-semibold text-gold border border-gold/30 bg-gold/5 hover:bg-gold/15 px-4 py-2 rounded-lg transition-colors"
         >
           <Users size={14} />
           Assign Crew
-        </button>
-        <span className="text-xs text-content-muted">Crew assignment workflow coming next</span>
+        </Link>
       </div>
     );
   }
