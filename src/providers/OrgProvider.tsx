@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useRef } from "react";
 import type { OrgConfig, ProjectContext, ModuleId, UserRole } from "@/types/org";
 import type { OrgUserRow } from "@/lib/supabase/org-users";
 import type { ModuleFeatureMap } from "@/types/org";
@@ -24,6 +24,11 @@ import { MOCK_ACTIVITY } from "@/lib/mock/activity";
 import { serverCreateProject, serverUpdateProject } from "@/lib/actions/projects";
 import { serverCreateCrew, serverAddCrewMember, serverRemoveCrewMember } from "@/lib/actions/crews";
 import { serverCreateWorker, serverUpdateWorker } from "@/lib/actions/workers";
+import type { WorkerProjectRole, ProjectPosition } from "@/types/domain";
+import {
+  serverAssignProjectPosition,
+  serverRemoveProjectPosition,
+} from "@/lib/actions/worker-project-roles";
 
 interface OrgContextValue {
   currentOrganization: OrgConfig["org"];
@@ -66,6 +71,9 @@ interface OrgContextValue {
   updateCrewName:       (crewId: string, name: string) => void;
   addWorkerToCrew:      (crewId: string, workerId: string) => void;
   removeWorkerFromCrew: (crewId: string, workerId: string) => void;
+  workerProjectRoles:      WorkerProjectRole[];
+  assignProjectPosition:   (workerId: string, projectId: string, position: ProjectPosition) => void;
+  removeProjectPosition:   (workerId: string, projectId: string) => void;
 }
 
 const OrgContext = createContext<OrgContextValue | null>(null);
@@ -92,12 +100,16 @@ export function OrgProvider({
   initialProjects,
   initialCrews,
   initialUser,
+  initialWorkerProjectRoles,
+  initialWorkerPositions,
 }: {
-  children:         React.ReactNode;
-  initialWorkers?:  OrgWorker[];
-  initialProjects?: Project[];
-  initialCrews?:    OrgCrew[];
-  initialUser?:     OrgUserRow;
+  children:                    React.ReactNode;
+  initialWorkers?:             OrgWorker[];
+  initialProjects?:            Project[];
+  initialCrews?:               OrgCrew[];
+  initialUser?:                OrgUserRow;
+  initialWorkerProjectRoles?:  WorkerProjectRole[];
+  initialWorkerPositions?:     WorkerProjectRole[];
 }) {
   const [config, setConfig] = useState<OrgConfig>(() => {
     const base = getOrgConfig();
@@ -149,6 +161,10 @@ export function OrgProvider({
       superintendent: [...SKILL_CATALOG.superintendent],
     })
   );
+  const [workerProjectRoles, setWorkerProjectRoles] = useState<WorkerProjectRole[]>(
+    initialWorkerProjectRoles ?? [],
+  );
+  const sessionPositionsRef = useRef<WorkerProjectRole[]>(initialWorkerPositions ?? []);
 
   function addEmittedActivity(event: ActivityEvent): void {
     setActivity((prev) => [event, ...prev]);
@@ -163,7 +179,16 @@ export function OrgProvider({
   }
 
   const setCurrentProject = useCallback((project: ProjectContext) => {
-    setConfig((prev) => ({ ...prev, currentProject: project }));
+    setConfig((prev) => {
+      const position = sessionPositionsRef.current.find((p) => p.projectId === project.id);
+      return {
+        ...prev,
+        currentProject: project,
+        currentUser: position
+          ? { ...prev.currentUser, role: position.position }
+          : prev.currentUser,
+      };
+    });
   }, []);
 
   function setRole(role: UserRole) {
@@ -406,6 +431,36 @@ export function OrgProvider({
     });
   }
 
+  function assignProjectPosition(
+    workerId: string,
+    projectId: string,
+    position: ProjectPosition,
+  ): void {
+    setWorkerProjectRoles((prev) => {
+      const without = prev.filter(
+        (r) => !(r.workerId === workerId && r.projectId === projectId),
+      );
+      const newRow: WorkerProjectRole = {
+        id:        `wpr_${workerId}_${projectId}`,
+        orgId,
+        workerId,
+        projectId,
+        position,
+      };
+      return [...without, newRow];
+    });
+    serverAssignProjectPosition(workerId, projectId, position).catch(console.error);
+  }
+
+  function removeProjectPosition(workerId: string, projectId: string): void {
+    setWorkerProjectRoles((prev) =>
+      prev.filter(
+        (r) => !(r.workerId === workerId && r.projectId === projectId),
+      ),
+    );
+    serverRemoveProjectPosition(workerId, projectId).catch(console.error);
+  }
+
   function addSkillToRole(role: WorkerRole, skill: string): void {
     setSkillCatalog((prev) => ({
       ...prev,
@@ -519,11 +574,17 @@ export function OrgProvider({
     return config.features[id] ?? {};
   }
 
-  const availableProjects: ProjectContext[] = projects.map((p) => ({
+  const allProjectContexts: ProjectContext[] = projects.map((p) => ({
     id:   p.id,
     name: p.name,
     slug: p.slug,
   }));
+
+  const availableProjects: ProjectContext[] = sessionPositionsRef.current.length > 0
+    ? allProjectContexts.filter((p) =>
+        sessionPositionsRef.current.some((sp) => sp.projectId === p.id),
+      )
+    : allProjectContexts;
 
   return (
     <OrgContext.Provider
@@ -566,6 +627,9 @@ export function OrgProvider({
         updateCrewName,
         addWorkerToCrew,
         removeWorkerFromCrew,
+        workerProjectRoles,
+        assignProjectPosition,
+        removeProjectPosition,
       }}
     >
       {children}
