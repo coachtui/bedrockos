@@ -106,6 +106,16 @@ export type WorkerRole =
   | "operator"
   | "laborer";
 
+export type ProjectPosition = "superintendent" | "foreman";
+
+export interface WorkerProjectRole {
+  id:        string;
+  orgId:     string;
+  workerId:  string;
+  projectId: string;
+  position:  ProjectPosition;
+}
+
 export interface OrgWorker {
   id:        string;
   orgId:     string;
