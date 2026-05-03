@@ -9,3 +9,4 @@ create table cx_day_assignments (
 );
 
 create index cx_day_assignments_org_id_idx on cx_day_assignments(org_id);
+create index cx_day_assignments_org_project_date_idx on cx_day_assignments(org_id, project_id, date);
