@@ -1,6 +1,6 @@
 import type { PlatformOrg } from "@/types/platform";
 
-export const mockPlatformOrgs: PlatformOrg[] = [
+export const MOCK_PLATFORM_ORGS: PlatformOrg[] = [
   {
     id:             "org_acme",
     name:           "Acme Construction",
@@ -27,5 +27,14 @@ export const mockPlatformOrgs: PlatformOrg[] = [
     enabledModules: ["cru", "fix", "mx", "ops"],
     userCount:      1,
     createdAt:      "2025-11",
+  },
+  {
+    id:             "org_sunset",
+    name:           "Sunset Builders",
+    slug:           "sunset",
+    status:         "inactive",
+    enabledModules: ["cru"],
+    userCount:      0,
+    createdAt:      "2025-09",
   },
 ];
