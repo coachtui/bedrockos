@@ -9,42 +9,49 @@ function blockedExtension(filename: string): boolean {
   return BLOCKED_EXTENSIONS.has(ext);
 }
 
-export async function uploadProjectFile(
-  formData: FormData,
-): Promise<{ error?: string }> {
-  const file       = formData.get("file")       as File   | null;
-  const projectId  = formData.get("projectId")  as string | null;
-  const orgId      = formData.get("orgId")      as string | null;
-  const uploadedBy = formData.get("uploadedBy") as string | null;
-
-  if (!file || !projectId || !orgId || !uploadedBy) {
-    return { error: "Missing required fields." };
-  }
-  if (blockedExtension(file.name)) {
+// Step 1: get a signed upload URL — file goes directly from browser to Supabase Storage,
+// never through Next.js, avoiding all middleware body size limits.
+export async function createUploadUrl(
+  orgId: string,
+  projectId: string,
+  fileName: string,
+): Promise<{ uploadUrl?: string; storagePath?: string; error?: string }> {
+  if (blockedExtension(fileName)) {
     return { error: "CAD files (DWG, DXF, DWF) are not supported." };
   }
 
   const uuid        = crypto.randomUUID();
-  const storagePath = `${orgId}/${projectId}/${uuid}-${file.name}`;
-  const bytes       = await file.arrayBuffer();
+  const storagePath = `${orgId}/${projectId}/${uuid}-${fileName}`;
 
-  const { error: storageError } = await supabase.storage
+  const { data, error } = await supabase.storage
     .from("project-files")
-    .upload(storagePath, bytes, { contentType: file.type });
+    .createSignedUploadUrl(storagePath);
 
-  if (storageError) return { error: storageError.message };
+  if (error || !data) return { error: error?.message ?? "Could not create upload URL." };
+  return { uploadUrl: data.signedUrl, storagePath };
+}
 
-  const { error: dbError } = await supabase.from("project_files").insert({
+// Step 2: save metadata to DB after the browser has finished the direct upload.
+export async function saveFileMetadata(
+  orgId: string,
+  projectId: string,
+  storagePath: string,
+  fileName: string,
+  fileSize: number,
+  mimeType: string,
+  uploadedBy: string,
+): Promise<{ error?: string }> {
+  const { error } = await supabase.from("project_files").insert({
     org_id:       orgId,
     project_id:   projectId,
     storage_path: storagePath,
-    file_name:    file.name,
-    file_size:    file.size,
-    mime_type:    file.type,
+    file_name:    fileName,
+    file_size:    fileSize,
+    mime_type:    mimeType,
     uploaded_by:  uploadedBy,
   });
 
-  if (dbError) return { error: dbError.message };
+  if (error) return { error: error.message };
   return {};
 }
 

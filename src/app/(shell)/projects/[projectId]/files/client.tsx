@@ -7,7 +7,7 @@ import Link from "next/link";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { Card } from "@/components/ui/Card";
 import { useOrg } from "@/providers/OrgProvider";
-import { uploadProjectFile, getSignedFileUrl } from "@/lib/actions/project-files";
+import { createUploadUrl, saveFileMetadata, getSignedFileUrl } from "@/lib/actions/project-files";
 import type { ProjectFile } from "@/types/domain";
 
 interface ProjectFilesClientProps {
@@ -69,20 +69,38 @@ export function ProjectFilesClient({ projectId, orgId, initialFiles }: ProjectFi
     }
 
     const uploadedBy = currentUser?.name ?? "Unknown";
-    const formData   = new FormData();
-    formData.append("file",       file);
-    formData.append("projectId",  projectId);
-    formData.append("orgId",      orgId);
-    formData.append("uploadedBy", uploadedBy);
 
     startTransition(async () => {
       try {
-        const result = await uploadProjectFile(formData);
-        if (result?.error) {
-          setError(result.error);
-        } else {
-          router.refresh();
+        // Step 1: get a signed upload URL (tiny server action — no file body)
+        const urlResult = await createUploadUrl(orgId, projectId, file.name);
+        if (urlResult.error || !urlResult.uploadUrl || !urlResult.storagePath) {
+          setError(urlResult.error ?? "Could not prepare upload.");
+          return;
         }
+
+        // Step 2: upload directly from browser to Supabase — bypasses Next.js entirely
+        const uploadRes = await fetch(urlResult.uploadUrl, {
+          method:  "PUT",
+          body:    file,
+          headers: { "Content-Type": file.type },
+        });
+        if (!uploadRes.ok) {
+          setError("Upload failed. Please try again.");
+          return;
+        }
+
+        // Step 3: save metadata (tiny server action — no file body)
+        const metaResult = await saveFileMetadata(
+          orgId, projectId, urlResult.storagePath,
+          file.name, file.size, file.type, uploadedBy,
+        );
+        if (metaResult.error) {
+          setError(metaResult.error);
+          return;
+        }
+
+        router.refresh();
       } finally {
         e.target.value = "";
       }
