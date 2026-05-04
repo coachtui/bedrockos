@@ -16,6 +16,8 @@ export const REQUEST_TRANSITIONS: Record<RequestStatus, RequestStatus[]> = {
   pending:  ["approved"],
   approved: ["assigned"],
   assigned: [],
+  open:     ["closed"],
+  closed:   [],
 };
 
 // ── Requests ──────────────────────────────────────────────────────────────────

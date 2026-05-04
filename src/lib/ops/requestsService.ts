@@ -12,50 +12,61 @@
 
 import type { Request } from "./types";
 
-const STORAGE_KEY = "aigacp:ops:requests";
+const STORAGE_KEY = "aigacp:ops:requests:v2";
 
 // ── Seed data ─────────────────────────────────────────────────────────────────
 
 const SEED_REQUESTS: Request[] = [
-  // Manual requests (not pour-linked)
+  // ── New-model dispatch requests ─────────────────────────────────────────
   {
     id:          "req_001",
-    type:        "mason",
+    type:        "manpower",
+    trade:       "laborer",
+    quantity:    3,
     jobsite:     "Highland Tower — Phase 2",
-    dateNeeded:  "2026-04-14",
-    notes:       "Need 4 masons for block wall on Level 8.",
-    status:      "pending",
+    dateNeeded:  "2026-05-06",
+    notes:       "Need 3 laborers for slab prep on Level 9.",
+    status:      "open",
     requestedBy: "Dan Ortega",
   },
   {
     id:          "req_002",
-    type:        "pump_truck",
-    jobsite:     "Riverside District Parking",
-    dateNeeded:  "2026-04-12",
-    notes:       "60m boom required for deck pour — Level 3.",
-    status:      "approved",
-    requestedBy: "Sarah Kim",
+    type:        "manpower",
+    trade:       "operator",
+    quantity:    1,
+    jobsite:     "Highland Tower — Phase 2",
+    dateNeeded:  "2026-05-07",
+    notes:       "Tower crane operator needed — current operator OT maxed out.",
+    status:      "open",
+    requestedBy: "Dan Ortega",
   },
   {
     id:          "req_003",
     type:        "equipment",
+    equipmentType: "Compact Excavator",
+    quantity:    1,
     jobsite:     "Eastside Medical Campus",
-    dateNeeded:  "2026-04-13",
-    notes:       "Compact excavator for utility trench near Building B.",
-    status:      "pending",
+    dateNeeded:  "2026-05-05",
+    notes:       "Utility trench near Building B — compact only, tight access.",
+    status:      "open",
     requestedBy: "Jake Powell",
   },
   {
     id:          "req_004",
-    type:        "mason",
-    jobsite:     "Eastside Medical Campus",
-    dateNeeded:  "2026-04-15",
-    notes:       "2 masons for stone veneer installation — lobby.",
-    status:      "assigned",
-    requestedBy: "Jake Powell",
+    type:        "manpower",
+    trade:       "finisher",
+    quantity:    2,
+    jobsite:     "Riverside District Parking",
+    dateNeeded:  "2026-05-04",
+    notes:       "Concrete finishers for Level 3 deck.",
+    status:      "closed",
+    requestedBy: "Sarah Kim",
+    assignedTo:  "Marco Reyes, Luis Torres",
+    assignedFrom: "Eastside Medical Campus",
+    assignedAt:  "2026-05-03T14:22:00Z",
+    assignedBy:  "Marcus Webb",
   },
-  // Auto-generated on approval of pour_001 (seed pour, pre-approved).
-  // Mirrors what approvePour() would have created if the pour was approved via UI.
+  // ── Pour-linked requests (legacy model — managed by pour schedule) ──────
   {
     id:                  "req_pour_001_pump",
     type:                "pump_truck",

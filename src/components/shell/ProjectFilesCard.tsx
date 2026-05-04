@@ -3,10 +3,10 @@
 import React, { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, FileText, Image, Sheet, FileType } from "lucide-react";
+import { ChevronRight, FileText, Image, Sheet, FileType, Pencil } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { useOrg } from "@/providers/OrgProvider";
-import { createUploadUrl, saveFileMetadata, getSignedFileUrl } from "@/lib/actions/project-files";
+import { createUploadUrl, saveFileMetadata, getSignedFileUrl, renameProjectFile } from "@/lib/actions/project-files";
 import type { ProjectFile } from "@/types/domain";
 
 interface ProjectFilesCardProps {
@@ -31,8 +31,10 @@ export function ProjectFilesCard({ projectId, orgId, files }: ProjectFilesCardPr
   const { currentUser } = useOrg();
   const router          = useRouter();
   const inputRef        = useRef<HTMLInputElement>(null);
-  const [error, setError]         = useState<string | null>(null);
-  const [opening, setOpening]     = useState<string | null>(null);
+  const [error, setError]           = useState<string | null>(null);
+  const [opening, setOpening]       = useState<string | null>(null);
+  const [editingId, setEditingId]   = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
   const [isPending, startTransition] = useTransition();
 
   const recent = files.slice(0, 3);
@@ -88,6 +90,16 @@ export function ProjectFilesCard({ projectId, orgId, files }: ProjectFilesCardPr
     });
   }
 
+  async function handleRename(fileId: string) {
+    const trimmed = editingName.trim();
+    setEditingId(null);
+    setEditingName("");
+    if (!trimmed) return;
+    const result = await renameProjectFile(fileId, trimmed);
+    if (result.error) setError(result.error);
+    else router.refresh();
+  }
+
   async function handleOpenFile(file: ProjectFile) {
     setOpening(file.id);
     const result = await getSignedFileUrl(file.storagePath);
@@ -120,20 +132,48 @@ export function ProjectFilesCard({ projectId, orgId, files }: ProjectFilesCardPr
           </div>
         ) : (
           recent.map((f) => (
-            <button
-              key={f.id}
-              onClick={() => handleOpenFile(f)}
-              disabled={opening === f.id}
-              className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-surface-hover transition-colors text-left disabled:opacity-50"
-            >
-              {fileIcon(f.mimeType)}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-content-primary truncate">{f.fileName}</p>
-                <p className="text-[11px] text-content-muted">
-                  {formatDate(f.uploadedAt)} · {f.uploadedBy}
-                </p>
+            editingId === f.id ? (
+              <div key={f.id} className="flex items-center gap-2 px-2 py-1.5">
+                {fileIcon(f.mimeType)}
+                <input
+                  autoFocus
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleRename(f.id);
+                    if (e.key === "Escape") { setEditingId(null); setEditingName(""); }
+                  }}
+                  onBlur={() => handleRename(f.id)}
+                  className="flex-1 text-sm bg-transparent border border-gold/50 rounded px-1.5 py-0.5 text-content-primary outline-none min-w-0"
+                />
               </div>
-            </button>
+            ) : (
+              <div
+                key={f.id}
+                className="group flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-surface-hover transition-colors"
+              >
+                <button
+                  onClick={() => handleOpenFile(f)}
+                  disabled={opening === f.id}
+                  className="flex-1 flex items-center gap-2.5 text-left min-w-0 disabled:opacity-50"
+                >
+                  {fileIcon(f.mimeType)}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-content-primary truncate">{f.fileName}</p>
+                    <p className="text-[11px] text-content-muted">
+                      {formatDate(f.uploadedAt)} · {f.uploadedBy}
+                    </p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => { setEditingId(f.id); setEditingName(f.fileName); }}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-surface-active text-content-muted"
+                  aria-label={`Rename ${f.fileName}`}
+                >
+                  <Pencil size={11} />
+                </button>
+              </div>
+            )
           ))
         )}
 

@@ -84,3 +84,19 @@ export async function deleteProjectFile(
   if (dbError) return { error: dbError.message };
   return {};
 }
+
+export async function renameProjectFile(
+  fileId: string,
+  newName: string,
+): Promise<{ error?: string }> {
+  const trimmed = newName.trim();
+  if (!trimmed) return { error: "File name cannot be empty." };
+
+  const { error } = await supabase
+    .from("project_files")
+    .update({ file_name: trimmed })
+    .eq("id", fileId);
+
+  if (error) return { error: error.message };
+  return {};
+}

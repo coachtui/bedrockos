@@ -2,12 +2,12 @@
 
 import React, { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, FileText, Image, Sheet, FileType, Download } from "lucide-react";
+import { ArrowLeft, FileText, Image, Sheet, FileType, Download, Pencil } from "lucide-react";
 import Link from "next/link";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { Card } from "@/components/ui/Card";
 import { useOrg } from "@/providers/OrgProvider";
-import { createUploadUrl, saveFileMetadata, getSignedFileUrl } from "@/lib/actions/project-files";
+import { createUploadUrl, saveFileMetadata, getSignedFileUrl, renameProjectFile } from "@/lib/actions/project-files";
 import type { ProjectFile } from "@/types/domain";
 
 interface ProjectFilesClientProps {
@@ -52,9 +52,12 @@ export function ProjectFilesClient({ projectId, orgId, initialFiles }: ProjectFi
   const [sort, setSort]   = useState<SortOrder>("date");
   const [error, setError] = useState<string | null>(null);
   const [opening, setOpening] = useState<string | null>(null);
+  const [localFiles, setLocalFiles] = useState<ProjectFile[]>(initialFiles);
+  const [editingId, setEditingId]   = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
   const [isPending, startTransition] = useTransition();
 
-  const sorted = sortFiles(initialFiles, sort);
+  const sorted = sortFiles(localFiles, sort);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -116,6 +119,19 @@ export function ProjectFilesClient({ projectId, orgId, initialFiles }: ProjectFi
       return;
     }
     window.open(result.url, "_blank");
+  }
+
+  async function handleRename(fileId: string) {
+    const trimmed = editingName.trim();
+    setEditingId(null);
+    setEditingName("");
+    if (!trimmed) return;
+    setLocalFiles((prev) => prev.map((f) => f.id === fileId ? { ...f, fileName: trimmed } : f));
+    const result = await renameProjectFile(fileId, trimmed);
+    if (result.error) {
+      setError(result.error);
+      router.refresh();
+    }
   }
 
   async function handleDownloadFile(e: React.MouseEvent, f: ProjectFile) {
@@ -202,30 +218,57 @@ export function ProjectFilesClient({ projectId, orgId, initialFiles }: ProjectFi
         ) : (
           <div className="divide-y divide-surface-border">
             {sorted.map((f) => (
-              <div
-                key={f.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => handleOpenFile(f)}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleOpenFile(f); }}
-                aria-disabled={opening === f.id}
-                className={`flex items-center gap-4 px-5 py-3.5 hover:bg-surface-hover transition-colors cursor-pointer group ${opening === f.id ? "opacity-50 pointer-events-none" : ""}`}
-              >
-                {fileIcon(f.mimeType)}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-content-primary truncate">{f.fileName}</p>
-                  <p className="text-xs text-content-muted mt-0.5">
-                    {formatFileSize(f.fileSize)} · Uploaded {formatDate(f.uploadedAt)} by {f.uploadedBy}
+              editingId === f.id ? (
+                <div key={f.id} className="flex items-center gap-3 px-5 py-3.5 border-b border-surface-border last:border-0">
+                  {fileIcon(f.mimeType)}
+                  <input
+                    autoFocus
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleRename(f.id);
+                      if (e.key === "Escape") { setEditingId(null); setEditingName(""); }
+                    }}
+                    onBlur={() => handleRename(f.id)}
+                    className="flex-1 text-sm bg-transparent border border-gold/50 rounded px-2 py-1 text-content-primary outline-none min-w-0"
+                  />
+                  <p className="text-xs text-content-muted whitespace-nowrap">
+                    {formatFileSize(f.fileSize)}
                   </p>
                 </div>
-                <button
-                  onClick={(e) => handleDownloadFile(e, f)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-surface-active text-content-muted"
-                  aria-label={`Download ${f.fileName}`}
+              ) : (
+                <div
+                  key={f.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleOpenFile(f)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleOpenFile(f); }}
+                  aria-disabled={opening === f.id}
+                  className={`flex items-center gap-4 px-5 py-3.5 hover:bg-surface-hover transition-colors cursor-pointer group ${opening === f.id ? "opacity-50 pointer-events-none" : ""}`}
                 >
-                  <Download size={13} />
-                </button>
-              </div>
+                  {fileIcon(f.mimeType)}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-content-primary truncate">{f.fileName}</p>
+                    <p className="text-xs text-content-muted mt-0.5">
+                      {formatFileSize(f.fileSize)} · Uploaded {formatDate(f.uploadedAt)} by {f.uploadedBy}
+                    </p>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setEditingId(f.id); setEditingName(f.fileName); }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-surface-active text-content-muted"
+                    aria-label={`Rename ${f.fileName}`}
+                  >
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    onClick={(e) => handleDownloadFile(e, f)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-surface-active text-content-muted"
+                    aria-label={`Download ${f.fileName}`}
+                  >
+                    <Download size={13} />
+                  </button>
+                </div>
+              )
             ))}
           </div>
         )}

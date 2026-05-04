@@ -32,6 +32,8 @@ const REQUEST_TRANSITIONS: Record<RequestStatus, RequestStatus[]> = {
   pending:  ["approved"],
   approved: ["assigned"],
   assigned: [],
+  open:     ["closed"],
+  closed:   [],
 };
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -43,6 +45,13 @@ interface OpsState {
 
 type WorkerInput = { id: string; label: string; role?: string };
 
+export interface DispatchAssignment {
+  assignedTo?:         string;
+  assignedFrom?:       string;
+  assignedFromCustom?: string;
+  assignedBy?:         string;
+}
+
 type OpsAction =
   | { type: "INIT_REQUESTS";   requests: OpsRequest[] }
   | { type: "APPROVE_REQUEST"; id: string }
@@ -51,7 +60,7 @@ type OpsAction =
       id:                   string;
       worker?:              WorkerInput;
       linkedMxWorkOrderId?: string;
-    }
+    } & DispatchAssignment
   | { type: "CREATE_REQUEST"; request: OpsRequest }
   // Pour actions — state update only; service already persisted before dispatch
   | { type: "INIT_POURS";  pours: PourEvent[] }
@@ -79,17 +88,27 @@ function opsReducer(state: OpsState, action: OpsAction): OpsState {
 
     case "ASSIGN_REQUEST": {
       const req = state.requests.find((r) => r.id === action.id);
-      if (!req || !REQUEST_TRANSITIONS[req.status].includes("assigned")) return state;
+      if (!req) return state;
+
+      const newStatus: RequestStatus = (req.status === "open") ? "closed" : "assigned";
+      if (!(REQUEST_TRANSITIONS[req.status] ?? []).includes(newStatus)) return state;
 
       const { worker, linkedMxWorkOrderId } = action;
 
       const updatedReq: OpsRequest = {
         ...req,
-        status:               "assigned",
-        assignedToId:         worker?.id,
-        assignedToLabel:      worker?.label ?? "TBD",
-        assignedToRole:       worker?.role,
+        status:              newStatus,
+        // Legacy CRU fields (pour-linked flow)
+        assignedToId:        worker?.id,
+        assignedToLabel:     worker?.label ?? action.assignedTo ?? "TBD",
+        assignedToRole:      worker?.role,
         linkedMxWorkOrderId,
+        // Dispatch fields (new flow)
+        assignedTo:          action.assignedTo ?? worker?.label,
+        assignedFrom:        action.assignedFrom,
+        assignedFromCustom:  action.assignedFromCustom,
+        assignedAt:          new Date().toISOString(),
+        assignedBy:          action.assignedBy,
       };
 
       return {
@@ -136,7 +155,7 @@ interface OpsContextValue {
    * This creates a MX work order (via the injected callback) and stores the
    * returned WO id as linkedMxWorkOrderId on the request.
    */
-  assignRequest:         (id: string, worker?: WorkerInput) => void;
+  assignRequest:         (id: string, worker?: WorkerInput, opts?: DispatchAssignment) => void;
   createRequest:         (data: Omit<OpsRequest, "id">) => void;
   // Pours
   pours:                 PourEvent[];
@@ -180,27 +199,34 @@ export function OpsProvider({ children, onCreateMxWorkOrder }: OpsProviderProps)
     dispatch({ type: "APPROVE_REQUEST", id });
   }
 
-  function assignRequest(id: string, worker?: WorkerInput): void {
+  function assignRequest(id: string, worker?: WorkerInput, opts?: DispatchAssignment): void {
     const req = state.requests.find((r) => r.id === id);
     if (!req) return;
 
-    // Delegate work order creation to MX — MX is the single source of truth.
-    const wo = onCreateMxWorkOrder({
-      title:            `Dispatch: ${req.type.replace("_", " ")} — ${req.jobsite}`,
-      category:         "corrective",
-      priority:         "medium",
-      requestedBy:      req.requestedBy ?? "OPS",
-      requestedDate:    new Date().toISOString().split("T")[0],
-      neededByDate:     req.dateNeeded,
-      readinessImpact:  null,
-      opsBlocking:      false,
-    });
+    let linkedMxWorkOrderId: string | undefined;
+
+    // Only create an MX work order for the legacy CRU-linked flow (approved → assigned).
+    // New dispatch requests (open → closed) don't need MX work orders.
+    if (req.status === "approved") {
+      const wo = onCreateMxWorkOrder({
+        title:            `Dispatch: ${req.type.replace("_", " ")} — ${req.jobsite}`,
+        category:         "corrective",
+        priority:         "medium",
+        requestedBy:      req.requestedBy ?? "OPS",
+        requestedDate:    new Date().toISOString().split("T")[0],
+        neededByDate:     req.dateNeeded,
+        readinessImpact:  null,
+        opsBlocking:      false,
+      });
+      linkedMxWorkOrderId = wo.id;
+    }
 
     dispatch({
-      type:                 "ASSIGN_REQUEST",
+      type:                "ASSIGN_REQUEST",
       id,
       worker,
-      linkedMxWorkOrderId:  wo.id,
+      linkedMxWorkOrderId,
+      ...opts,
     });
   }
 
