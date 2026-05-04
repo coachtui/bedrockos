@@ -22,6 +22,8 @@ import { FixLaunchButton } from "@/components/modules/fix/FixLaunchButton";
 import type { ActivityEvent, Issue, Alert } from "@/types/domain";
 import { ScheduleTab } from "@/components/schedule/ScheduleTab";
 import { ProjectCXCard } from "@/components/shell/ProjectCXCard";
+import { ProjectFilesCard } from "@/components/shell/ProjectFilesCard";
+import type { ProjectFile } from "@/types/domain";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -337,7 +339,13 @@ function ActivitySection({ events }: { events: ActivityEvent[] }) {
 
 // ── main client component ─────────────────────────────────────────────────────
 
-export function ProjectCommandCenterClient({ projectId }: { projectId: string }) {
+interface ProjectCommandCenterClientProps {
+  projectId:    string;
+  orgId:        string;
+  initialFiles: ProjectFile[];
+}
+
+export function ProjectCommandCenterClient({ projectId, orgId, initialFiles }: ProjectCommandCenterClientProps) {
   const { role, projects, setCurrentProject, issues, alerts, activity } = useOrg();
   const [activeTab, setActiveTab] = useState<"overview" | "schedule">("overview");
   const [editOpen, setEditOpen] = useState(false);
@@ -548,6 +556,9 @@ export function ProjectCommandCenterClient({ projectId }: { projectId: string })
 
               {/* CX Summary */}
               <ProjectCXCard projectId={projectId} />
+
+              {/* Project Files */}
+              <ProjectFilesCard projectId={projectId} orgId={orgId} files={initialFiles} />
 
               {/* Project Snapshot — de-emphasize for field/maintenance */}
               <Card
