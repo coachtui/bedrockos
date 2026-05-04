@@ -173,3 +173,15 @@ export interface CreateWorkerInput {
   role:   WorkerRole;
   skills: string[];
 }
+
+export interface ProjectFile {
+  id:          string;
+  orgId:       string;
+  projectId:   string;
+  storagePath: string;
+  fileName:    string;
+  fileSize:    number;    // bytes
+  mimeType:    string;
+  uploadedBy:  string;   // display name
+  uploadedAt:  string;   // ISO 8601 string
+}
