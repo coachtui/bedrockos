@@ -23,17 +23,15 @@ interface CsvImportModalProps {
 }
 
 const FIELD_ORDER: Array<keyof ColumnMapping> = [
-  "name", "externalId", "type", "startDate", "endDate", "location", "status", "notes",
+  "activityId", "activityName", "start", "finish",
+  "originalDuration", "remainingDuration", "predecessors", "successors",
 ];
 
 export function CsvImportModal({ open, onClose, projectId, onImport }: CsvImportModalProps) {
   const [step,    setStep]    = useState<Step>("upload");
   const [headers, setHeaders] = useState<string[]>([]);
   const [rows,    setRows]    = useState<string[][]>([]);
-  const [mapping, setMapping] = useState<ColumnMapping>({
-    name: null, type: null, startDate: null, endDate: null,
-    location: null, status: null, notes: null, externalId: null,
-  });
+  const [mapping, setMapping] = useState<ColumnMapping>({ ...EMPTY_MAPPING });
   const [preview, setPreview] = useState<CreateCxTaskInput[]>([]);
   const [error,   setError]   = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -82,7 +80,7 @@ export function CsvImportModal({ open, onClose, projectId, onImport }: CsvImport
   }
 
   function goToPreview() {
-    if (mapping.name === null) { setError("You must map the Task Name column."); return; }
+    if (mapping.activityName === null) { setError("You must map the Activity Name column."); return; }
     setError(null);
     setPreview(mapRowsToTasks(rows, mapping, projectId));
     setStep("preview");
@@ -132,7 +130,7 @@ export function CsvImportModal({ open, onClose, projectId, onImport }: CsvImport
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted mb-2">Expected Columns</p>
                 <div className="bg-surface-overlay rounded-lg border border-surface-border px-3 py-2 font-mono text-[10px] text-content-muted">
-                  task_id, name, type, start_date, end_date, location, status, notes
+                  activity_id, activity_name, start, finish, original_duration, remaining_duration, predecessors, successors
                 </div>
                 <p className="text-[10px] text-content-muted mt-1.5">
                   Column order doesn&apos;t matter — you&apos;ll map them in the next step.
@@ -175,7 +173,7 @@ export function CsvImportModal({ open, onClose, projectId, onImport }: CsvImport
                   <div key={field}>
                     <label className={labelClass}>
                       {FIELD_LABELS[field]}
-                      {field === "name" && <span className="text-red-400 ml-1">*</span>}
+                      {field === "activityName" && <span className="text-red-400 ml-1">*</span>}
                     </label>
                     <select
                       className={fieldClass}
@@ -209,24 +207,31 @@ export function CsvImportModal({ open, onClose, projectId, onImport }: CsvImport
                 <table className="w-full text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-surface-border">
-                      <th className="text-left text-[10px] font-bold uppercase tracking-widest text-content-muted pb-2 pr-3">Name</th>
-                      <th className="text-left text-[10px] font-bold uppercase tracking-widest text-content-muted pb-2 pr-3">Type</th>
-                      <th className="text-left text-[10px] font-bold uppercase tracking-widest text-content-muted pb-2 pr-3">Dates</th>
-                      <th className="text-left text-[10px] font-bold uppercase tracking-widest text-content-muted pb-2">ID</th>
+                      <th className="text-left text-[10px] font-bold uppercase tracking-widest text-content-muted pb-2 pr-3">ID</th>
+                      <th className="text-left text-[10px] font-bold uppercase tracking-widest text-content-muted pb-2 pr-3">Activity Name</th>
+                      <th className="text-left text-[10px] font-bold uppercase tracking-widest text-content-muted pb-2 pr-3">Start → Finish</th>
+                      <th className="text-left text-[10px] font-bold uppercase tracking-widest text-content-muted pb-2 pr-3">OD</th>
+                      <th className="text-left text-[10px] font-bold uppercase tracking-widest text-content-muted pb-2">Links</th>
                     </tr>
                   </thead>
                   <tbody>
                     {preview.map((t, i) => (
                       <tr key={i} className="border-b border-surface-border last:border-0">
+                        <td className="py-2 pr-3 text-content-muted font-mono">{t.externalId ?? "—"}</td>
                         <td className="py-2 pr-3 font-medium text-content-primary">{t.name}</td>
-                        <td className="py-2 pr-3 text-content-muted capitalize">{t.type}</td>
                         <td className="py-2 pr-3">
                           {t.startDate
-                            ? <span className="text-content-primary">{t.startDate}{t.endDate !== t.startDate ? ` → ${t.endDate}` : ""}</span>
+                            ? <span className="text-content-primary">{t.startDate}{t.endDate && t.endDate !== t.startDate ? ` → ${t.endDate}` : ""}</span>
                             : <span className="text-amber-400 font-semibold">Draft</span>
                           }
                         </td>
-                        <td className="py-2 text-content-muted font-mono">{t.externalId ?? "—"}</td>
+                        <td className="py-2 pr-3 text-content-muted">{t.originalDuration != null ? `${t.originalDuration}d` : "—"}</td>
+                        <td className="py-2 text-content-muted">
+                          {t.predecessors.length > 0 && <span className="text-content-secondary">↑{t.predecessors.length}</span>}
+                          {t.predecessors.length > 0 && t.successors.length > 0 && " "}
+                          {t.successors.length > 0 && <span className="text-content-secondary">↓{t.successors.length}</span>}
+                          {t.predecessors.length === 0 && t.successors.length === 0 && "—"}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

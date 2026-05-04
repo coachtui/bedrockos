@@ -39,7 +39,7 @@ export async function fetchOrgTasks(orgId: string): Promise<CxTask[]> {
     const { data, error } = await supabase
       .from("cx_tasks")
       .select(
-        "id, project_id, name, type, start_date, end_date, location, status, crew_requirements, assigned_worker_ids, notes, external_id"
+        "id, project_id, name, type, start_date, end_date, location, status, crew_requirements, assigned_worker_ids, notes, external_id, original_duration, remaining_duration, predecessors, successors"
       )
       .eq("org_id", orgId)
       .order("created_at", { ascending: true });
@@ -63,6 +63,10 @@ export async function fetchOrgTasks(orgId: string): Promise<CxTask[]> {
         : [],
       notes: row.notes ?? undefined,
       externalId: row.external_id ?? undefined,
+      originalDuration: row.original_duration ?? undefined,
+      remainingDuration: row.remaining_duration ?? undefined,
+      predecessors: Array.isArray(row.predecessors) ? row.predecessors : [],
+      successors: Array.isArray(row.successors) ? row.successors : [],
     }));
   } catch {
     return [];

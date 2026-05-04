@@ -1,36 +1,31 @@
-import type { CreateCxTaskInput, CxTaskType, CxTaskStatus } from "./types";
+import type { CreateCxTaskInput, CxTaskStatus } from "./types";
 
 export interface ColumnMapping {
-  name:        number | null;
-  type:        number | null;
-  startDate:   number | null;
-  endDate:     number | null;
-  location:    number | null;
-  status:      number | null;
-  notes:       number | null;
-  externalId:  number | null;
+  activityId:        number | null;
+  activityName:      number | null;
+  start:             number | null;
+  finish:            number | null;
+  originalDuration:  number | null;
+  remainingDuration: number | null;
+  predecessors:      number | null;
+  successors:        number | null;
 }
 
 export const EMPTY_MAPPING: ColumnMapping = {
-  name: null, type: null, startDate: null, endDate: null,
-  location: null, status: null, notes: null, externalId: null,
+  activityId: null, activityName: null, start: null, finish: null,
+  originalDuration: null, remainingDuration: null, predecessors: null, successors: null,
 };
 
 export const FIELD_LABELS: Record<keyof ColumnMapping, string> = {
-  name:       "Task Name",
-  type:       "Type",
-  startDate:  "Start Date",
-  endDate:    "End Date",
-  location:   "Location",
-  status:     "Status",
-  notes:      "Notes",
-  externalId: "Task ID",
+  activityId:        "Activity ID",
+  activityName:      "Activity Name",
+  start:             "Start",
+  finish:            "Finish",
+  originalDuration:  "Original Duration",
+  remainingDuration: "Remaining Duration",
+  predecessors:      "Predecessors",
+  successors:        "Successors",
 };
-
-const TASK_TYPE_VALUES = new Set<CxTaskType>([
-  "pour", "inspection", "delivery", "grading", "concrete", "framing",
-  "electrical", "excavation", "utility", "paving", "demolition", "other",
-]);
 
 const STATUS_VALUES = new Set<CxTaskStatus>([
   "not_started", "in_progress", "on_hold", "complete",
@@ -67,14 +62,14 @@ export function parseCSVText(text: string): { headers: string[]; rows: string[][
 export function detectMapping(headers: string[]): ColumnMapping {
   const mapping: ColumnMapping = { ...EMPTY_MAPPING };
   const patterns: Record<keyof ColumnMapping, RegExp> = {
-    name:       /name|task.?name|description|title/i,
-    type:       /type|task.?type|work.?type|category/i,
-    startDate:  /start.?date|start|begin|from/i,
-    endDate:    /end.?date|end|finish|to/i,
-    location:   /location|loc|area|zone|grid/i,
-    status:     /status/i,
-    notes:      /notes?|comments?|remarks?/i,
-    externalId: /task.?id|id|ref|reference|ext/i,
+    activityId:        /activity.?id|act.?id|wbs|task.?id|id/i,
+    activityName:      /activity.?name|act.?name|name|description|task.?name|title/i,
+    start:             /start.?date|start|begin|es|early.?start/i,
+    finish:            /finish.?date|finish|end|ef|early.?finish/i,
+    originalDuration:  /orig.?dur|original.?dur|od|planned.?dur|baseline.?dur/i,
+    remainingDuration: /rem.?dur|remaining.?dur|rd/i,
+    predecessors:      /pred|predecessor/i,
+    successors:        /succ|successor/i,
   };
   headers.forEach((h, i) => {
     (Object.keys(patterns) as Array<keyof ColumnMapping>).forEach((field) => {
@@ -84,19 +79,6 @@ export function detectMapping(headers: string[]): ColumnMapping {
     });
   });
   return mapping;
-}
-
-function coerceType(raw: string): CxTaskType {
-  const normalized = raw.toLowerCase().replace(/\s+/g, "_").replace(/-/g, "_");
-  if (TASK_TYPE_VALUES.has(normalized as CxTaskType)) return normalized as CxTaskType;
-  const typeMap: Record<string, CxTaskType> = {
-    concrete_work: "concrete",
-    utility_work:  "utility",
-    site_work:     "grading",
-    demo:          "demolition",
-    elec:          "electrical",
-  };
-  return typeMap[normalized] ?? "other";
 }
 
 function coerceStatus(raw: string): CxTaskStatus {
@@ -120,7 +102,29 @@ function coerceDate(raw: string): string | undefined {
     const [, m, d, y] = mdy;
     return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
   }
+  // Handle "DD-MMM-YY" or "DD-MMM-YYYY" (common P6 export format)
+  const p6 = raw.match(/^(\d{1,2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{2,4})$/i);
+  if (p6) {
+    const monthMap: Record<string, string> = {
+      jan:"01",feb:"02",mar:"03",apr:"04",may:"05",jun:"06",
+      jul:"07",aug:"08",sep:"09",oct:"10",nov:"11",dec:"12",
+    };
+    const [, d, mon, y] = p6;
+    const year = y.length === 2 ? `20${y}` : y;
+    return `${year}-${monthMap[mon.toLowerCase()]}-${d.padStart(2, "0")}`;
+  }
   return undefined;
+}
+
+function parseDependencies(raw: string): string[] {
+  if (!raw.trim()) return [];
+  return raw.split(/[,;]+/).map((s) => s.trim()).filter(Boolean);
+}
+
+function parseDuration(raw: string): number | undefined {
+  if (!raw.trim()) return undefined;
+  const n = parseInt(raw.replace(/[^0-9]/g, ""), 10);
+  return isNaN(n) ? undefined : n;
 }
 
 export function mapRowsToTasks(
@@ -130,29 +134,36 @@ export function mapRowsToTasks(
 ): CreateCxTaskInput[] {
   return rows
     .filter((row) => {
-      const nameIdx = mapping.name;
+      const nameIdx = mapping.activityName;
       return nameIdx !== null && row[nameIdx]?.trim();
     })
     .map((row) => {
       const get = (idx: number | null) => (idx !== null ? (row[idx] ?? "") : "");
       return {
         projectId,
-        name:              get(mapping.name).trim(),
-        type:              mapping.type   !== null ? coerceType(get(mapping.type))     : "other",
-        startDate:         coerceDate(get(mapping.startDate)),
-        endDate:           coerceDate(get(mapping.endDate)),
-        location:          get(mapping.location).trim()   || undefined,
-        status:            mapping.status !== null ? coerceStatus(get(mapping.status)) : "not_started",
-        notes:             get(mapping.notes).trim()      || undefined,
-        externalId:        get(mapping.externalId).trim() || undefined,
+        name:              get(mapping.activityName).trim(),
+        type:              "other" as const,
+        startDate:         coerceDate(get(mapping.start)),
+        endDate:           coerceDate(get(mapping.finish)),
+        status:            "not_started" as const,
         crewRequirements:  [],
         assignedWorkerIds: [],
+        externalId:        get(mapping.activityId).trim()  || undefined,
+        originalDuration:  parseDuration(get(mapping.originalDuration)),
+        remainingDuration: parseDuration(get(mapping.remainingDuration)),
+        predecessors:      parseDependencies(get(mapping.predecessors)),
+        successors:        parseDependencies(get(mapping.successors)),
       };
     });
 }
 
 export const CSV_TEMPLATE_HEADER =
-  "task_id,name,type,start_date,end_date,location,status,notes";
+  "activity_id,activity_name,start,finish,original_duration,remaining_duration,predecessors,successors";
 
 export const CSV_TEMPLATE_EXAMPLE =
-  `${CSV_TEMPLATE_HEADER}\nTK-001,North Wall Pour,pour,2026-05-15,2026-05-15,Grid B-4,not_started,\nTK-002,Foundation Inspection,inspection,,,South Wing,not_started,\nTK-003,Utility Trenching,utility,2026-05-20,2026-05-24,Zone C,,Coordinate with city inspector`;
+  `${CSV_TEMPLATE_HEADER}
+A1000,Mobilization,2026-05-01,2026-05-03,3,3,,A1010
+A1010,Excavation - Zone A,2026-05-04,2026-05-10,5,5,A1000,A1020;A1030
+A1020,Footing Formwork,2026-05-11,2026-05-13,3,3,A1010,A1040
+A1030,Underground Utilities,2026-05-11,2026-05-17,5,5,A1010,A1040
+A1040,Concrete Pour - Footings,2026-05-18,2026-05-18,1,1,A1020;A1030,`;

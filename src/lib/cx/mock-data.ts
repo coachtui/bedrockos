@@ -16,6 +16,7 @@ export const MOCK_CX_TASKS: CxTask[] = [
       { role: "operator", count: 1 },
     ],
     assignedWorkerIds: ["worker_008", "worker_009"],
+    predecessors: [], successors: [],
   },
   {
     id: "cx_task_002",
@@ -28,6 +29,7 @@ export const MOCK_CX_TASKS: CxTask[] = [
     status: "not_started",
     crewRequirements: [],
     assignedWorkerIds: [],
+    predecessors: [], successors: [],
   },
   {
     id: "cx_task_003",
@@ -43,6 +45,7 @@ export const MOCK_CX_TASKS: CxTask[] = [
       { role: "laborer", count: 4 },
     ],
     assignedWorkerIds: [],
+    predecessors: [], successors: [],
   },
   {
     id: "cx_task_004",
@@ -58,6 +61,7 @@ export const MOCK_CX_TASKS: CxTask[] = [
       { role: "laborer", count: 2 },
     ],
     assignedWorkerIds: [],
+    predecessors: [], successors: [],
   },
   {
     id: "cx_task_005",
@@ -72,6 +76,7 @@ export const MOCK_CX_TASKS: CxTask[] = [
       { role: "laborer", count: 2 },
     ],
     assignedWorkerIds: [],
+    predecessors: [], successors: [],
   },
 ];
 

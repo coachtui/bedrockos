@@ -167,6 +167,8 @@ export function TaskInspectorPanel({
       assignedWorkerIds: task?.assignedWorkerIds ?? [],
       notes:             notes.trim() || undefined,
       externalId:        externalId.trim() || undefined,
+      predecessors:      task?.predecessors ?? [],
+      successors:        task?.successors ?? [],
     });
     onClose();
   }

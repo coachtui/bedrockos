@@ -47,7 +47,11 @@ export interface CxTask {
   crewRequirements:   CxCrewRequirement[];
   assignedWorkerIds:  string[];
   notes?:             string;
-  externalId?:        string;   // ID from imported spreadsheet
+  externalId?:        string;   // Activity ID from imported schedule
+  originalDuration?:  number;   // planned duration in workdays
+  remainingDuration?: number;   // remaining duration in workdays
+  predecessors:       string[]; // activity IDs this task depends on
+  successors:         string[]; // activity IDs that depend on this task
 }
 
 export interface CxEvent {
@@ -80,4 +84,8 @@ export interface CreateCxTaskInput {
   assignedWorkerIds:  string[];
   notes?:             string;
   externalId?:        string;
+  originalDuration?:  number;
+  remainingDuration?: number;
+  predecessors:       string[];
+  successors:         string[];
 }
