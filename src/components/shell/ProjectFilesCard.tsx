@@ -58,13 +58,16 @@ export function ProjectFilesCard({ projectId, orgId, files }: ProjectFilesCardPr
     formData.append("uploadedBy", uploadedBy);
 
     startTransition(async () => {
-      const result = await uploadProjectFile(formData);
-      if (result?.error) {
-        setError(result.error);
-      } else {
-        router.refresh();
+      try {
+        const result = await uploadProjectFile(formData);
+        if (result?.error) {
+          setError(result.error);
+        } else {
+          router.refresh();
+        }
+      } finally {
+        e.target.value = "";
       }
-      e.target.value = "";
     });
   }
 
@@ -138,6 +141,7 @@ export function ProjectFilesCard({ projectId, orgId, files }: ProjectFilesCardPr
           ref={inputRef}
           type="file"
           className="hidden"
+          accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.xlsx,.xls,.csv,.doc,.docx,.txt"
           onChange={handleFileChange}
         />
       </div>

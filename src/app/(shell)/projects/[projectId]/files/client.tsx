@@ -76,13 +76,16 @@ export function ProjectFilesClient({ projectId, orgId, initialFiles }: ProjectFi
     formData.append("uploadedBy", uploadedBy);
 
     startTransition(async () => {
-      const result = await uploadProjectFile(formData);
-      if (result?.error) {
-        setError(result.error);
-      } else {
-        router.refresh();
+      try {
+        const result = await uploadProjectFile(formData);
+        if (result?.error) {
+          setError(result.error);
+        } else {
+          router.refresh();
+        }
+      } finally {
+        e.target.value = "";
       }
-      e.target.value = "";
     });
   }
 
@@ -126,7 +129,7 @@ export function ProjectFilesClient({ projectId, orgId, initialFiles }: ProjectFi
           <div>
             <h1 className="text-lg font-semibold text-content-primary">Project Files</h1>
             <p className="text-xs text-content-muted mt-0.5">
-              {initialFiles.length} file{initialFiles.length !== 1 ? "s" : ""}
+              {sorted.length} file{sorted.length !== 1 ? "s" : ""}
             </p>
           </div>
         </div>
@@ -139,7 +142,7 @@ export function ProjectFilesClient({ projectId, orgId, initialFiles }: ProjectFi
         </button>
       </div>
 
-      <input ref={inputRef} type="file" className="hidden" onChange={handleFileChange} />
+      <input ref={inputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.xlsx,.xls,.csv,.doc,.docx,.txt" onChange={handleFileChange} />
 
       {error && (
         <p className="text-sm text-red-400 mb-4">{error}</p>
