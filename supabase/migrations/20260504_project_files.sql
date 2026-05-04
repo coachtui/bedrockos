@@ -16,6 +16,6 @@ create index if not exists project_files_project_idx
 -- RLS: to be added when auth is introduced. Until then, all access
 -- is via the service-role client in server actions only.
 
-insert into storage.buckets (id, name, public)
-values ('project-files', 'project-files', false)
-on conflict (id) do nothing;
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('project-files', 'project-files', false, 104857600)
+on conflict (id) do update set file_size_limit = excluded.file_size_limit;
