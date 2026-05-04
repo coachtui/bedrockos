@@ -260,7 +260,7 @@ export function TaskInspectorPanel({
         {reqs.map((req, i) => (
           <div key={i} className="flex items-center gap-2 mt-2">
             <select
-              className={`${fieldClass} flex-1`}
+              className={`${fieldClass} flex-1 min-w-0`}
               value={req.role}
               onChange={(e) => updateReq(i, { role: e.target.value as WorkerRole })}
             >
@@ -272,7 +272,7 @@ export function TaskInspectorPanel({
               type="number"
               min={1}
               max={99}
-              className={`${fieldClass} w-16 text-center`}
+              className={`${fieldClass} !w-16 shrink-0 text-center`}
               value={req.count}
               onChange={(e) => updateReq(i, { count: Math.max(1, parseInt(e.target.value) || 1) })}
             />
