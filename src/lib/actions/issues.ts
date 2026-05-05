@@ -25,8 +25,35 @@ export async function serverInsertIssue(issue: Issue): Promise<void> {
     inspection_id:         issue.inspection_id ?? null,
     description:           issue.description ?? null,
     related_work_order_id: issue.related_work_order_id ?? null,
+    related_task_id:       issue.related_task_id ?? null,
+    photo_paths:           issue.photo_paths ?? [],
   });
   if (error) throwSupabaseWriteFailure(`serverInsertIssue(${issue.id})`, error);
+}
+
+export async function createIssuePhotoUploadUrl(
+  fileName: string,
+): Promise<{ uploadUrl?: string; storagePath?: string; error?: string }> {
+  const uuid        = crypto.randomUUID();
+  const safeName    = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const storagePath = `${ORG_ID}/inspect/${uuid}-${safeName}`;
+
+  const { data, error } = await supabase.storage
+    .from("project-files")
+    .createSignedUploadUrl(storagePath);
+
+  if (error || !data) return { error: error?.message ?? "Could not create upload URL." };
+  return { uploadUrl: data.signedUrl, storagePath };
+}
+
+export async function getIssuePhotoSignedUrl(
+  storagePath: string,
+): Promise<{ url?: string; error?: string }> {
+  const { data, error } = await supabase.storage
+    .from("project-files")
+    .createSignedUrl(storagePath, 60 * 60); // 1 hour
+  if (error || !data) return { error: "Could not generate photo link." };
+  return { url: data.signedUrl };
 }
 
 export async function serverSetIssueStatus(id: string, status: IssueStatus): Promise<void> {

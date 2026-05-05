@@ -7,6 +7,8 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { FixLaunchButton } from "@/components/modules/fix/FixLaunchButton";
 import { fetchOrgIssueById } from "@/lib/supabase/issues";
 import { fetchMxWorkOrderById } from "@/lib/supabase/mx-work-orders";
+import { fetchCxTaskById } from "@/lib/supabase/cx-tasks";
+import { getIssuePhotoSignedUrl } from "@/lib/actions/issues";
 import { IssueStatusButtons } from "@/components/shell/IssueStatusButtons";
 import { notFound } from "next/navigation";
 import type { ModuleId } from "@/types/org";
@@ -54,9 +56,14 @@ export default async function IssueDetailPage({ params }: { params: Params }) {
 
   if (!issue) notFound();
 
-  const linkedWo = issue.related_work_order_id
-    ? await fetchMxWorkOrderById(issue.related_work_order_id)
-    : null;
+  const [linkedWo, linkedTask, photoUrls] = await Promise.all([
+    issue.related_work_order_id ? fetchMxWorkOrderById(issue.related_work_order_id) : Promise.resolve(null),
+    issue.related_task_id       ? fetchCxTaskById(issue.related_task_id)            : Promise.resolve(null),
+    Promise.all((issue.photo_paths ?? []).map(async (path) => {
+      const result = await getIssuePhotoSignedUrl(path);
+      return { path, url: result.url ?? null };
+    })),
+  ]);
 
   const isFromInspect = issue.module === "inspect";
   const isFromFix     = issue.module === "fix";
@@ -97,6 +104,33 @@ export default async function IssueDetailPage({ params }: { params: Params }) {
             <Card variant="default">
               <p className="text-[11px] font-bold uppercase tracking-widest text-content-muted mb-3">Summary</p>
               <p className="text-sm text-content-secondary leading-relaxed">{issue.description}</p>
+            </Card>
+          )}
+
+          {/* Photos */}
+          {photoUrls.length > 0 && (
+            <Card variant="default">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-content-muted mb-3">Photos</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {photoUrls.map(({ path, url }) =>
+                  url ? (
+                    <a
+                      key={path}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block aspect-square overflow-hidden rounded-lg border border-surface-border hover:border-blue-brand/40 transition-colors"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt="Inspection photo" className="w-full h-full object-cover" />
+                    </a>
+                  ) : (
+                    <div key={path} className="aspect-square rounded-lg border border-surface-border bg-surface-overlay text-[10px] text-content-muted flex items-center justify-center">
+                      Unavailable
+                    </div>
+                  )
+                )}
+              </div>
             </Card>
           )}
 
@@ -159,6 +193,10 @@ export default async function IssueDetailPage({ params }: { params: Params }) {
                 { label: "Reported",    value: formatDate(issue.created_at)       },
                 { label: "Source",      value: MODULE_LABEL[issue.module]          },
                 { label: "Inspection",  value: issue.inspection_id ?? null         },
+                {
+                  label: "Linked Task",
+                  value: linkedTask ? linkedTask.name : null,
+                },
                 {
                   label: "Linked WO",
                   value: linkedWo

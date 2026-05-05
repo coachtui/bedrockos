@@ -42,6 +42,8 @@ export interface Issue {
   inspection_id?:          string;
   description?:            string;
   related_work_order_id?:  string;
+  related_task_id?:        string;
+  photo_paths?:            string[];
 }
 
 export interface Alert {

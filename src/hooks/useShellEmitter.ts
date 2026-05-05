@@ -12,6 +12,8 @@ export interface CreateIssueInput {
   assetId?:            string;
   description?:        string;
   relatedWorkOrderId?: string;
+  relatedTaskId?:      string;
+  photoPaths?:         string[];
 }
 
 export interface CreateActivityInput {
@@ -48,6 +50,8 @@ export function useShellEmitter() {
       asset_id:              input.assetId,
       description:           input.description,
       related_work_order_id: input.relatedWorkOrderId,
+      related_task_id:       input.relatedTaskId,
+      photo_paths:           input.photoPaths,
     });
     return id;
   }

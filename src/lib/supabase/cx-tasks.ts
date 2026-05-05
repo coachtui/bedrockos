@@ -35,6 +35,50 @@ function toTaskStatus(s: string): CxTaskStatus {
     : "not_started";
 }
 
+export async function fetchCxTaskById(id: string): Promise<CxTask | null> {
+  try {
+    const { data, error } = await supabase
+      .from("cx_tasks")
+      .select(
+        "id, project_id, name, type, start_date, end_date, location, status, crew_requirements, assigned_worker_ids, notes, external_id, original_duration, remaining_duration, predecessors, successors"
+      )
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) {
+      logSupabaseReadFailure(`fetchCxTaskById(${id})`, error);
+      return null;
+    }
+    if (!data) return null;
+
+    return {
+      id: data.id,
+      projectId: data.project_id,
+      name: data.name,
+      type: toTaskType(data.type),
+      startDate: data.start_date ?? undefined,
+      endDate: data.end_date ?? undefined,
+      location: data.location ?? undefined,
+      status: toTaskStatus(data.status),
+      crewRequirements: Array.isArray(data.crew_requirements)
+        ? (data.crew_requirements as CxCrewRequirement[])
+        : [],
+      assignedWorkerIds: Array.isArray(data.assigned_worker_ids)
+        ? (data.assigned_worker_ids as string[])
+        : [],
+      notes: data.notes ?? undefined,
+      externalId: data.external_id ?? undefined,
+      originalDuration: data.original_duration ?? undefined,
+      remainingDuration: data.remaining_duration ?? undefined,
+      predecessors: Array.isArray(data.predecessors) ? data.predecessors : [],
+      successors: Array.isArray(data.successors) ? data.successors : [],
+    };
+  } catch (err) {
+    logSupabaseReadFailure(`fetchCxTaskById(${id})`, err);
+    return null;
+  }
+}
+
 export async function fetchOrgTasks(orgId: string): Promise<CxTask[]> {
   try {
     const { data, error } = await supabase
