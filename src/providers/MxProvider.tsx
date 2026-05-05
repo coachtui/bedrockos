@@ -39,6 +39,12 @@ import type {
   MxWorkOrderUpdate,
   EquipmentReadiness,
 } from "@/lib/mx/types";
+import type { ActivityEvent } from "@/types/domain";
+
+type EmitActivityInput =
+  Omit<ActivityEvent, "id" | "timestamp" | "actor_name"> &
+  { actor_name?: string };
+export type EmitActivityFn = (event: EmitActivityInput) => void;
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -106,9 +112,11 @@ function logMutationFailure(operation: string): (error: unknown) => void {
 export function MxProvider({
   children,
   initialWorkOrders = [],
+  onEmitActivity,
 }: {
   children:           React.ReactNode;
   initialWorkOrders?: MxWorkOrder[];
+  onEmitActivity?:    EmitActivityFn;
 }) {
   const [state, dispatch] = useReducer(mxReducer, { workOrders: initialWorkOrders });
 
@@ -159,6 +167,15 @@ export function MxProvider({
         dispatch({ type: "REMOVE_WORK_ORDER", id: optimistic.id });
       });
 
+    onEmitActivity?.({
+      action:      "created work order",
+      entity_type: "work_order",
+      entity_id:   optimistic.id,
+      entity_name: optimistic.woNumber,
+      project_id:  input.projectId ?? "",
+      module:      "mx",
+    });
+
     return optimistic;
   }
 
@@ -180,6 +197,15 @@ export function MxProvider({
     serverUpdateMxWorkOrderStatus(id, status)
       .then((persisted) => dispatch({ type: "UPSERT_WORK_ORDER", workOrder: persisted }))
       .catch(logMutationFailure(`updateWorkOrderStatus(${id})`));
+
+    onEmitActivity?.({
+      action:      `moved work order to ${status.replace("_", " ")}`,
+      entity_type: "work_order",
+      entity_id:   id,
+      entity_name: wo.woNumber,
+      project_id:  wo.projectId ?? "",
+      module:      "mx",
+    });
   }
 
   function updateWorkOrder(id: string, updates: MxWorkOrderUpdate): void {
@@ -213,6 +239,15 @@ export function MxProvider({
     serverAssignMechanic(workOrderId, mechanicId)
       .then((persisted) => dispatch({ type: "UPSERT_WORK_ORDER", workOrder: persisted }))
       .catch(logMutationFailure(`assignMechanic(${workOrderId}, ${mechanicId})`));
+
+    onEmitActivity?.({
+      action:      "assigned mechanic to",
+      entity_type: "work_order",
+      entity_id:   workOrderId,
+      entity_name: wo.woNumber,
+      project_id:  wo.projectId ?? "",
+      module:      "mx",
+    });
   }
 
   function unassignMechanic(workOrderId: string, mechanicId: string): void {
@@ -229,6 +264,15 @@ export function MxProvider({
     serverUnassignMechanic(workOrderId, mechanicId)
       .then((persisted) => dispatch({ type: "UPSERT_WORK_ORDER", workOrder: persisted }))
       .catch(logMutationFailure(`unassignMechanic(${workOrderId}, ${mechanicId})`));
+
+    onEmitActivity?.({
+      action:      "removed mechanic from",
+      entity_type: "work_order",
+      entity_id:   workOrderId,
+      entity_name: wo.woNumber,
+      project_id:  wo.projectId ?? "",
+      module:      "mx",
+    });
   }
 
   return (

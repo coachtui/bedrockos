@@ -44,7 +44,13 @@ import type {
   PourEvent, CreatePourInput,
 } from "@/lib/ops/types";
 import type { CreateMxWorkOrderInput } from "@/lib/mx/types";
+import type { ActivityEvent } from "@/types/domain";
 import type { UserRole } from "@/types/org";
+
+type EmitActivityInput =
+  Omit<ActivityEvent, "id" | "timestamp" | "actor_name"> &
+  { actor_name?: string };
+export type EmitActivityFn = (event: EmitActivityInput) => void;
 
 // ── Transition rules ──────────────────────────────────────────────────────────
 
@@ -140,6 +146,9 @@ interface OpsProviderProps {
   /** Injected by the layout so OpsProvider can create MX work orders without
    *  depending on MxProvider directly (they are siblings in the tree). */
   onCreateMxWorkOrder: (input: CreateMxWorkOrderInput) => { id: string };
+  /** Injected by the layout so OPS workflow events (pour approvals, request
+   *  assignments) flow into the shell-owned activity feed. */
+  onEmitActivity?:     EmitActivityFn;
 }
 
 export function OpsProvider({
@@ -147,6 +156,7 @@ export function OpsProvider({
   initialPours,
   initialRequests,
   onCreateMxWorkOrder,
+  onEmitActivity,
 }: OpsProviderProps) {
   const [state, dispatch] = useReducer(opsReducer, {
     requests: initialRequests,
@@ -165,6 +175,15 @@ export function OpsProvider({
     serverApproveRequest(id)
       .then((persisted) => dispatch({ type: "UPSERT_REQUEST", request: persisted }))
       .catch(logMutationFailure(`approveRequest(${id})`));
+
+    onEmitActivity?.({
+      action:      `approved ${req.type.replace("_", " ")} request for`,
+      entity_type: "request",
+      entity_id:   id,
+      entity_name: req.jobsite,
+      project_id:  req.jobsiteId ?? "",
+      module:      "ops",
+    });
   }
 
   function assignRequest(id: string, worker?: WorkerInput, opts?: DispatchAssignment): void {
@@ -219,6 +238,19 @@ export function OpsProvider({
     })
       .then((persisted) => dispatch({ type: "UPSERT_REQUEST", request: persisted }))
       .catch(logMutationFailure(`assignRequest(${id})`));
+
+    const assigneeLabel = optimistic.assignedTo ?? optimistic.assignedToLabel ?? "TBD";
+    onEmitActivity?.({
+      action:      newStatus === "closed"
+        ? `closed ${req.type.replace("_", " ")} request — assigned ${assigneeLabel} to`
+        : `assigned ${assigneeLabel} to ${req.type.replace("_", " ")} request at`,
+      entity_type: "request",
+      entity_id:   id,
+      entity_name: req.jobsite,
+      project_id:  req.jobsiteId ?? "",
+      module:      "ops",
+      actor_name:  opts?.assignedBy,
+    });
   }
 
   function createRequest(data: Omit<OpsRequest, "id">): void {
@@ -231,6 +263,18 @@ export function OpsProvider({
         logMutationFailure(`createRequest(${optimistic.id})`)(err);
         dispatch({ type: "REMOVE_REQUEST", id: optimistic.id });
       });
+
+    onEmitActivity?.({
+      action:      data.sourcePourId
+        ? `auto-generated ${data.type.replace("_", " ")} request from approved pour at`
+        : `opened ${data.type.replace("_", " ")} request for`,
+      entity_type: "request",
+      entity_id:   optimistic.id,
+      entity_name: data.jobsite,
+      project_id:  data.jobsiteId ?? "",
+      module:      "ops",
+      actor_name:  data.requestedBy,
+    });
   }
 
   // ── Pour actions ──────────────────────────────────────────────────────────
@@ -253,6 +297,18 @@ export function OpsProvider({
         logMutationFailure(`createPour(${id})`)(err);
         dispatch({ type: "REMOVE_POUR", id });
       });
+
+    onEmitActivity?.({
+      action:      asDraft ? "drafted pour for" : "submitted pour for approval at",
+      entity_type: "pour",
+      entity_id:   id,
+      entity_name: input.location,
+      project_id:  input.jobsiteId,
+      module:      "ops",
+      target_type: "project",
+      target_id:   input.jobsiteId,
+      actor_name:  input.createdByName,
+    });
   }
 
   function editPour(
@@ -306,6 +362,15 @@ export function OpsProvider({
     serverSubmitPourForApproval(id)
       .then((persisted) => dispatch({ type: "UPSERT_POUR", pour: persisted }))
       .catch(logMutationFailure(`submitPourForApproval(${id})`));
+
+    onEmitActivity?.({
+      action:      "submitted pour for approval at",
+      entity_type: "pour",
+      entity_id:   id,
+      entity_name: pour.location,
+      project_id:  pour.jobsiteId ?? "",
+      module:      "ops",
+    });
   }
 
   function approvePour(id: string, actorRole: UserRole, actorId: string, actorName: string): void {
@@ -330,6 +395,16 @@ export function OpsProvider({
     serverApprovePour(id, actorId, actorName)
       .then((persisted) => dispatch({ type: "UPSERT_POUR", pour: persisted }))
       .catch(logMutationFailure(`approvePour(${id})`));
+
+    onEmitActivity?.({
+      action:      "approved pour at",
+      entity_type: "pour",
+      entity_id:   id,
+      entity_name: pour.location,
+      project_id:  pour.jobsiteId ?? "",
+      module:      "ops",
+      actor_name:  actorName,
+    });
 
     // Auto-create dispatch requests for resource needs declared on this pour.
     // Guard against duplicates on re-approval.
@@ -390,6 +465,16 @@ export function OpsProvider({
     serverRejectPour(id, reason, actorId, actorName)
       .then((persisted) => dispatch({ type: "UPSERT_POUR", pour: persisted }))
       .catch(logMutationFailure(`rejectPour(${id})`));
+
+    onEmitActivity?.({
+      action:      "rejected pour at",
+      entity_type: "pour",
+      entity_id:   id,
+      entity_name: pour.location,
+      project_id:  pour.jobsiteId ?? "",
+      module:      "ops",
+      actor_name:  actorName,
+    });
   }
 
   function cancelPour(
@@ -416,6 +501,16 @@ export function OpsProvider({
     serverCancelPour(id, reason, actorId, actorName)
       .then((persisted) => dispatch({ type: "UPSERT_POUR", pour: persisted }))
       .catch(logMutationFailure(`cancelPour(${id})`));
+
+    onEmitActivity?.({
+      action:      "canceled pour at",
+      entity_type: "pour",
+      entity_id:   id,
+      entity_name: pour.location,
+      project_id:  pour.jobsiteId ?? "",
+      module:      "ops",
+      actor_name:  actorName,
+    });
   }
 
   return (

@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { FixLaunchButton } from "@/components/modules/fix/FixLaunchButton";
 import { fetchOrgIssueById } from "@/lib/supabase/issues";
+import { IssueStatusButtons } from "@/components/shell/IssueStatusButtons";
 import { notFound } from "next/navigation";
 import type { ModuleId } from "@/types/org";
 
@@ -93,6 +94,12 @@ export default async function IssueDetailPage({ params }: { params: Params }) {
               <p className="text-sm text-content-secondary leading-relaxed">{issue.description}</p>
             </Card>
           )}
+
+          {/* Status controls */}
+          <Card variant="default">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-content-muted mb-3">Status</p>
+            <IssueStatusButtons issueId={issue.id} status={issue.status} />
+          </Card>
 
           {/* Action bar */}
           <div className="flex flex-wrap gap-2">

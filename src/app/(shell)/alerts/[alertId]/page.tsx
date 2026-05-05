@@ -6,6 +6,7 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { Card } from "@/components/ui/Card";
 import { fetchOrgAlertById } from "@/lib/supabase/alerts";
 import { fetchOrgIssueById } from "@/lib/supabase/issues";
+import { AlertReadToggle } from "@/components/shell/AlertReadToggle";
 import { notFound } from "next/navigation";
 import type { AlertType, AlertSeverity } from "@/types/domain";
 
@@ -97,6 +98,7 @@ export default async function AlertDetailPage({ params }: { params: Params }) {
 
           {/* Action bar */}
           <div className="flex flex-wrap gap-2">
+            <AlertReadToggle alertId={alert.id} isRead={alert.is_read} />
             <Link
               href="/issues"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gold hover:bg-gold-hover text-content-inverse text-sm font-semibold transition-colors"

@@ -1,6 +1,7 @@
 "use client";
 
-import { OrgProvider }    from "@/providers/OrgProvider";
+import React, { useCallback } from "react";
+import { OrgProvider, useOrg } from "@/providers/OrgProvider";
 import { UIProvider }     from "@/providers/UIProvider";
 import { MxProvider }     from "@/providers/MxProvider";
 import { OpsProvider }    from "@/providers/OpsProvider";
@@ -19,6 +20,27 @@ import type { CxTask, CxDayAssignment }                        from "@/lib/cx/ty
 import type { MxWorkOrder }                                    from "@/lib/mx/types";
 import type { PourEvent, Request as OpsRequest }               from "@/lib/ops/types";
 
+function useShellActivityEmitter() {
+  const { addEmittedActivity, currentUser } = useOrg();
+  return useCallback((partial: Omit<ActivityEvent, "id" | "timestamp" | "actor_name"> & { actor_name?: string }) => {
+    addEmittedActivity({
+      id:         crypto.randomUUID(),
+      timestamp:  new Date().toISOString(),
+      actor_name: currentUser.name,
+      ...partial,
+    });
+  }, [addEmittedActivity, currentUser.name]);
+}
+
+function MxLayer({ children, initialWorkOrders }: { children: React.ReactNode; initialWorkOrders: MxWorkOrder[] }) {
+  const onEmitActivity = useShellActivityEmitter();
+  return (
+    <MxProvider initialWorkOrders={initialWorkOrders} onEmitActivity={onEmitActivity}>
+      {children}
+    </MxProvider>
+  );
+}
+
 function OpsLayer({
   children,
   initialPours,
@@ -29,9 +51,11 @@ function OpsLayer({
   initialRequests: OpsRequest[];
 }) {
   const { createWorkOrder } = useMx();
+  const onEmitActivity = useShellActivityEmitter();
   return (
     <OpsProvider
       onCreateMxWorkOrder={createWorkOrder}
+      onEmitActivity={onEmitActivity}
       initialPours={initialPours}
       initialRequests={initialRequests}
     >
@@ -100,11 +124,11 @@ export function ShellClientRoot({
       <OrgProvider initialWorkers={initialWorkers} initialProjects={initialProjects} initialAssets={initialAssets} initialCrews={initialCrews} initialIssues={initialIssues} initialAlerts={initialAlerts} initialActivity={initialActivity} initialUser={initialUser} initialWorkerProjectRoles={initialWorkerProjectRoles} initialWorkerPositions={initialWorkerPositions}>
         <UIProvider>
           <CxProvider initialTasks={initialTasks} initialAssignments={initialAssignments}>
-            <MxProvider initialWorkOrders={initialMxWorkOrders}>
+            <MxLayer initialWorkOrders={initialMxWorkOrders}>
               <OpsLayer initialPours={initialPours} initialRequests={initialRequests}>
                 <ShellLayout>{children}</ShellLayout>
               </OpsLayer>
-            </MxProvider>
+            </MxLayer>
           </CxProvider>
         </UIProvider>
       </OrgProvider>
