@@ -66,13 +66,14 @@ const EVENT_TYPE_COLOR: Record<string, string> = {
 
 // ── Calendar View ─────────────────────────────────────────────────────────────
 
-function CalendarView({ events, tasks, projectId, today, startDate, workingHolidayDates }: {
+function CalendarView({ events, tasks, projectId, today, startDate, workingHolidayDates, onTaskClick }: {
   events:               CxEvent[];
   tasks:                CxTask[];
   projectId:            string;
   today:                string;
   startDate:            string;
   workingHolidayDates:  string[];
+  onTaskClick:          (task: CxTask) => void;
 }) {
   const allDates = Array.from({ length: 28 }, (_, i) => addDays(startDate, i));
   const weeks = [
@@ -124,13 +125,14 @@ function CalendarView({ events, tasks, projectId, today, startDate, workingHolid
                     </p>
                   )}
                   {dayTasks.map((t) => (
-                    <div
+                    <button
                       key={t.id}
-                      className="text-[9px] font-semibold px-1.5 py-0.5 rounded border mb-0.5 truncate bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
+                      onClick={() => onTaskClick(t)}
+                      className="w-full text-left text-[9px] font-semibold px-1.5 py-0.5 rounded border mb-0.5 truncate bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 hover:border-emerald-500/50 transition-colors"
                       title={t.name}
                     >
                       {t.name}
-                    </div>
+                    </button>
                   ))}
                   {dayEvents.map((e) => (
                     <div
@@ -250,6 +252,7 @@ export default function SchedulePage() {
           today={today}
           startDate={sunday}
           workingHolidayDates={workingHolidayDates}
+          onTaskClick={openEdit}
         />
       ) : (
         <div className="mt-4">
