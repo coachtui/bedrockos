@@ -37,7 +37,8 @@ export async function serverUpdateProject(
   if (patch.start_date  !== undefined) update.start_date  = patch.start_date;
   if (patch.end_date    !== undefined) update.end_date    = patch.end_date;
   if (patch.description !== undefined) update.description = patch.description ?? null;
-  if (patch.award_price !== undefined) update.award_price = patch.award_price ?? null;
+  if (patch.award_price           !== undefined) update.award_price           = patch.award_price ?? null;
+  if (patch.working_holiday_dates !== undefined) update.working_holiday_dates = patch.working_holiday_dates;
   if (Object.keys(update).length === 0) return;
   await supabase.from("projects").update(update).eq("id", id);
 }

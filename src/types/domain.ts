@@ -21,8 +21,9 @@ export interface Project {
   last_activity: string;
   start_date:    string;
   end_date:      string;
-  description?:  string;
-  award_price?:  number;
+  description?:          string;
+  award_price?:          number;
+  working_holiday_dates: string[];
 }
 
 export interface Issue {
@@ -152,7 +153,8 @@ export interface CreateProjectInput {
 
 export type UpdateProjectInput = Partial<Pick<Project,
   "name" | "location" | "phase" | "pm_name" | "status" |
-  "start_date" | "end_date" | "description" | "award_price"
+  "start_date" | "end_date" | "description" | "award_price" |
+  "working_holiday_dates"
 >>;
 
 export interface CreateAssetInput {

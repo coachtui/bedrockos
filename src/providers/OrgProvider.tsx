@@ -212,8 +212,9 @@ export function OrgProvider({
       last_activity: new Date().toISOString(),
       start_date:    input.startDate,
       end_date:      input.endDate,
-      description:   input.description,
-      award_price:   input.awardPrice,
+      description:           input.description,
+      award_price:           input.awardPrice,
+      working_holiday_dates: [],
     };
     setProjects((prev) => [project, ...prev]);
     serverCreateProject(project).catch(console.error);
