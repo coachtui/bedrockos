@@ -24,7 +24,7 @@ export const GCA_HOLIDAYS_2026: GcaHoliday[] = [
 
 const HOLIDAY_SET = new Set(GCA_HOLIDAYS_2026.map((h) => h.date));
 
-export function isNonWorkingDay(date: string, workingOverrides: string[]): boolean {
+export function isNonWorkingDay(date: string, workingOverrides: string[] = []): boolean {
   const d = new Date(date + "T12:00:00");
   const dow = d.getDay(); // 0=Sun, 6=Sat
   if (dow === 0 || dow === 6) return true;
