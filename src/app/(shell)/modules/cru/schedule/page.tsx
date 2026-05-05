@@ -9,7 +9,11 @@ import { GanttPanel } from "@/components/cx/GanttPanel";
 import { useOrg } from "@/providers/OrgProvider";
 import { useCx } from "@/providers/CxProvider";
 import { localDateString } from "@/lib/utils/time";
-import { isNonWorkingDay } from "@/lib/cx/holidays";
+import { isNonWorkingDay, GCA_HOLIDAYS_2026 } from "@/lib/cx/holidays";
+
+const HOLIDAY_NAME: Record<string, string> = Object.fromEntries(
+  GCA_HOLIDAYS_2026.map((h) => [h.date, h.name]),
+);
 import type { CxTask, CxEvent, CreateCxTaskInput } from "@/lib/cx/types";
 import { ArrowLeft, Plus, CalendarDays, BarChart2 } from "lucide-react";
 
@@ -95,10 +99,11 @@ function CalendarView({ events, tasks, projectId, today, startDate, workingHolid
           </p>
           <div className="grid grid-cols-7 gap-1">
             {week.map((date) => {
-              const nonWorking = isNonWorkingDay(date, workingHolidayDates);
-              const dayEvents  = nonWorking ? [] : projectEvents.filter((e) => e.date === date);
-              const dayTasks   = nonWorking ? [] : activeTasks.filter((t) => date >= t.startDate && date <= t.endDate);
-              const isToday    = date === today;
+              const nonWorking  = isNonWorkingDay(date, workingHolidayDates);
+              const holidayName = HOLIDAY_NAME[date] && !workingHolidayDates.includes(date) ? HOLIDAY_NAME[date] : undefined;
+              const dayEvents   = nonWorking ? [] : projectEvents.filter((e) => e.date === date);
+              const dayTasks    = nonWorking ? [] : activeTasks.filter((t) => date >= t.startDate && date <= t.endDate);
+              const isToday     = date === today;
               return (
                 <div
                   key={date}
@@ -113,6 +118,11 @@ function CalendarView({ events, tasks, projectId, today, startDate, workingHolid
                   <p className={`text-[10px] font-semibold mb-1 ${isToday ? "text-gold" : "text-content-muted"}`}>
                     {formatShortDate(date)}
                   </p>
+                  {holidayName && (
+                    <p className="text-[8px] font-semibold uppercase tracking-wide text-amber-400/80 leading-tight mb-1 truncate" title={holidayName}>
+                      {holidayName}
+                    </p>
+                  )}
                   {dayTasks.map((t) => (
                     <div
                       key={t.id}
