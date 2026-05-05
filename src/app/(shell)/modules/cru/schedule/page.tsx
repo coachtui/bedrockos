@@ -29,6 +29,12 @@ function getMonday(dateStr: string): string {
   return d.toISOString().split("T")[0];
 }
 
+function getSunday(dateStr: string): string {
+  const d   = new Date(dateStr + "T12:00:00");
+  d.setDate(d.getDate() - d.getDay());
+  return d.toISOString().split("T")[0];
+}
+
 function formatShortDate(dateStr: string): string {
   return new Date(dateStr + "T12:00:00").toLocaleDateString("en-US", {
     month: "short", day: "numeric",
@@ -56,15 +62,15 @@ const EVENT_TYPE_COLOR: Record<string, string> = {
 
 // ── Calendar View ─────────────────────────────────────────────────────────────
 
-function CalendarView({ events, tasks, projectId, today, monday, workingHolidayDates }: {
+function CalendarView({ events, tasks, projectId, today, startDate, workingHolidayDates }: {
   events:               CxEvent[];
   tasks:                CxTask[];
   projectId:            string;
   today:                string;
-  monday:               string;
+  startDate:            string;
   workingHolidayDates:  string[];
 }) {
-  const allDates = Array.from({ length: 28 }, (_, i) => addDays(monday, i));
+  const allDates = Array.from({ length: 28 }, (_, i) => addDays(startDate, i));
   const weeks = [
     allDates.slice(0,  7),
     allDates.slice(7,  14),
@@ -145,6 +151,7 @@ export default function SchedulePage() {
 
   const today  = useMemo(() => localDateString(), []);
   const monday = useMemo(() => getMonday(today), [today]);
+  const sunday = useMemo(() => getSunday(today), [today]);
 
   const [tab,          setTab]          = useState<ScheduleTab>("calendar");
   const [panelOpen,      setPanelOpen]    = useState(false);
@@ -223,7 +230,7 @@ export default function SchedulePage() {
           tasks={tasks}
           projectId={currentProject.id}
           today={today}
-          monday={monday}
+          startDate={sunday}
           workingHolidayDates={workingHolidayDates}
         />
       ) : (
