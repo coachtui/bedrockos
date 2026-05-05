@@ -27,6 +27,7 @@ import { serverCreateAsset, serverUpdateAssetProject, serverUpdateAssetStatus } 
 import { serverCreateCrew, serverAddCrewMember, serverRemoveCrewMember } from "@/lib/actions/crews";
 import { serverCreateWorker, serverUpdateWorker } from "@/lib/actions/workers";
 import { serverInsertActivity } from "@/lib/actions/activity";
+import { serverInsertIssue } from "@/lib/actions/issues";
 import type { WorkerProjectRole, ProjectPosition } from "@/types/domain";
 import {
   serverAssignProjectPosition,
@@ -222,6 +223,7 @@ export function OrgProvider({
 
   function addEmittedIssue(issue: Issue): void {
     setIssues((prev) => [issue, ...prev]);
+    serverInsertIssue(issue).catch(logOrgPersistenceFailure(`emit issue ${issue.id}`));
   }
 
   function addEmittedAlert(alert: Alert): void {

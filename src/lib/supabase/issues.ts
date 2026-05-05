@@ -21,7 +21,7 @@ function toStatus(value: string): IssueStatus {
 }
 
 const SELECT_COLUMNS =
-  "id, title, module, severity, project_id, project_name, created_at, assignee_name, status, asset_id, asset_name, inspection_id, description";
+  "id, title, module, severity, project_id, project_name, created_at, assignee_name, status, asset_id, asset_name, inspection_id, description, related_work_order_id";
 
 function toIssue(row: Record<string, unknown>): Issue {
   return {
@@ -36,8 +36,9 @@ function toIssue(row: Record<string, unknown>): Issue {
     status:        toStatus(String(row.status ?? "")),
     asset_id:      row.asset_id == null      ? undefined : String(row.asset_id),
     asset_name:    row.asset_name == null    ? undefined : String(row.asset_name),
-    inspection_id: row.inspection_id == null ? undefined : String(row.inspection_id),
-    description:   row.description == null   ? undefined : String(row.description),
+    inspection_id:         row.inspection_id == null ? undefined : String(row.inspection_id),
+    description:           row.description == null   ? undefined : String(row.description),
+    related_work_order_id: row.related_work_order_id == null ? undefined : String(row.related_work_order_id),
   };
 }
 

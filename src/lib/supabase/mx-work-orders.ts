@@ -87,6 +87,26 @@ export function rowToMxWorkOrder(row: Record<string, unknown>): MxWorkOrder {
   };
 }
 
+export async function fetchMxWorkOrderById(id: string): Promise<MxWorkOrder | null> {
+  try {
+    const { data, error } = await supabase
+      .from("mx_work_orders")
+      .select(MX_WO_SELECT_COLUMNS)
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) {
+      logSupabaseReadFailure(`fetchMxWorkOrderById(${id})`, error);
+      return null;
+    }
+    if (!data) return null;
+    return rowToMxWorkOrder(data as unknown as Record<string, unknown>);
+  } catch (err) {
+    logSupabaseReadFailure(`fetchMxWorkOrderById(${id})`, err);
+    return null;
+  }
+}
+
 export async function fetchOrgMxWorkOrders(orgId: string): Promise<MxWorkOrder[]> {
   try {
     const { data, error } = await supabase

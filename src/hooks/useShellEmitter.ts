@@ -5,12 +5,13 @@ import type { ModuleId } from "@/types/org";
 import type { IssueSeverity } from "@/types/domain";
 
 export interface CreateIssueInput {
-  title:        string;
-  module:       ModuleId;
-  severity:     IssueSeverity;
-  projectId:    string;
-  assetId?:     string;
-  description?: string;
+  title:               string;
+  module:              ModuleId;
+  severity:            IssueSeverity;
+  projectId:           string;
+  assetId?:            string;
+  description?:        string;
+  relatedWorkOrderId?: string;
 }
 
 export interface CreateActivityInput {
@@ -37,15 +38,16 @@ export function useShellEmitter() {
     const id = crypto.randomUUID();
     addEmittedIssue({
       id,
-      title:         input.title,
-      module:        input.module,
-      severity:      input.severity,
-      project_id:    input.projectId,
-      created_at:    new Date().toISOString(),
-      assignee_name: null,
-      status:        "open",
-      asset_id:      input.assetId,
-      description:   input.description,
+      title:                 input.title,
+      module:                input.module,
+      severity:              input.severity,
+      project_id:            input.projectId,
+      created_at:            new Date().toISOString(),
+      assignee_name:         null,
+      status:                "open",
+      asset_id:              input.assetId,
+      description:           input.description,
+      related_work_order_id: input.relatedWorkOrderId,
     });
     return id;
   }

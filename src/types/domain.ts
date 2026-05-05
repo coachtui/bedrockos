@@ -37,10 +37,11 @@ export interface Issue {
   assignee_name:   string | null;
   status:          IssueStatus;
   /* Enriched context */
-  asset_id?:       string;
-  asset_name?:     string;
-  inspection_id?:  string;
-  description?:    string;
+  asset_id?:               string;
+  asset_name?:             string;
+  inspection_id?:          string;
+  description?:            string;
+  related_work_order_id?:  string;
 }
 
 export interface Alert {

@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { FixLaunchButton } from "@/components/modules/fix/FixLaunchButton";
 import { fetchOrgIssueById } from "@/lib/supabase/issues";
+import { fetchMxWorkOrderById } from "@/lib/supabase/mx-work-orders";
 import { IssueStatusButtons } from "@/components/shell/IssueStatusButtons";
 import { notFound } from "next/navigation";
 import type { ModuleId } from "@/types/org";
@@ -52,6 +53,10 @@ export default async function IssueDetailPage({ params }: { params: Params }) {
   const issue = await fetchOrgIssueById(ORG_ID, issueId);
 
   if (!issue) notFound();
+
+  const linkedWo = issue.related_work_order_id
+    ? await fetchMxWorkOrderById(issue.related_work_order_id)
+    : null;
 
   const isFromInspect = issue.module === "inspect";
   const isFromFix     = issue.module === "fix";
@@ -147,14 +152,28 @@ export default async function IssueDetailPage({ params }: { params: Params }) {
           <Card variant="default">
             <p className="text-[11px] font-bold uppercase tracking-widest text-content-muted mb-3">Context</p>
             <div className="space-y-0">
-              {[
+              {([
                 { label: "Project",     value: issue.project_name ?? issue.project_id },
                 { label: "Asset",       value: issue.asset_name ?? null          },
                 { label: "Reported by", value: issue.assignee_name ?? "Unassigned" },
                 { label: "Reported",    value: formatDate(issue.created_at)       },
                 { label: "Source",      value: MODULE_LABEL[issue.module]          },
                 { label: "Inspection",  value: issue.inspection_id ?? null         },
-              ].filter((row) => row.value !== null).map(({ label, value }) => (
+                {
+                  label: "Linked WO",
+                  value: linkedWo
+                    ? (
+                      <Link
+                        href={`/modules/mx/work-orders/${linkedWo.id}`}
+                        className="text-gold hover:text-gold-hover transition-colors"
+                      >
+                        {linkedWo.woNumber}
+                      </Link>
+                    )
+                    : null,
+                },
+              ] as { label: string; value: React.ReactNode | null }[])
+                .filter((row) => row.value !== null).map(({ label, value }) => (
                 <div key={label} className="flex justify-between gap-3 py-2.5 border-b border-surface-border last:border-0">
                   <span className="text-xs text-content-muted shrink-0">{label}</span>
                   <span className="text-xs font-medium text-content-secondary text-right">{value}</span>
