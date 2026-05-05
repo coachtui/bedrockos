@@ -19,8 +19,9 @@ export async function serverCreateProject(project: Project): Promise<void> {
     last_activity: project.last_activity,
     start_date:    project.start_date,
     end_date:      project.end_date,
-    description:   project.description ?? null,
-    award_price:   project.award_price ?? null,
+    description:           project.description ?? null,
+    award_price:           project.award_price ?? null,
+    working_holiday_dates: project.working_holiday_dates ?? [],
   });
 }
 

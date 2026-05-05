@@ -10,7 +10,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card } from "@/components/ui/Card";
 
 export function ProjectSettingsClient({ projectId }: { projectId: string }) {
-  const { projects, setCurrentProject, updateProject } = useOrg();
+  const { projects, setCurrentProject, updateProject, role } = useOrg();
   const project = projects.find((p) => p.id === projectId);
 
   useEffect(() => {
@@ -21,9 +21,11 @@ export function ProjectSettingsClient({ projectId }: { projectId: string }) {
 
   if (!project) return null;
 
+  const canEdit = role === "owner" || role === "admin" || role === "pm";
   const workingDates = project.working_holiday_dates ?? [];
 
   function toggleHoliday(date: string) {
+    if (!canEdit) return;
     const next = workingDates.includes(date)
       ? workingDates.filter((d) => d !== date)
       : [...workingDates, date];
@@ -64,11 +66,13 @@ export function ProjectSettingsClient({ projectId }: { projectId: string }) {
                 </div>
                 <button
                   onClick={() => toggleHoliday(h.date)}
+                  disabled={!canEdit}
                   className={[
                     "px-3 py-1 rounded text-xs font-medium transition-colors border",
                     working
                       ? "bg-gold/20 text-gold border-gold/40"
                       : "bg-surface-raised text-content-muted border-surface-border",
+                    !canEdit ? "opacity-50 cursor-not-allowed" : "",
                   ].join(" ")}
                 >
                   {working ? "Working" : "Holiday"}
