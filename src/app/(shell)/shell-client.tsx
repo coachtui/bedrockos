@@ -30,14 +30,18 @@ function ShellLayout({ children }: { children: React.ReactNode }) {
   const { sidebarCollapsed } = useUI();
   return (
     <>
-      <Sidebar />
-      <Topbar />
-      <main className={`min-h-screen pt-14 transition-all duration-200 ease-in-out pl-0 ${sidebarCollapsed ? "md:pl-16" : "md:pl-60"}`}>
-        <div className="pb-20 md:pb-0">{children}</div>
+      <div className="print:hidden">
+        <Sidebar />
+        <Topbar />
+      </div>
+      <main className={`min-h-screen pt-14 print:pt-0 print:pl-0 transition-all duration-200 ease-in-out pl-0 ${sidebarCollapsed ? "md:pl-16" : "md:pl-60"}`}>
+        <div className="pb-20 md:pb-0 print:pb-0">{children}</div>
       </main>
-      <AssistantPanel />
-      <SearchModal />
-      <MobileNav />
+      <div className="print:hidden">
+        <AssistantPanel />
+        <SearchModal />
+        <MobileNav />
+      </div>
     </>
   );
 }

@@ -21,6 +21,8 @@ function formatDayHeader(dateStr: string): { dow: string; date: string } {
   };
 }
 
+const COL_PX = 48;
+
 interface GanttPanelProps {
   tasks:                CxTask[];
   projectId:            string;
@@ -30,9 +32,8 @@ interface GanttPanelProps {
   onTaskClick:          (task: CxTask) => void;
   canEdit:              boolean;
   workingHolidayDates?: string[];
+  days?:                number;
 }
-
-const GRID_COLS = "160px repeat(14, minmax(0, 1fr))";
 
 export function GanttPanel({
   tasks,
@@ -43,8 +44,10 @@ export function GanttPanel({
   onTaskClick,
   canEdit,
   workingHolidayDates = [],
+  days = 28,
 }: GanttPanelProps) {
-  const ganttDates   = Array.from({ length: 14 }, (_, i) => addDays(monday, i));
+  const GRID_COLS  = `160px repeat(${days}, ${COL_PX}px)`;
+  const ganttDates = Array.from({ length: days }, (_, i) => addDays(monday, i));
   const projectTasks = tasks.filter(
     (t): t is CxTask & { startDate: string; endDate: string } =>
       t.projectId === projectId &&
@@ -53,9 +56,11 @@ export function GanttPanel({
       !!t.endDate,
   );
 
+  const minWidth = 160 + days * COL_PX;
+
   return (
-    <div className="overflow-x-auto">
-      <div style={{ minWidth: "700px" }}>
+    <div className="overflow-x-auto print:overflow-visible">
+      <div style={{ minWidth: `${minWidth}px` }}>
 
         {/* Date header */}
         <div

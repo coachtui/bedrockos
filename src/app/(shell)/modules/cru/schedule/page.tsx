@@ -15,7 +15,7 @@ const HOLIDAY_NAME: Record<string, string> = Object.fromEntries(
   GCA_HOLIDAYS_2026.map((h) => [h.date, h.name]),
 );
 import type { CxTask, CxEvent, CreateCxTaskInput } from "@/lib/cx/types";
-import { ArrowLeft, Plus, CalendarDays, BarChart2 } from "lucide-react";
+import { ArrowLeft, Plus, CalendarDays, BarChart2, Printer } from "lucide-react";
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
@@ -205,14 +205,22 @@ export default function SchedulePage() {
         title="Site Schedule"
         subtitle={`${currentProject.name} · 4-week view`}
         action={
-          canEdit ? (
-            <button
-              onClick={openCreate}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gold text-black rounded hover:bg-gold/90 transition-colors"
+          <div className="flex items-center gap-2">
+            <Link
+              href="/modules/cru/schedule/print"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-content-muted border border-surface-border rounded hover:text-content-primary hover:border-content-muted transition-colors"
             >
-              <Plus size={13} /> Add Task
-            </button>
-          ) : undefined
+              <Printer size={13} /> Full View
+            </Link>
+            {canEdit && (
+              <button
+                onClick={openCreate}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gold text-black rounded hover:bg-gold/90 transition-colors"
+              >
+                <Plus size={13} /> Add Task
+              </button>
+            )}
+          </div>
         }
       />
 
