@@ -55,8 +55,9 @@ const EVENT_TYPE_COLOR: Record<string, string> = {
 
 // ── Calendar View ─────────────────────────────────────────────────────────────
 
-function CalendarView({ events, projectId, today, monday }: {
+function CalendarView({ events, tasks, projectId, today, monday }: {
   events:    CxEvent[];
+  tasks:     CxTask[];
   projectId: string;
   today:     string;
   monday:    string;
@@ -69,6 +70,13 @@ function CalendarView({ events, projectId, today, monday }: {
     allDates.slice(21, 28),
   ];
   const projectEvents = events.filter((e) => e.projectId === projectId);
+  const activeTasks   = tasks.filter(
+    (t): t is CxTask & { startDate: string; endDate: string } =>
+      t.projectId === projectId &&
+      t.status !== "complete" &&
+      !!t.startDate &&
+      !!t.endDate,
+  );
 
   return (
     <div className="mt-4 space-y-4">
@@ -80,6 +88,7 @@ function CalendarView({ events, projectId, today, monday }: {
           <div className="grid grid-cols-7 gap-1">
             {week.map((date) => {
               const dayEvents = projectEvents.filter((e) => e.date === date);
+              const dayTasks  = activeTasks.filter((t) => date >= t.startDate && date <= t.endDate);
               const isToday   = date === today;
               return (
                 <div
@@ -93,6 +102,15 @@ function CalendarView({ events, projectId, today, monday }: {
                   <p className={`text-[10px] font-semibold mb-1 ${isToday ? "text-gold" : "text-content-muted"}`}>
                     {formatShortDate(date)}
                   </p>
+                  {dayTasks.map((t) => (
+                    <div
+                      key={t.id}
+                      className="text-[9px] font-semibold px-1.5 py-0.5 rounded border mb-0.5 truncate bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
+                      title={t.name}
+                    >
+                      {t.name}
+                    </div>
+                  ))}
                   {dayEvents.map((e) => (
                     <div
                       key={e.id}
@@ -196,6 +214,7 @@ export default function SchedulePage() {
       {tab === "calendar" ? (
         <CalendarView
           events={events}
+          tasks={tasks}
           projectId={currentProject.id}
           today={today}
           monday={monday}
