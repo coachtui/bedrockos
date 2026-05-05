@@ -1,17 +1,18 @@
-import { MOCK_ISSUES } from "@/lib/mock/issues";
-import { MOCK_ALERTS } from "@/lib/mock/alerts";
 import { MOCK_CREWS } from "@/lib/mock/crews";
-import { MOCK_ASSETS } from "@/lib/mock/assets";
+import type { Asset, Issue, Alert } from "@/types/domain";
 
 interface PromptContext {
   org: { name: string };
   project: { name: string; status: string; location?: string };
   user: { name: string; role: string };
   enabledModules: string[];
+  assets?: Asset[];
+  issues?: Issue[];
+  alerts?: Alert[];
 }
 
 export function buildSystemPrompt(ctx: PromptContext): string {
-  const openIssues = MOCK_ISSUES
+  const openIssues = (ctx.issues ?? [])
     .filter((i) => i.status !== "resolved")
     .map(
       (i) =>
@@ -19,7 +20,7 @@ export function buildSystemPrompt(ctx: PromptContext): string {
     )
     .join("\n");
 
-  const activeAlerts = MOCK_ALERTS
+  const activeAlerts = (ctx.alerts ?? [])
     .filter((a) => !a.is_read)
     .map((a) => `${a.id}: [${a.severity}] ${a.message}`)
     .join("\n");
@@ -31,7 +32,7 @@ export function buildSystemPrompt(ctx: PromptContext): string {
     )
     .join("\n");
 
-  const assets = MOCK_ASSETS
+  const assets = (ctx.assets ?? [])
     .map((a) => `${a.id}: ${a.name} (${a.type}, status: ${a.status})`)
     .join("\n");
 

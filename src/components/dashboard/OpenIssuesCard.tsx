@@ -5,7 +5,6 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { MetricTile } from "@/components/ui/MetricTile";
-import { MOCK_ISSUES } from "@/lib/mock/issues";
 import { useOrg } from "@/providers/OrgProvider";
 import { getRoleGroup } from "@/lib/utils/roles";
 import { MyWorkCard } from "@/components/dashboard/MyWorkCard";
@@ -14,12 +13,12 @@ import type { Issue } from "@/types/domain";
 // ── Default: shell issues ─────────────────────────────────────────────────────
 
 export function OpenIssuesCard() {
-  const { role, currentProject } = useOrg();
+  const { role, currentProject, issues } = useOrg();
   const roleGroup = getRoleGroup(role);
 
   if (roleGroup === "maintenance") return <MyWorkCard />;
 
-  let open: Issue[] = MOCK_ISSUES.filter((i) => i.status !== "resolved");
+  let open: Issue[] = issues.filter((i) => i.status !== "resolved");
 
   if (roleGroup === "field") {
     open = open.filter((i) => i.project_id === currentProject.id);

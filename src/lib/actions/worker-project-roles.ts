@@ -1,6 +1,7 @@
 "use server";
 
 import { supabase } from "@/lib/supabase/server";
+import { describeSupabaseError } from "@/lib/supabase/errors";
 import type { ProjectPosition } from "@/types/domain";
 
 const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
@@ -15,11 +16,12 @@ export async function serverAssignProjectPosition(
   position: ProjectPosition,
 ): Promise<{ error?: string }> {
   // Remove any existing row first (handles the update case)
-  await supabase
+  const { error: deleteError } = await supabase
     .from("worker_project_roles")
     .delete()
     .eq("worker_id", workerId)
     .eq("project_id", projectId);
+  if (deleteError) return { error: describeSupabaseError(deleteError) };
 
   const { error } = await supabase.from("worker_project_roles").insert({
     org_id:     ORG_ID,
@@ -27,7 +29,7 @@ export async function serverAssignProjectPosition(
     project_id: projectId,
     position,
   });
-  if (error) return { error: error.message };
+  if (error) return { error: describeSupabaseError(error) };
   return {};
 }
 
@@ -41,7 +43,7 @@ export async function serverRemoveProjectPosition(
     .delete()
     .eq("worker_id", workerId)
     .eq("project_id", projectId);
-  if (error) return { error: error.message };
+  if (error) return { error: describeSupabaseError(error) };
   return {};
 }
 
@@ -54,6 +56,6 @@ export async function serverLinkWorkerUser(
     .from("workers")
     .update({ user_id: userId })
     .eq("id", workerId);
-  if (error) return { error: error.message };
+  if (error) return { error: describeSupabaseError(error) };
   return {};
 }

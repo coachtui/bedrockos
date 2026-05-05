@@ -1,5 +1,6 @@
 import Link                  from "next/link";
 import { fetchPlatformOrgs } from "@/lib/supabase/platform-orgs";
+import { ENABLE_MOCK_FALLBACK, warnMockFallback } from "@/lib/config/data-source";
 import { MOCK_PLATFORM_ORGS } from "@/lib/mock/platform";
 import { PageContainer }     from "@/components/ui/PageContainer";
 import { SectionHeader }     from "@/components/ui/SectionHeader";
@@ -9,7 +10,15 @@ export const metadata = { title: "Organizations — BedrockOS Admin" };
 
 export default async function PlatformOrgsPage() {
   const fetched = await fetchPlatformOrgs();
-  const orgs    = fetched.length > 0 ? fetched : MOCK_PLATFORM_ORGS;
+  const orgs = fetched.length > 0
+    ? fetched
+    : ENABLE_MOCK_FALLBACK
+      ? MOCK_PLATFORM_ORGS
+      : [];
+
+  if (fetched.length === 0 && ENABLE_MOCK_FALLBACK) {
+    warnMockFallback("platform organizations", "Supabase returned no organizations");
+  }
 
   return (
     <PageContainer maxWidth="wide">

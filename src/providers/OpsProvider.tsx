@@ -10,15 +10,35 @@
  * Work orders are NOT owned here. MX is the single source of truth for all
  * work orders. When a request is assigned, OpsProvider calls onCreateMxWorkOrder
  * (injected by the layout) so that MxProvider creates the canonical WO.
- * The resulting MX work order ID is stored on the request as linkedMxWorkOrderId.
  *
- * Phase 3 migration path: swap poursService / requestsService for Supabase
- * calls — no page-component changes required.
+ * Hydrates from server-fetched initialPours and initialRequests. Mutations
+ * follow optimistic-then-reconcile: dispatch optimistic state, fire server
+ * action, UPSERT with the persisted row when it lands.
  */
 
-import React, { createContext, useContext, useReducer, useEffect } from "react";
-import * as poursService from "@/lib/ops/poursService";
-import * as requestsService from "@/lib/ops/requestsService";
+import React, { createContext, useContext, useReducer } from "react";
+import {
+  serverCreatePour,
+  serverEditPour,
+  serverSubmitPourForApproval,
+  serverApprovePour,
+  serverRejectPour,
+  serverCancelPour,
+} from "@/lib/actions/ops-pours";
+import {
+  serverCreateRequest,
+  serverApproveRequest,
+  serverAssignRequest,
+} from "@/lib/actions/ops-requests";
+import {
+  POUR_STATUS,
+  isValidTransition,
+  isAdminRole,
+  canApprovePour,
+  canCancelPour,
+  canSubmitForApproval,
+  canEditPour,
+} from "@/lib/ops/pourRules";
 import type {
   Request as OpsRequest, RequestStatus,
   PourEvent, CreatePourInput,
@@ -53,78 +73,24 @@ export interface DispatchAssignment {
 }
 
 type OpsAction =
-  | { type: "INIT_REQUESTS";   requests: OpsRequest[] }
-  | { type: "APPROVE_REQUEST"; id: string }
-  | {
-      type:                 "ASSIGN_REQUEST";
-      id:                   string;
-      worker?:              WorkerInput;
-      linkedMxWorkOrderId?: string;
-    } & DispatchAssignment
-  | { type: "CREATE_REQUEST"; request: OpsRequest }
-  // Pour actions — state update only; service already persisted before dispatch
-  | { type: "INIT_POURS";  pours: PourEvent[] }
-  | { type: "UPSERT_POUR"; pour:  PourEvent   };
-
-// ── Reducer ───────────────────────────────────────────────────────────────────
+  | { type: "UPSERT_REQUEST"; request: OpsRequest }
+  | { type: "REMOVE_REQUEST"; id: string }
+  | { type: "UPSERT_POUR";    pour: PourEvent }
+  | { type: "REMOVE_POUR";    id: string };
 
 function opsReducer(state: OpsState, action: OpsAction): OpsState {
   switch (action.type) {
-
-    case "INIT_REQUESTS": {
-      return { ...state, requests: action.requests };
-    }
-
-    case "APPROVE_REQUEST": {
-      const req = state.requests.find((r) => r.id === action.id);
-      if (!req || !REQUEST_TRANSITIONS[req.status].includes("approved")) return state;
+    case "UPSERT_REQUEST": {
+      const exists = state.requests.some((r) => r.id === action.request.id);
       return {
         ...state,
-        requests: state.requests.map((r) =>
-          r.id === action.id ? { ...r, status: "approved" } : r,
-        ),
+        requests: exists
+          ? state.requests.map((r) => (r.id === action.request.id ? action.request : r))
+          : [...state.requests, action.request],
       };
     }
-
-    case "ASSIGN_REQUEST": {
-      const req = state.requests.find((r) => r.id === action.id);
-      if (!req) return state;
-
-      const newStatus: RequestStatus = (req.status === "open") ? "closed" : "assigned";
-      if (!(REQUEST_TRANSITIONS[req.status] ?? []).includes(newStatus)) return state;
-
-      const { worker, linkedMxWorkOrderId } = action;
-
-      const updatedReq: OpsRequest = {
-        ...req,
-        status:              newStatus,
-        // Legacy CRU fields (pour-linked flow)
-        assignedToId:        worker?.id,
-        assignedToLabel:     worker?.label ?? action.assignedTo ?? "TBD",
-        assignedToRole:      worker?.role,
-        linkedMxWorkOrderId,
-        // Dispatch fields (new flow)
-        assignedTo:          action.assignedTo ?? worker?.label,
-        assignedFrom:        action.assignedFrom,
-        assignedFromCustom:  action.assignedFromCustom,
-        assignedAt:          new Date().toISOString(),
-        assignedBy:          action.assignedBy,
-      };
-
-      return {
-        ...state,
-        requests: state.requests.map((r) => r.id === action.id ? updatedReq : r),
-      };
-    }
-
-    case "CREATE_REQUEST": {
-      return { ...state, requests: [...state.requests, action.request] };
-    }
-
-    case "INIT_POURS": {
-      return { ...state, pours: action.pours };
-    }
-
+    case "REMOVE_REQUEST":
+      return { ...state, requests: state.requests.filter((r) => r.id !== action.id) };
     case "UPSERT_POUR": {
       const exists = state.pours.some((p) => p.id === action.pour.id);
       return {
@@ -134,30 +100,20 @@ function opsReducer(state: OpsState, action: OpsAction): OpsState {
           : [...state.pours, action.pour],
       };
     }
-
+    case "REMOVE_POUR":
+      return { ...state, pours: state.pours.filter((p) => p.id !== action.id) };
     default:
       return state;
   }
 }
-
-const INITIAL_STATE: OpsState = {
-  requests: [], // loaded from requestsService after hydration
-  pours:    [], // loaded from poursService after hydration
-};
 
 // ── Context ───────────────────────────────────────────────────────────────────
 
 interface OpsContextValue {
   requests:              OpsRequest[];
   approveRequest:        (id: string) => void;
-  /**
-   * Assign a request to a worker.
-   * This creates a MX work order (via the injected callback) and stores the
-   * returned WO id as linkedMxWorkOrderId on the request.
-   */
   assignRequest:         (id: string, worker?: WorkerInput, opts?: DispatchAssignment) => void;
   createRequest:         (data: Omit<OpsRequest, "id">) => void;
-  // Pours
   pours:                 PourEvent[];
   createPour:            (input: CreatePourInput, asDraft: boolean) => void;
   editPour:              (id: string, updates: Omit<CreatePourInput, "createdBy" | "createdByName">, actorRole: UserRole, actorId: string, options?: { preserveStatus?: boolean; submitForApproval?: boolean }) => void;
@@ -169,78 +125,134 @@ interface OpsContextValue {
 
 const OpsContext = createContext<OpsContextValue | null>(null);
 
+function logMutationFailure(operation: string): (error: unknown) => void {
+  return (error) => {
+    console.error(`[ops:persist] ${operation} failed`, error);
+  };
+}
+
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 interface OpsProviderProps {
-  children: React.ReactNode;
+  children:            React.ReactNode;
+  initialPours:        PourEvent[];
+  initialRequests:     OpsRequest[];
   /** Injected by the layout so OpsProvider can create MX work orders without
    *  depending on MxProvider directly (they are siblings in the tree). */
   onCreateMxWorkOrder: (input: CreateMxWorkOrderInput) => { id: string };
 }
 
-export function OpsProvider({ children, onCreateMxWorkOrder }: OpsProviderProps) {
-  const [state, dispatch] = useReducer(opsReducer, INITIAL_STATE);
-
-  // Load pours + requests from services after hydration to avoid SSR/client mismatch
-  useEffect(() => {
-    dispatch({ type: "INIT_POURS",    pours:    poursService.getAllPours() });
-    dispatch({ type: "INIT_REQUESTS", requests: requestsService.getAllRequests() });
-  }, []);
-
-  // Persist requests to localStorage whenever they change (after initial load)
-  useEffect(() => {
-    if (state.requests.length === 0) return;
-    requestsService.saveAll(state.requests);
-  }, [state.requests]);
+export function OpsProvider({
+  children,
+  initialPours,
+  initialRequests,
+  onCreateMxWorkOrder,
+}: OpsProviderProps) {
+  const [state, dispatch] = useReducer(opsReducer, {
+    requests: initialRequests,
+    pours:    initialPours,
+  });
 
   // ── Request actions ───────────────────────────────────────────────────────
 
   function approveRequest(id: string): void {
-    dispatch({ type: "APPROVE_REQUEST", id });
+    const req = state.requests.find((r) => r.id === id);
+    if (!req || !REQUEST_TRANSITIONS[req.status].includes("approved")) return;
+
+    const optimistic: OpsRequest = { ...req, status: "approved" };
+    dispatch({ type: "UPSERT_REQUEST", request: optimistic });
+
+    serverApproveRequest(id)
+      .then((persisted) => dispatch({ type: "UPSERT_REQUEST", request: persisted }))
+      .catch(logMutationFailure(`approveRequest(${id})`));
   }
 
   function assignRequest(id: string, worker?: WorkerInput, opts?: DispatchAssignment): void {
     const req = state.requests.find((r) => r.id === id);
     if (!req) return;
 
-    let linkedMxWorkOrderId: string | undefined;
+    const newStatus: RequestStatus = req.status === "open" ? "closed" : "assigned";
+    if (!REQUEST_TRANSITIONS[req.status].includes(newStatus)) return;
 
-    // Only create an MX work order for the legacy CRU-linked flow (approved → assigned).
-    // New dispatch requests (open → closed) don't need MX work orders.
+    let linkedMxWorkOrderId: string | undefined;
     if (req.status === "approved") {
       const wo = onCreateMxWorkOrder({
-        title:            `Dispatch: ${req.type.replace("_", " ")} — ${req.jobsite}`,
-        category:         "corrective",
-        priority:         "medium",
-        requestedBy:      req.requestedBy ?? "OPS",
-        requestedDate:    new Date().toISOString().split("T")[0],
-        neededByDate:     req.dateNeeded,
-        readinessImpact:  null,
-        opsBlocking:      false,
+        title:           `Dispatch: ${req.type.replace("_", " ")} — ${req.jobsite}`,
+        category:        "corrective",
+        priority:        "medium",
+        requestedBy:     req.requestedBy ?? "OPS",
+        requestedDate:   new Date().toISOString().split("T")[0],
+        neededByDate:    req.dateNeeded,
+        readinessImpact: null,
+        opsBlocking:     false,
       });
       linkedMxWorkOrderId = wo.id;
     }
 
-    dispatch({
-      type:                "ASSIGN_REQUEST",
-      id,
-      worker,
+    const now = new Date().toISOString();
+    const optimistic: OpsRequest = {
+      ...req,
+      status:              newStatus,
+      assignedToId:        worker?.id,
+      assignedToLabel:     worker?.label ?? opts?.assignedTo ?? "TBD",
+      assignedToRole:      worker?.role,
       linkedMxWorkOrderId,
-      ...opts,
-    });
+      assignedTo:          opts?.assignedTo ?? worker?.label,
+      assignedFrom:        opts?.assignedFrom,
+      assignedFromCustom:  opts?.assignedFromCustom,
+      assignedAt:          now,
+      assignedBy:          opts?.assignedBy,
+    };
+    dispatch({ type: "UPSERT_REQUEST", request: optimistic });
+
+    serverAssignRequest(id, {
+      status:              newStatus,
+      assignedTo:          optimistic.assignedTo,
+      assignedFrom:        optimistic.assignedFrom,
+      assignedFromCustom:  optimistic.assignedFromCustom,
+      assignedAt:          now,
+      assignedBy:          optimistic.assignedBy,
+      assignedToId:        optimistic.assignedToId,
+      assignedToLabel:     optimistic.assignedToLabel,
+      assignedToRole:      optimistic.assignedToRole,
+      linkedMxWorkOrderId,
+    })
+      .then((persisted) => dispatch({ type: "UPSERT_REQUEST", request: persisted }))
+      .catch(logMutationFailure(`assignRequest(${id})`));
   }
 
   function createRequest(data: Omit<OpsRequest, "id">): void {
-    dispatch({ type: "CREATE_REQUEST", request: { ...data, id: crypto.randomUUID() } });
+    const optimistic: OpsRequest = { ...data, id: crypto.randomUUID() };
+    dispatch({ type: "UPSERT_REQUEST", request: optimistic });
+
+    serverCreateRequest(optimistic)
+      .then((persisted) => dispatch({ type: "UPSERT_REQUEST", request: persisted }))
+      .catch((err) => {
+        logMutationFailure(`createRequest(${optimistic.id})`)(err);
+        dispatch({ type: "REMOVE_REQUEST", id: optimistic.id });
+      });
   }
 
   // ── Pour actions ──────────────────────────────────────────────────────────
-  // Each function calls the service (which enforces rules + persists), then
-  // dispatches to update React state.
 
   function createPour(input: CreatePourInput, asDraft: boolean): void {
-    const pour = poursService.createPour(input, asDraft);
-    dispatch({ type: "UPSERT_POUR", pour });
+    const id = crypto.randomUUID();
+    const optimistic: PourEvent = {
+      ...input,
+      id,
+      status:               asDraft ? POUR_STATUS.DRAFT : POUR_STATUS.PENDING_APPROVAL,
+      requestedAt:          new Date().toISOString(),
+      relatedWorkOrderIds:  [],
+      equipmentAssignments: [],
+    };
+    dispatch({ type: "UPSERT_POUR", pour: optimistic });
+
+    serverCreatePour(id, input, asDraft)
+      .then((persisted) => dispatch({ type: "UPSERT_POUR", pour: persisted }))
+      .catch((err) => {
+        logMutationFailure(`createPour(${id})`)(err);
+        dispatch({ type: "REMOVE_POUR", id });
+      });
   }
 
   function editPour(
@@ -250,56 +262,103 @@ export function OpsProvider({ children, onCreateMxWorkOrder }: OpsProviderProps)
     actorId: string,
     options?: { preserveStatus?: boolean; submitForApproval?: boolean },
   ): void {
-    const pour = poursService.editPour(id, updates, actorRole, actorId, options);
-    if (pour) dispatch({ type: "UPSERT_POUR", pour });
+    const pour = state.pours.find((p) => p.id === id);
+    if (!pour) return;
+    if (!canEditPour(actorRole, pour, actorId)) return;
+
+    let newStatus = pour.status;
+    if (options?.submitForApproval && canSubmitForApproval(actorRole, pour, actorId)) {
+      newStatus = POUR_STATUS.PENDING_APPROVAL;
+    } else if (!options?.preserveStatus && !isAdminRole(actorRole) && pour.status === POUR_STATUS.APPROVED) {
+      newStatus = POUR_STATUS.PENDING_APPROVAL;
+    }
+    const clearApproval = newStatus === POUR_STATUS.PENDING_APPROVAL && pour.status === POUR_STATUS.APPROVED;
+
+    const optimistic: PourEvent = {
+      ...pour,
+      ...updates,
+      status: newStatus,
+      ...(clearApproval ? {
+        approvedBy:     undefined,
+        approvedByName: undefined,
+        approvedAt:     undefined,
+      } : {}),
+    };
+    dispatch({ type: "UPSERT_POUR", pour: optimistic });
+
+    serverEditPour(id, updates, newStatus, clearApproval)
+      .then((persisted) => dispatch({ type: "UPSERT_POUR", pour: persisted }))
+      .catch(logMutationFailure(`editPour(${id})`));
   }
 
   function submitPourForApproval(id: string, actorRole: UserRole, actorId: string): void {
-    const pour = poursService.submitForApproval(id, actorRole, actorId);
-    if (pour) dispatch({ type: "UPSERT_POUR", pour });
+    const pour = state.pours.find((p) => p.id === id);
+    if (!pour) return;
+    if (!canSubmitForApproval(actorRole, pour, actorId)) return;
+
+    const optimistic: PourEvent = {
+      ...pour,
+      status:          POUR_STATUS.PENDING_APPROVAL,
+      rejectionReason: undefined,
+    };
+    dispatch({ type: "UPSERT_POUR", pour: optimistic });
+
+    serverSubmitPourForApproval(id)
+      .then((persisted) => dispatch({ type: "UPSERT_POUR", pour: persisted }))
+      .catch(logMutationFailure(`submitPourForApproval(${id})`));
   }
 
   function approvePour(id: string, actorRole: UserRole, actorId: string, actorName: string): void {
-    const pour = poursService.approvePour(id, actorRole, actorId, actorName);
+    const pour = state.pours.find((p) => p.id === id);
     if (!pour) return;
-    dispatch({ type: "UPSERT_POUR", pour });
+    if (!canApprovePour(actorRole)) return;
+    if (!isValidTransition(pour.status, POUR_STATUS.APPROVED)) return;
+
+    const now = new Date().toISOString();
+    const optimistic: PourEvent = {
+      ...pour,
+      status:          POUR_STATUS.APPROVED,
+      approvedBy:      actorId,
+      approvedByName:  actorName,
+      approvedAt:      now,
+      rejectedBy:      undefined,
+      rejectedByName:  undefined,
+      rejectionReason: undefined,
+    };
+    dispatch({ type: "UPSERT_POUR", pour: optimistic });
+
+    serverApprovePour(id, actorId, actorName)
+      .then((persisted) => dispatch({ type: "UPSERT_POUR", pour: persisted }))
+      .catch(logMutationFailure(`approvePour(${id})`));
 
     // Auto-create dispatch requests for resource needs declared on this pour.
     // Guard against duplicates on re-approval.
     const alreadyCreated = state.requests.filter((r) => r.sourcePourId === id);
 
     if (pour.pumpRequest.requested && !alreadyCreated.some((r) => r.type === "pump_truck")) {
-      dispatch({
-        type: "CREATE_REQUEST",
-        request: {
-          id:                crypto.randomUUID(),
-          type:              "pump_truck",
-          jobsite:           pour.location,
-          dateNeeded:        pour.date,
-          notes:             pour.pumpRequest.notes ?? `Pump truck for ${pour.yardage} yd³ pour.`,
-          status:            "pending",
-          requestedBy:       pour.createdByName,
-          requestedByUserId: pour.createdBy,
-          sourcePourId:      pour.id,
-        },
+      createRequest({
+        type:              "pump_truck",
+        jobsite:           pour.location,
+        dateNeeded:        pour.date,
+        notes:             pour.pumpRequest.notes ?? `Pump truck for ${pour.yardage} yd³ pour.`,
+        status:            "pending",
+        requestedBy:       pour.createdByName,
+        requestedByUserId: pour.createdBy,
+        sourcePourId:      pour.id,
       });
     }
 
     if (pour.masonRequest.requested && !alreadyCreated.some((r) => r.type === "mason")) {
-      dispatch({
-        type: "CREATE_REQUEST",
-        request: {
-          id:                crypto.randomUUID(),
-          type:              "mason",
-          jobsite:           pour.location,
-          dateNeeded:        pour.date,
-          notes:             pour.masonRequest.notes ?? `${pour.masonRequest.masonCount ?? "?"} masons needed for pour.`,
-          status:            "pending",
-          requestedBy:       pour.createdByName,
-          requestedByUserId: pour.createdBy,
-          requestedCount:    pour.masonRequest.masonCount,
-          sourcePourId:      pour.id,
-        },
+      createRequest({
+        type:              "mason",
+        jobsite:           pour.location,
+        dateNeeded:        pour.date,
+        notes:             pour.masonRequest.notes ?? `${pour.masonRequest.masonCount ?? "?"} masons needed for pour.`,
+        status:            "pending",
+        requestedBy:       pour.createdByName,
+        requestedByUserId: pour.createdBy,
+        requestedCount:    pour.masonRequest.masonCount,
+        sourcePourId:      pour.id,
       });
     }
   }
@@ -311,8 +370,26 @@ export function OpsProvider({ children, onCreateMxWorkOrder }: OpsProviderProps)
     actorId: string,
     actorName: string,
   ): void {
-    const pour = poursService.rejectPour(id, reason, actorRole, actorId, actorName);
-    if (pour) dispatch({ type: "UPSERT_POUR", pour });
+    const pour = state.pours.find((p) => p.id === id);
+    if (!pour) return;
+    if (!canApprovePour(actorRole)) return;
+    if (!isValidTransition(pour.status, POUR_STATUS.REJECTED)) return;
+
+    const optimistic: PourEvent = {
+      ...pour,
+      status:          POUR_STATUS.REJECTED,
+      rejectedBy:      actorId,
+      rejectedByName:  actorName,
+      rejectionReason: reason.trim() || "No reason provided.",
+      approvedBy:      undefined,
+      approvedByName:  undefined,
+      approvedAt:      undefined,
+    };
+    dispatch({ type: "UPSERT_POUR", pour: optimistic });
+
+    serverRejectPour(id, reason, actorId, actorName)
+      .then((persisted) => dispatch({ type: "UPSERT_POUR", pour: persisted }))
+      .catch(logMutationFailure(`rejectPour(${id})`));
   }
 
   function cancelPour(
@@ -322,8 +399,23 @@ export function OpsProvider({ children, onCreateMxWorkOrder }: OpsProviderProps)
     actorId: string,
     actorName: string,
   ): void {
-    const pour = poursService.cancelPour(id, reason, actorRole, actorId, actorName);
-    if (pour) dispatch({ type: "UPSERT_POUR", pour });
+    const pour = state.pours.find((p) => p.id === id);
+    if (!pour) return;
+    if (!canCancelPour(actorRole, pour, actorId)) return;
+
+    const optimistic: PourEvent = {
+      ...pour,
+      status:             POUR_STATUS.CANCELED,
+      canceledBy:         actorId,
+      canceledByName:     actorName,
+      canceledAt:         new Date().toISOString(),
+      cancellationReason: reason.trim() || "No reason provided.",
+    };
+    dispatch({ type: "UPSERT_POUR", pour: optimistic });
+
+    serverCancelPour(id, reason, actorId, actorName)
+      .then((persisted) => dispatch({ type: "UPSERT_POUR", pour: persisted }))
+      .catch(logMutationFailure(`cancelPour(${id})`));
   }
 
   return (
@@ -346,8 +438,6 @@ export function OpsProvider({ children, onCreateMxWorkOrder }: OpsProviderProps)
     </OpsContext.Provider>
   );
 }
-
-// ── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useOps(): OpsContextValue {
   const ctx = useContext(OpsContext);

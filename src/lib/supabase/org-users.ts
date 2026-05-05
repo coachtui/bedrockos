@@ -1,5 +1,6 @@
 import "server-only";
 import { supabase } from "./server";
+import { logSupabaseReadFailure } from "./errors";
 import type { UserRole } from "@/types/org";
 
 const KNOWN_USER_ROLES = new Set<UserRole>([
@@ -36,9 +37,14 @@ export async function fetchOrgUsers(orgId: string): Promise<OrgUserRow[]> {
       .select("id, auth_id, email, name, role")
       .eq("org_id", orgId)
       .order("created_at", { ascending: true });
-    if (error || !data) return [];
+    if (error) {
+      logSupabaseReadFailure(`fetchOrgUsers(${orgId})`, error);
+      return [];
+    }
+    if (!data) return [];
     return data.map(toOrgUserRow);
-  } catch {
+  } catch (err) {
+    logSupabaseReadFailure(`fetchOrgUsers(${orgId})`, err);
     return [];
   }
 }
@@ -54,9 +60,14 @@ export async function fetchOrgUser(
       .eq("org_id", orgId)
       .eq("auth_id", authId)
       .single();
-    if (error || !data) return null;
+    if (error) {
+      logSupabaseReadFailure(`fetchOrgUser(${orgId}, ${authId})`, error);
+      return null;
+    }
+    if (!data) return null;
     return toOrgUserRow(data);
-  } catch {
+  } catch (err) {
+    logSupabaseReadFailure(`fetchOrgUser(${orgId}, ${authId})`, err);
     return null;
   }
 }

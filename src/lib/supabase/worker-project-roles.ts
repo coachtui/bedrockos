@@ -1,5 +1,6 @@
 import "server-only";
 import { supabase } from "./server";
+import { logSupabaseReadFailure } from "./errors";
 import type { WorkerProjectRole, ProjectPosition } from "@/types/domain";
 
 const VALID: Set<ProjectPosition> = new Set(["superintendent", "foreman"]);
@@ -25,9 +26,14 @@ export async function fetchOrgWorkerProjectRoles(orgId: string): Promise<WorkerP
       .from("worker_project_roles")
       .select("id, org_id, worker_id, project_id, position")
       .eq("org_id", orgId);
-    if (error || !data) return [];
+    if (error) {
+      logSupabaseReadFailure(`fetchOrgWorkerProjectRoles(${orgId})`, error);
+      return [];
+    }
+    if (!data) return [];
     return data.map(mapRow);
-  } catch {
+  } catch (err) {
+    logSupabaseReadFailure(`fetchOrgWorkerProjectRoles(${orgId})`, err);
     return [];
   }
 }
@@ -44,9 +50,14 @@ export async function fetchWorkerByUserId(
       .eq("org_id", orgId)
       .eq("user_id", userId)
       .single();
-    if (error || !data) return null;
+    if (error) {
+      logSupabaseReadFailure(`fetchWorkerByUserId(${orgId}, ${userId})`, error);
+      return null;
+    }
+    if (!data) return null;
     return { id: data.id as string };
-  } catch {
+  } catch (err) {
+    logSupabaseReadFailure(`fetchWorkerByUserId(${orgId}, ${userId})`, err);
     return null;
   }
 }
@@ -58,9 +69,14 @@ export async function fetchWorkerPositions(workerId: string): Promise<WorkerProj
       .from("worker_project_roles")
       .select("id, org_id, worker_id, project_id, position")
       .eq("worker_id", workerId);
-    if (error || !data) return [];
+    if (error) {
+      logSupabaseReadFailure(`fetchWorkerPositions(${workerId})`, error);
+      return [];
+    }
+    if (!data) return [];
     return data.map(mapRow);
-  } catch {
+  } catch (err) {
+    logSupabaseReadFailure(`fetchWorkerPositions(${workerId})`, err);
     return [];
   }
 }

@@ -3,6 +3,7 @@ import Link                   from "next/link";
 import { notFound }           from "next/navigation";
 import { fetchPlatformOrg }   from "@/lib/supabase/platform-orgs";
 import { fetchOrgUsers }      from "@/lib/supabase/org-users";
+import { ENABLE_MOCK_FALLBACK, warnMockFallback } from "@/lib/config/data-source";
 import { MOCK_PLATFORM_ORGS } from "@/lib/mock/platform";
 import { PageContainer }      from "@/components/ui/PageContainer";
 import { SectionHeader }      from "@/components/ui/SectionHeader";
@@ -13,10 +14,14 @@ type Params = Promise<{ orgId: string }>;
 export default async function OrgDetailPage({ params }: { params: Params }) {
   const { orgId } = await params;
 
-  const org =
-    (await fetchPlatformOrg(orgId)) ??
-    MOCK_PLATFORM_ORGS.find(o => o.id === orgId) ??
-    null;
+  const fetchedOrg = await fetchPlatformOrg(orgId);
+  const mockOrg = ENABLE_MOCK_FALLBACK
+    ? MOCK_PLATFORM_ORGS.find(o => o.id === orgId) ?? null
+    : null;
+  if (!fetchedOrg && mockOrg) {
+    warnMockFallback(`platform organization ${orgId}`, "Supabase returned no organization");
+  }
+  const org = fetchedOrg ?? mockOrg;
 
   if (!org) notFound();
 

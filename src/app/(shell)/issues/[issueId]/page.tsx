@@ -5,9 +5,11 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { FixLaunchButton } from "@/components/modules/fix/FixLaunchButton";
-import { MOCK_ISSUES } from "@/lib/mock/issues";
+import { fetchOrgIssueById } from "@/lib/supabase/issues";
 import { notFound } from "next/navigation";
 import type { ModuleId } from "@/types/org";
+
+const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
 
 const MODULE_LABEL: Record<ModuleId, string> = {
   fix:      "Fix",
@@ -40,13 +42,13 @@ type Params = Promise<{ issueId: string }>;
 
 export async function generateMetadata({ params }: { params: Params }) {
   const { issueId } = await params;
-  const issue = MOCK_ISSUES.find((i) => i.id === issueId);
+  const issue = await fetchOrgIssueById(ORG_ID, issueId);
   return { title: issue ? issue.title : "Issue Not Found" };
 }
 
 export default async function IssueDetailPage({ params }: { params: Params }) {
   const { issueId } = await params;
-  const issue = MOCK_ISSUES.find((i) => i.id === issueId);
+  const issue = await fetchOrgIssueById(ORG_ID, issueId);
 
   if (!issue) notFound();
 

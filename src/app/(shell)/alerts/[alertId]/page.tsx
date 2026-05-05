@@ -4,10 +4,12 @@ import { ArrowLeft, Search, ExternalLink } from "lucide-react";
 import { FixLaunchButton } from "@/components/modules/fix/FixLaunchButton";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { Card } from "@/components/ui/Card";
-import { MOCK_ALERTS } from "@/lib/mock/alerts";
-import { MOCK_ISSUES } from "@/lib/mock/issues";
+import { fetchOrgAlertById } from "@/lib/supabase/alerts";
+import { fetchOrgIssueById } from "@/lib/supabase/issues";
 import { notFound } from "next/navigation";
 import type { AlertType, AlertSeverity } from "@/types/domain";
+
+const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
 
 const TYPE_LABEL: Record<AlertType, string> = {
   safety:     "Safety",
@@ -34,19 +36,18 @@ type Params = Promise<{ alertId: string }>;
 
 export async function generateMetadata({ params }: { params: Params }) {
   const { alertId } = await params;
-  const alert = MOCK_ALERTS.find((a) => a.id === alertId);
+  const alert = await fetchOrgAlertById(ORG_ID, alertId);
   return { title: alert ? alert.message : "Alert Not Found" };
 }
 
 export default async function AlertDetailPage({ params }: { params: Params }) {
   const { alertId } = await params;
-  const alert = MOCK_ALERTS.find((a) => a.id === alertId);
+  const alert = await fetchOrgAlertById(ORG_ID, alertId);
 
   if (!alert) notFound();
 
-  // Resolve related issue for Fix handoff
   const relatedIssue = alert.related_issue_id
-    ? MOCK_ISSUES.find((i) => i.id === alert.related_issue_id) ?? null
+    ? await fetchOrgIssueById(ORG_ID, alert.related_issue_id)
     : null;
 
   return (

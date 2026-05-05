@@ -1,6 +1,7 @@
 "use server";
 
 import { supabase } from "@/lib/supabase/server";
+import { throwSupabaseWriteFailure } from "@/lib/supabase/errors";
 import type { CxTask } from "@/lib/cx/types";
 
 function toRow(orgId: string, task: CxTask) {
@@ -22,12 +23,14 @@ function toRow(orgId: string, task: CxTask) {
 }
 
 export async function serverCreateTask(orgId: string, task: CxTask): Promise<void> {
-  await supabase.from("cx_tasks").insert(toRow(orgId, task));
+  const { error } = await supabase.from("cx_tasks").insert(toRow(orgId, task));
+  if (error) throwSupabaseWriteFailure(`serverCreateTask(${task.id})`, error);
 }
 
 export async function serverBulkCreateTasks(orgId: string, tasks: CxTask[]): Promise<void> {
   if (tasks.length === 0) return;
-  await supabase.from("cx_tasks").insert(tasks.map((t) => toRow(orgId, t)));
+  const { error } = await supabase.from("cx_tasks").insert(tasks.map((t) => toRow(orgId, t)));
+  if (error) throwSupabaseWriteFailure(`serverBulkCreateTasks(${tasks.length})`, error);
 }
 
 export async function serverUpdateTask(id: string, patch: Partial<CxTask>): Promise<void> {
@@ -43,5 +46,6 @@ export async function serverUpdateTask(id: string, patch: Partial<CxTask>): Prom
   if (patch.notes             !== undefined) update.notes               = patch.notes     ?? null;
   if (patch.externalId        !== undefined) update.external_id         = patch.externalId ?? null;
   if (Object.keys(update).length === 0) return;
-  await supabase.from("cx_tasks").update(update).eq("id", id);
+  const { error } = await supabase.from("cx_tasks").update(update).eq("id", id);
+  if (error) throwSupabaseWriteFailure(`serverUpdateTask(${id})`, error);
 }

@@ -1,5 +1,6 @@
 import "server-only";
 import { supabase } from "./server";
+import { logSupabaseReadFailure } from "./errors";
 import type { Project, ProjectStatus } from "@/types/domain";
 
 const KNOWN_PROJECT_STATUSES = new Set<ProjectStatus>([
@@ -18,7 +19,11 @@ export async function fetchOrgProjects(orgId: string): Promise<Project[]> {
       .eq("org_id", orgId)
       .order("created_at", { ascending: false });
 
-    if (error || !data) return [];
+    if (error) {
+      logSupabaseReadFailure(`fetchOrgProjects(${orgId})`, error);
+      return [];
+    }
+    if (!data) return [];
 
     return data.map((row) => ({
       id:            row.id,
@@ -37,7 +42,8 @@ export async function fetchOrgProjects(orgId: string): Promise<Project[]> {
       award_price:           row.award_price != null ? Number(row.award_price) : undefined,
       working_holiday_dates: Array.isArray(row.working_holiday_dates) ? row.working_holiday_dates : [],
     }));
-  } catch {
+  } catch (err) {
+    logSupabaseReadFailure(`fetchOrgProjects(${orgId})`, err);
     return [];
   }
 }

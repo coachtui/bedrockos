@@ -6,7 +6,6 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { useMx } from "@/providers/MxProvider";
 import { useOrg } from "@/providers/OrgProvider";
 import { STATUS_LABELS, STATUS_BADGE, READINESS_BADGE, READINESS_LABELS, canCreateWorkOrder } from "@/lib/mx/rules";
-import { MOCK_ASSETS } from "@/lib/mock/assets";
 import type { MxWorkOrderPriority } from "@/lib/mx/types";
 import { ArrowLeft, ArrowUpRight, Wrench, AlertTriangle, CheckCircle } from "lucide-react";
 
@@ -28,7 +27,7 @@ const PRIORITIES: Array<{ value: MxWorkOrderPriority; label: string; style: stri
 
 function ReportIssueForm() {
   const { createWorkOrder, workOrders } = useMx();
-  const { currentUser, currentProject, role } = useOrg();
+  const { currentUser, currentProject, role, assets } = useOrg();
 
   const [equipment,   setEquipment]   = useState("");
   const [description, setDescription] = useState("");
@@ -44,7 +43,7 @@ function ReportIssueForm() {
     if (!description.trim()) return;
 
     setSubmitting(true);
-    const asset = MOCK_ASSETS.find((a) => a.id === equipment);
+    const asset = assets.find((a) => a.id === equipment);
 
     try {
       const wo = createWorkOrder({
@@ -103,7 +102,7 @@ function ReportIssueForm() {
               className="flex-1 min-w-[180px] text-sm bg-surface-overlay border border-surface-border rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-teal cursor-pointer"
             >
               <option value="">Equipment (optional)</option>
-              {MOCK_ASSETS.map((a) => (
+              {assets.map((a) => (
                 <option key={a.id} value={a.id}>{a.name}</option>
               ))}
             </select>

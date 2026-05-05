@@ -6,14 +6,15 @@ import {
   Wrench, AlertTriangle, Gauge, ArrowUpRight,
   X, ArrowLeft, Truck, Building2,
 } from "lucide-react";
-import { MOCK_ISSUES } from "@/lib/mock/issues";
-import { MOCK_ASSETS } from "@/lib/mock/assets";
-import { MOCK_PROJECTS } from "@/lib/mock/projects";
-import { MOCK_ALERTS } from "@/lib/mock/alerts";
+import { fetchOrgAlertById } from "@/lib/supabase/alerts";
+import { fetchOrgIssueById } from "@/lib/supabase/issues";
+import { fetchOrgAssetById } from "@/lib/supabase/assets";
+import { fetchOrgProjects } from "@/lib/supabase/projects";
 import { getSourceConfig } from "@/lib/modules/source-config";
 import { FixEscalateButton } from "@/components/modules/fix/FixEscalateButton";
 
 export const metadata = { title: "Fix" };
+const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
 
 // ── module features ───────────────────────────────────────────────────────────
 
@@ -47,14 +48,14 @@ export default async function FixPage({ searchParams }: { searchParams: SearchPa
   const source  = typeof params.source  === "string" ? params.source  : null;
   const role    = typeof params.role    === "string" ? params.role    : null;
 
-  // Context resolution from mock data
-  const issue = issueId ? MOCK_ISSUES.find((i) => i.id === issueId) ?? null : null;
-  const asset = assetId ? MOCK_ASSETS.find((a) => a.id === assetId) ?? null : null;
-  const alert = alertId ? MOCK_ALERTS.find((a) => a.id === alertId) ?? null : null;
+  const issue = issueId ? await fetchOrgIssueById(ORG_ID, issueId) : null;
+  const asset = assetId ? await fetchOrgAssetById(ORG_ID, assetId) : null;
+  const alert = alertId ? await fetchOrgAlertById(ORG_ID, alertId) : null;
 
   // Derive project from issue → asset fallback
   const projectId = issue?.project_id ?? asset?.project_id ?? null;
-  const project   = projectId ? MOCK_PROJECTS.find((p) => p.id === projectId) ?? null : null;
+  const projects  = projectId ? await fetchOrgProjects(ORG_ID) : [];
+  const project   = projectId ? projects.find((p) => p.id === projectId) ?? null : null;
 
   // Show banner whenever issue or asset context is present
   const hasContext = !!(issue || asset);

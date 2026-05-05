@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ActivityFeedItem } from "@/components/ui/ActivityFeedItem";
-import { MOCK_ACTIVITY } from "@/lib/mock/activity";
+import { useOrg } from "@/providers/OrgProvider";
 import type { ActivityEvent } from "@/types/domain";
 import type { ModuleId } from "@/types/org";
 
@@ -26,10 +26,11 @@ function getEventHref(event: ActivityEvent): string | undefined {
 
 export default function ActivityPage() {
   const [filter, setFilter] = useState<ModuleId | "all">("all");
+  const { activity } = useOrg();
 
   const events = filter === "all"
-    ? MOCK_ACTIVITY
-    : MOCK_ACTIVITY.filter((e) => e.module === filter);
+    ? activity
+    : activity.filter((e) => e.module === filter);
 
   return (
     <PageContainer>

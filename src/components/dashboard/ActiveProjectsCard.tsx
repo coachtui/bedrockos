@@ -6,7 +6,6 @@ import { ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { MetricTile } from "@/components/ui/MetricTile";
-import { MOCK_PROJECTS } from "@/lib/mock/projects";
 import { useOrg } from "@/providers/OrgProvider";
 import { useMx } from "@/providers/MxProvider";
 import { getRoleGroup } from "@/lib/utils/roles";
@@ -120,13 +119,13 @@ function SiteMaintenanceCard() {
 // ── Default: active projects ──────────────────────────────────────────────────
 
 export function ActiveProjectsCard() {
-  const { role } = useOrg();
+  const { role, projects } = useOrg();
   const roleGroup = getRoleGroup(role);
 
   if (roleGroup === "maintenance") return <EquipmentStatusCard />;
   if (roleGroup === "field")       return <SiteMaintenanceCard />;
 
-  const activeProjects = MOCK_PROJECTS.filter((p) => p.status === "active" || p.status === "on_hold");
+  const activeProjects = projects.filter((p) => p.status === "active" || p.status === "on_hold");
   const top3 = activeProjects.slice(0, 3);
 
   return (

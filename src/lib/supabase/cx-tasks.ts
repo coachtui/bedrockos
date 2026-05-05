@@ -1,5 +1,6 @@
 import "server-only";
 import { supabase } from "./server";
+import { logSupabaseReadFailure } from "./errors";
 import type { CxTask, CxTaskType, CxTaskStatus, CxCrewRequirement } from "@/lib/cx/types";
 
 const KNOWN_TASK_TYPES = new Set<CxTaskType>([
@@ -44,7 +45,11 @@ export async function fetchOrgTasks(orgId: string): Promise<CxTask[]> {
       .eq("org_id", orgId)
       .order("created_at", { ascending: true });
 
-    if (error || !data) return [];
+    if (error) {
+      logSupabaseReadFailure(`fetchOrgTasks(${orgId})`, error);
+      return [];
+    }
+    if (!data) return [];
 
     return data.map((row) => ({
       id: row.id,
@@ -68,7 +73,8 @@ export async function fetchOrgTasks(orgId: string): Promise<CxTask[]> {
       predecessors: Array.isArray(row.predecessors) ? row.predecessors : [],
       successors: Array.isArray(row.successors) ? row.successors : [],
     }));
-  } catch {
+  } catch (err) {
+    logSupabaseReadFailure(`fetchOrgTasks(${orgId})`, err);
     return [];
   }
 }

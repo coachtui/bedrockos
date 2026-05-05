@@ -1,5 +1,6 @@
 import "server-only";
 import { supabase } from "./server";
+import { logSupabaseReadFailure } from "./errors";
 import type { OrgWorker, WorkerRole } from "@/types/domain";
 
 const KNOWN_ROLES = new Set<WorkerRole>([
@@ -18,7 +19,11 @@ export async function fetchOrgWorkers(orgId: string): Promise<OrgWorker[]> {
       .select("id, org_id, name, role, project_id, site_name, available, skills")
       .eq("org_id", orgId);
 
-    if (error || !data) return [];
+    if (error) {
+      logSupabaseReadFailure(`fetchOrgWorkers(${orgId})`, error);
+      return [];
+    }
+    if (!data) return [];
 
     return data.map((row) => ({
       id:        row.id,
@@ -31,7 +36,8 @@ export async function fetchOrgWorkers(orgId: string): Promise<OrgWorker[]> {
       available: row.available === true,
       skills:    row.skills ?? [],
     }));
-  } catch {
+  } catch (err) {
+    logSupabaseReadFailure(`fetchOrgWorkers(${orgId})`, err);
     return [];
   }
 }

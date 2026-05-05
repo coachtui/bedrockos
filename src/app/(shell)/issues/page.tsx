@@ -4,11 +4,13 @@ import { ArrowRight } from "lucide-react";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { MOCK_ISSUES } from "@/lib/mock/issues";
+import { fetchOrgIssues } from "@/lib/supabase/issues";
 import type { IssueSeverity } from "@/types/domain";
 import type { ModuleId } from "@/types/org";
 
 export const metadata = { title: "Issues" };
+
+const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
 
 const MODULE_LABEL: Record<ModuleId, string> = {
   fix:      "Fix",
@@ -60,12 +62,14 @@ export default async function IssuesPage({ searchParams }: { searchParams: Searc
     { label: "Inspect", value: "inspect" },
   ];
 
-  const filtered = MOCK_ISSUES
+  const issues = await fetchOrgIssues(ORG_ID);
+
+  const filtered = issues
     .filter((i) => severity === "all" || i.severity === severity)
     .filter((i) => source   === "all" || i.module   === source);
 
-  const openCount     = MOCK_ISSUES.filter((i) => i.status !== "resolved").length;
-  const criticalCount = MOCK_ISSUES.filter((i) => i.severity === "critical").length;
+  const openCount     = issues.filter((i) => i.status !== "resolved").length;
+  const criticalCount = issues.filter((i) => i.severity === "critical").length;
 
   return (
     <PageContainer maxWidth="wide">

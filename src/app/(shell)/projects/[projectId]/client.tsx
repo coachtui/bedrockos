@@ -13,8 +13,6 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ActivityFeedItem } from "@/components/ui/ActivityFeedItem";
 import { ProjectInspectorPanel } from "@/components/shell/ProjectInspectorPanel";
-import { MOCK_ASSETS } from "@/lib/mock/assets";
-import { MOCK_CREWS } from "@/lib/mock/crews";
 import { useOrg } from "@/providers/OrgProvider";
 import { getRoleGroup } from "@/lib/utils/roles";
 import { buildFixUrl } from "@/lib/modules/fix/launch";
@@ -346,7 +344,7 @@ interface ProjectCommandCenterClientProps {
 }
 
 export function ProjectCommandCenterClient({ projectId, orgId, initialFiles }: ProjectCommandCenterClientProps) {
-  const { role, projects, setCurrentProject, issues, alerts, activity } = useOrg();
+  const { role, projects, assets, crews, setCurrentProject, issues, alerts, activity } = useOrg();
   const [activeTab, setActiveTab] = useState<"overview" | "schedule">("overview");
   const [editOpen, setEditOpen] = useState(false);
   const roleGroup = getRoleGroup(role);
@@ -358,7 +356,7 @@ export function ProjectCommandCenterClient({ projectId, orgId, initialFiles }: P
     if (project) {
       setCurrentProject({ id: project.id, name: project.name, slug: project.slug });
     }
-  }, [project?.id, setCurrentProject]);
+  }, [project, setCurrentProject]);
 
   if (!project) {
     return (
@@ -372,8 +370,8 @@ export function ProjectCommandCenterClient({ projectId, orgId, initialFiles }: P
   const projectIssues   = issues.filter((i) => i.project_id === projectId);
   const projectAlerts   = alerts.filter((a) => a.project_id === projectId);
   const projectActivity = activity.filter((e) => e.project_id === projectId).slice(0, 8);
-  const projectAssets   = MOCK_ASSETS.filter((a) => a.project_id === projectId);
-  const projectCrews    = MOCK_CREWS.filter((c) => c.project_id === projectId);
+  const projectAssets   = assets.filter((a) => a.project_id === projectId);
+  const projectCrews    = crews.filter((c) => c.projectId === projectId);
 
   // Role-aware issue filtering/ordering
   let openIssues = projectIssues.filter((i) => i.status !== "resolved");

@@ -13,14 +13,28 @@ import { AssistantPanel } from "@/components/layout/AssistantPanel";
 import { SearchModal }    from "@/components/search/SearchModal";
 import { useUI }          from "@/providers/UIProvider";
 import { useMx }          from "@/providers/MxProvider";
-import type { OrgWorker, Project, OrgCrew, WorkerProjectRole } from "@/types/domain";
+import type { Asset, OrgWorker, Project, OrgCrew, WorkerProjectRole, Issue, Alert, ActivityEvent } from "@/types/domain";
 import type { OrgUserRow }                                     from "@/lib/supabase/org-users";
 import type { CxTask, CxDayAssignment }                        from "@/lib/cx/types";
+import type { MxWorkOrder }                                    from "@/lib/mx/types";
+import type { PourEvent, Request as OpsRequest }               from "@/lib/ops/types";
 
-function OpsLayer({ children }: { children: React.ReactNode }) {
+function OpsLayer({
+  children,
+  initialPours,
+  initialRequests,
+}: {
+  children:        React.ReactNode;
+  initialPours:    PourEvent[];
+  initialRequests: OpsRequest[];
+}) {
   const { createWorkOrder } = useMx();
   return (
-    <OpsProvider onCreateMxWorkOrder={createWorkOrder}>
+    <OpsProvider
+      onCreateMxWorkOrder={createWorkOrder}
+      initialPours={initialPours}
+      initialRequests={initialRequests}
+    >
       {children}
     </OpsProvider>
   );
@@ -50,7 +64,14 @@ export function ShellClientRoot({
   children,
   initialWorkers,
   initialProjects,
+  initialAssets,
   initialCrews,
+  initialIssues,
+  initialAlerts,
+  initialActivity,
+  initialMxWorkOrders,
+  initialPours,
+  initialRequests,
   initialTasks,
   initialAssignments,
   initialUser,
@@ -60,7 +81,14 @@ export function ShellClientRoot({
   children:                   React.ReactNode;
   initialWorkers:             OrgWorker[];
   initialProjects:            Project[];
+  initialAssets:              Asset[];
   initialCrews:               OrgCrew[];
+  initialIssues:              Issue[];
+  initialAlerts:              Alert[];
+  initialActivity:            ActivityEvent[];
+  initialMxWorkOrders:        MxWorkOrder[];
+  initialPours:               PourEvent[];
+  initialRequests:            OpsRequest[];
   initialTasks:               CxTask[];
   initialAssignments:         CxDayAssignment[];
   initialUser?:               OrgUserRow;
@@ -69,11 +97,11 @@ export function ShellClientRoot({
 }) {
   return (
     <ThemeProvider>
-      <OrgProvider initialWorkers={initialWorkers} initialProjects={initialProjects} initialCrews={initialCrews} initialUser={initialUser} initialWorkerProjectRoles={initialWorkerProjectRoles} initialWorkerPositions={initialWorkerPositions}>
+      <OrgProvider initialWorkers={initialWorkers} initialProjects={initialProjects} initialAssets={initialAssets} initialCrews={initialCrews} initialIssues={initialIssues} initialAlerts={initialAlerts} initialActivity={initialActivity} initialUser={initialUser} initialWorkerProjectRoles={initialWorkerProjectRoles} initialWorkerPositions={initialWorkerPositions}>
         <UIProvider>
           <CxProvider initialTasks={initialTasks} initialAssignments={initialAssignments}>
-            <MxProvider>
-              <OpsLayer>
+            <MxProvider initialWorkOrders={initialMxWorkOrders}>
+              <OpsLayer initialPours={initialPours} initialRequests={initialRequests}>
                 <ShellLayout>{children}</ShellLayout>
               </OpsLayer>
             </MxProvider>

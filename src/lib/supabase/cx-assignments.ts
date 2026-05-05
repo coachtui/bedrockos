@@ -1,5 +1,6 @@
 import "server-only";
 import { supabase } from "./server";
+import { logSupabaseReadFailure } from "./errors";
 import type { CxDayAssignment } from "@/lib/cx/types";
 
 export async function fetchOrgAssignments(
@@ -12,7 +13,11 @@ export async function fetchOrgAssignments(
       .eq("org_id", orgId)
       .order("date", { ascending: true });
 
-    if (error || !data) return [];
+    if (error) {
+      logSupabaseReadFailure(`fetchOrgAssignments(${orgId})`, error);
+      return [];
+    }
+    if (!data) return [];
 
     return data.map((row) => ({
       id: row.id,
@@ -20,7 +25,8 @@ export async function fetchOrgAssignments(
       projectId: row.project_id,
       date: row.date,
     }));
-  } catch {
+  } catch (err) {
+    logSupabaseReadFailure(`fetchOrgAssignments(${orgId})`, err);
     return [];
   }
 }

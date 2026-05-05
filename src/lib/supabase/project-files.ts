@@ -1,5 +1,6 @@
 import "server-only";
 import { supabase } from "./server";
+import { logSupabaseReadFailure } from "./errors";
 import type { ProjectFile } from "@/types/domain";
 
 export async function fetchProjectFiles(
@@ -14,7 +15,11 @@ export async function fetchProjectFiles(
       .eq("project_id", projectId)
       .order("uploaded_at", { ascending: false });
 
-    if (error || !data) return [];
+    if (error) {
+      logSupabaseReadFailure(`fetchProjectFiles(${orgId}, ${projectId})`, error);
+      return [];
+    }
+    if (!data) return [];
 
     return data.map((row) => ({
       id:          row.id,
@@ -27,7 +32,8 @@ export async function fetchProjectFiles(
       uploadedBy:  row.uploaded_by,
       uploadedAt:  row.uploaded_at,
     }));
-  } catch {
+  } catch (err) {
+    logSupabaseReadFailure(`fetchProjectFiles(${orgId}, ${projectId})`, err);
     return [];
   }
 }

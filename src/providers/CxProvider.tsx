@@ -8,6 +8,12 @@ import { serverCreateAssignment, serverRemoveAssignment } from "@/lib/actions/cx
 
 const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
 
+function logCxPersistenceFailure(operation: string): (error: unknown) => void {
+  return (error) => {
+    console.error(`[cx:persist] ${operation} failed`, error);
+  };
+}
+
 interface CxState {
   tasks:       CxTask[];
   events:      CxEvent[];
@@ -84,20 +90,22 @@ export function CxProvider({
   function addTask(input: CreateCxTaskInput): CxTask {
     const task: CxTask = { ...input, id: crypto.randomUUID() };
     dispatch({ type: "ADD_TASK", task });
-    void serverCreateTask(ORG_ID, task);
+    serverCreateTask(ORG_ID, task).catch(logCxPersistenceFailure(`create task ${task.id}`));
     return task;
   }
 
   function addTasks(inputs: CreateCxTaskInput[]): CxTask[] {
     const tasks: CxTask[] = inputs.map((input) => ({ ...input, id: crypto.randomUUID() }));
     dispatch({ type: "ADD_TASKS", tasks });
-    void serverBulkCreateTasks(ORG_ID, tasks);
+    serverBulkCreateTasks(ORG_ID, tasks).catch(
+      logCxPersistenceFailure(`bulk create ${tasks.length} tasks`),
+    );
     return tasks;
   }
 
   function updateTask(id: string, patch: Partial<CxTask>) {
     dispatch({ type: "UPDATE_TASK", id, patch });
-    void serverUpdateTask(id, patch);
+    serverUpdateTask(id, patch).catch(logCxPersistenceFailure(`update task ${id}`));
   }
 
   function addEvent(input: Omit<CxEvent, "id">): CxEvent {
@@ -113,13 +121,15 @@ export function CxProvider({
     if (existing) return existing;
     const assignment: CxDayAssignment = { ...input, id: crypto.randomUUID() };
     dispatch({ type: "ADD_ASSIGNMENT", assignment });
-    void serverCreateAssignment(ORG_ID, assignment);
+    serverCreateAssignment(ORG_ID, assignment).catch(
+      logCxPersistenceFailure(`create assignment ${assignment.id}`),
+    );
     return assignment;
   }
 
   function removeAssignment(id: string) {
     dispatch({ type: "REMOVE_ASSIGNMENT", id });
-    void serverRemoveAssignment(id);
+    serverRemoveAssignment(id).catch(logCxPersistenceFailure(`remove assignment ${id}`));
   }
 
   return (

@@ -2,6 +2,9 @@ import { streamText, convertToModelMessages } from "ai";
 import { anthropic }  from "@ai-sdk/anthropic";
 import { NextResponse } from "next/server";
 import { buildSystemPrompt } from "@/lib/assistant/system-prompt";
+import { fetchOrgAssets } from "@/lib/supabase/assets";
+import { fetchOrgIssues } from "@/lib/supabase/issues";
+import { fetchOrgAlerts } from "@/lib/supabase/alerts";
 
 export const runtime = "nodejs";
 
@@ -10,6 +13,7 @@ const KNOWN_MODULES  = new Set(["cru", "fix", "inspect", "datum", "mx", "ops"]);
 const MAX_MESSAGES   = 50;
 const MAX_BODY_BYTES = 100_000;
 const MODEL_ID       = "claude-haiku-4-5-20251001";
+const ORG_ID         = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
 
 export async function POST(request: Request) {
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -60,12 +64,20 @@ export async function POST(request: Request) {
   const safeModules = Array.isArray(enabledModules)
     ? (enabledModules as unknown[]).filter((m): m is string => typeof m === "string" && KNOWN_MODULES.has(m))
     : [];
+  const [assets, issues, alerts] = await Promise.all([
+    fetchOrgAssets(ORG_ID),
+    fetchOrgIssues(ORG_ID),
+    fetchOrgAlerts(ORG_ID),
+  ]);
 
   const systemPrompt = buildSystemPrompt({
     org:            { name: org.name },
     project:        { name: project.name, status: typeof project.status === "string" ? project.status : "active", location: typeof project.location === "string" ? project.location : undefined },
     user:           { name: user.name, role: safeRole },
     enabledModules: safeModules,
+    assets,
+    issues,
+    alerts,
   });
 
   const result = await streamText({

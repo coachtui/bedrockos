@@ -3,14 +3,12 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { PageContainer } from "@/components/ui/PageContainer";
-import { Card } from "@/components/ui/Card";
 import { useMx } from "@/providers/MxProvider";
-import { MOCK_ASSETS } from "@/lib/mock/assets";
+import { useOrg } from "@/providers/OrgProvider";
 import { deriveReadiness } from "@/lib/mx/readiness";
 import {
   READINESS_LABELS, READINESS_BADGE,
   PRIORITY_LABELS, PRIORITY_BADGE,
-  STATUS_LABELS, STATUS_BADGE,
   ACTIVE_STATUSES,
 } from "@/lib/mx/rules";
 import type { ReadinessStatus } from "@/lib/mx/types";
@@ -26,17 +24,18 @@ const READINESS_ORDER: ReadinessStatus[] = [
 
 export default function MxReadinessPage() {
   const { workOrders, readiness: derivedReadiness } = useMx();
+  const { assets } = useOrg();
 
   // Merge derived readiness with all known assets
   // Assets with no active WOs get "ready" status
   const allReadiness = useMemo(() => {
-    return MOCK_ASSETS.map((asset) => {
+    return assets.map((asset) => {
       const found = derivedReadiness.find((r) => r.equipmentId === asset.id);
       if (found) return found;
       // No active work orders → derive as ready
       return deriveReadiness(asset.id, asset.name, workOrders);
     });
-  }, [derivedReadiness, workOrders]);
+  }, [assets, derivedReadiness, workOrders]);
 
   // Summary counts
   const counts = useMemo(() => {
@@ -64,7 +63,7 @@ export default function MxReadinessPage() {
         </Link>
         <div>
           <h1 className="text-lg font-bold text-content-primary">Equipment Readiness</h1>
-          <p className="text-xs text-content-muted">{MOCK_ASSETS.length} assets tracked</p>
+          <p className="text-xs text-content-muted">{assets.length} assets tracked</p>
         </div>
       </div>
 
@@ -131,7 +130,7 @@ export default function MxReadinessPage() {
         </div>
 
         {sorted.map((r) => {
-          const asset         = MOCK_ASSETS.find((a) => a.id === r.equipmentId);
+          const asset         = assets.find((a) => a.id === r.equipmentId);
           const activeWos     = workOrders.filter(
             (wo) => wo.equipmentId === r.equipmentId && ACTIVE_STATUSES.includes(wo.status),
           );

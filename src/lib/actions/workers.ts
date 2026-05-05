@@ -1,12 +1,13 @@
 "use server";
 
 import { supabase } from "@/lib/supabase/server";
+import { throwSupabaseWriteFailure } from "@/lib/supabase/errors";
 import type { OrgWorker } from "@/types/domain";
 
 const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
 
 export async function serverCreateWorker(worker: OrgWorker): Promise<void> {
-  await supabase.from("workers").insert({
+  const { error } = await supabase.from("workers").insert({
     id:         worker.id,
     org_id:     ORG_ID,
     name:       worker.name,
@@ -16,6 +17,7 @@ export async function serverCreateWorker(worker: OrgWorker): Promise<void> {
     available:  worker.available,
     skills:     worker.skills,
   });
+  if (error) throwSupabaseWriteFailure(`serverCreateWorker(${worker.id})`, error);
 }
 
 export async function serverUpdateWorker(
@@ -30,5 +32,6 @@ export async function serverUpdateWorker(
   if (patch.available  !== undefined) update.available  = patch.available;
   if (patch.skills     !== undefined) update.skills     = patch.skills;
   if (Object.keys(update).length === 0) return;
-  await supabase.from("workers").update(update).eq("id", id);
+  const { error } = await supabase.from("workers").update(update).eq("id", id);
+  if (error) throwSupabaseWriteFailure(`serverUpdateWorker(${id})`, error);
 }

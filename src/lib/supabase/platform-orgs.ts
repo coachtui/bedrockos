@@ -1,5 +1,6 @@
 import "server-only";
 import { supabase } from "./server";
+import { logSupabaseReadFailure } from "./errors";
 import type { PlatformOrg, PlatformOrgStatus, UpdateOrgInput } from "@/types/platform";
 import type { ModuleId } from "@/types/org";
 
@@ -33,9 +34,14 @@ export async function fetchPlatformOrgs(): Promise<PlatformOrg[]> {
       .from("organizations")
       .select("id, name, slug, status, enabled_modules, created_at")
       .order("created_at", { ascending: true });
-    if (error || !data) return [];
+    if (error) {
+      logSupabaseReadFailure("fetchPlatformOrgs()", error);
+      return [];
+    }
+    if (!data) return [];
     return (data as Record<string, unknown>[]).map(toPlatformOrg);
-  } catch {
+  } catch (err) {
+    logSupabaseReadFailure("fetchPlatformOrgs()", err);
     return [];
   }
 }
@@ -47,9 +53,14 @@ export async function fetchPlatformOrg(orgId: string): Promise<PlatformOrg | nul
       .select("id, name, slug, status, enabled_modules, created_at")
       .eq("id", orgId)
       .single();
-    if (error || !data) return null;
+    if (error) {
+      logSupabaseReadFailure(`fetchPlatformOrg(${orgId})`, error);
+      return null;
+    }
+    if (!data) return null;
     return toPlatformOrg(data as Record<string, unknown>);
-  } catch {
+  } catch (err) {
+    logSupabaseReadFailure(`fetchPlatformOrg(${orgId})`, err);
     return null;
   }
 }

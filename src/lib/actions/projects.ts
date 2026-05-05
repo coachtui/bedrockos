@@ -1,11 +1,12 @@
 "use server";
 import { supabase } from "@/lib/supabase/server";
+import { throwSupabaseWriteFailure } from "@/lib/supabase/errors";
 import type { Project, UpdateProjectInput } from "@/types/domain";
 
 const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
 
 export async function serverCreateProject(project: Project): Promise<void> {
-  await supabase.from("projects").insert({
+  const { error } = await supabase.from("projects").insert({
     id:            project.id,
     org_id:        ORG_ID,
     name:          project.name,
@@ -23,6 +24,7 @@ export async function serverCreateProject(project: Project): Promise<void> {
     award_price:           project.award_price ?? null,
     working_holiday_dates: project.working_holiday_dates ?? [],
   });
+  if (error) throwSupabaseWriteFailure(`serverCreateProject(${project.id})`, error);
 }
 
 export async function serverUpdateProject(
@@ -41,5 +43,6 @@ export async function serverUpdateProject(
   if (patch.award_price           !== undefined) update.award_price           = patch.award_price ?? null;
   if (patch.working_holiday_dates !== undefined) update.working_holiday_dates = patch.working_holiday_dates;
   if (Object.keys(update).length === 0) return;
-  await supabase.from("projects").update(update).eq("id", id);
+  const { error } = await supabase.from("projects").update(update).eq("id", id);
+  if (error) throwSupabaseWriteFailure(`serverUpdateProject(${id})`, error);
 }

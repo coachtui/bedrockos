@@ -1,6 +1,7 @@
 "use server";
 
 import { supabase }              from "@/lib/supabase/server";
+import { describeSupabaseError } from "@/lib/supabase/errors";
 import { insertOrg, updateOrg }  from "@/lib/supabase/platform-orgs";
 import { assertPlatformAdmin }   from "@/lib/platform-auth";
 import type { CreateOrgInput, UpdateOrgInput } from "@/types/platform";
@@ -26,9 +27,12 @@ export async function serverCreateOrg(
   const { data: inviteData, error: inviteError } =
     await supabase.auth.admin.inviteUserByEmail(input.adminEmail, {
       redirectTo: `${siteUrl}/accept-invite`,
-    });
+  });
   if (inviteError || !inviteData.user) {
-    await supabase.from("organizations").delete().eq("id", orgId);
+    const { error: rollbackError } = await supabase.from("organizations").delete().eq("id", orgId);
+    if (rollbackError) {
+      console.error(`[supabase:write] rollback organization ${orgId} failed: ${describeSupabaseError(rollbackError)}`);
+    }
     return { error: inviteError?.message ?? "Invite failed" };
   }
 
@@ -40,9 +44,15 @@ export async function serverCreateOrg(
     role:    "owner",
   });
   if (userError) {
-    await supabase.auth.admin.deleteUser(inviteData.user.id);
-    await supabase.from("organizations").delete().eq("id", orgId);
-    return { error: userError.message };
+    const { error: deleteUserError } = await supabase.auth.admin.deleteUser(inviteData.user.id);
+    if (deleteUserError) {
+      console.error(`[supabase:write] rollback invited user ${inviteData.user.id} failed: ${describeSupabaseError(deleteUserError)}`);
+    }
+    const { error: rollbackError } = await supabase.from("organizations").delete().eq("id", orgId);
+    if (rollbackError) {
+      console.error(`[supabase:write] rollback organization ${orgId} failed: ${describeSupabaseError(rollbackError)}`);
+    }
+    return { error: describeSupabaseError(userError) };
   }
 
   // TODO: send a branded welcome email via Resend once template is ready.

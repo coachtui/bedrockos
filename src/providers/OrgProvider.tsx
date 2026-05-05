@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useRef } from "react";
+import React, { createContext, useContext, useState, useCallback } from "react";
 import type { OrgConfig, ProjectContext, ModuleId, UserRole } from "@/types/org";
 import type { OrgUserRow } from "@/lib/supabase/org-users";
 import type { ModuleFeatureMap } from "@/types/org";
@@ -12,6 +12,7 @@ import type {
   UpdateProjectInput,
 } from "@/types/domain";
 import { getOrgConfig, MOCK_USER_BY_ROLE, DEFAULT_USER } from "@/lib/config/org";
+import { ENABLE_MOCK_FALLBACK, warnMockFallback } from "@/lib/config/data-source";
 import { getModulesForBundles } from "@/lib/modules/bundles";
 import { MOCK_PROJECTS } from "@/lib/mock/projects";
 import { MOCK_ASSETS }   from "@/lib/mock/assets";
@@ -22,6 +23,7 @@ import { MOCK_ISSUES }   from "@/lib/mock/issues";
 import { MOCK_ALERTS }   from "@/lib/mock/alerts";
 import { MOCK_ACTIVITY } from "@/lib/mock/activity";
 import { serverCreateProject, serverUpdateProject } from "@/lib/actions/projects";
+import { serverCreateAsset, serverUpdateAssetProject, serverUpdateAssetStatus } from "@/lib/actions/assets";
 import { serverCreateCrew, serverAddCrewMember, serverRemoveCrewMember } from "@/lib/actions/crews";
 import { serverCreateWorker, serverUpdateWorker } from "@/lib/actions/workers";
 import type { WorkerProjectRole, ProjectPosition } from "@/types/domain";
@@ -94,11 +96,37 @@ function slugify(name: string): string {
   return name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 }
 
+function getMockFallback<T>(scope: string, reason: string, fallback: () => T): T | undefined {
+  if (!ENABLE_MOCK_FALLBACK) return undefined;
+  warnMockFallback(scope, reason);
+  return fallback();
+}
+
+function initialOrFallback<T>(
+  initial: T[] | undefined,
+  scope: string,
+  reason: string,
+  fallback: () => T[],
+): T[] {
+  if (initial && (initial.length > 0 || !ENABLE_MOCK_FALLBACK)) return initial;
+  return getMockFallback(scope, reason, fallback) ?? [];
+}
+
+function logOrgPersistenceFailure(operation: string): (error: unknown) => void {
+  return (error) => {
+    console.error(`[org:persist] ${operation} failed`, error);
+  };
+}
+
 export function OrgProvider({
   children,
   initialWorkers  = [],
   initialProjects,
+  initialAssets,
   initialCrews,
+  initialIssues,
+  initialAlerts,
+  initialActivity,
   initialUser,
   initialWorkerProjectRoles,
   initialWorkerPositions,
@@ -106,16 +134,26 @@ export function OrgProvider({
   children:                    React.ReactNode;
   initialWorkers?:             OrgWorker[];
   initialProjects?:            Project[];
+  initialAssets?:              Asset[];
   initialCrews?:               OrgCrew[];
+  initialIssues?:              Issue[];
+  initialAlerts?:              Alert[];
+  initialActivity?:            ActivityEvent[];
   initialUser?:                OrgUserRow;
   initialWorkerProjectRoles?:  WorkerProjectRole[];
   initialWorkerPositions?:     WorkerProjectRole[];
 }) {
   const [config, setConfig] = useState<OrgConfig>(() => {
     const base = getOrgConfig();
+    const liveDefaultProject = initialProjects && initialProjects.length > 0
+      ? { id: initialProjects[0].id, name: initialProjects[0].name, slug: initialProjects[0].slug }
+      : null;
+    const next: OrgConfig = liveDefaultProject
+      ? { ...base, currentProject: liveDefaultProject }
+      : base;
     if (initialUser) {
       return {
-        ...base,
+        ...next,
         currentUser: {
           id:     initialUser.auth_id,
           name:   initialUser.name,
@@ -125,29 +163,39 @@ export function OrgProvider({
         },
       };
     }
-    return base;
+    return next;
   });
 
-  // Issues / alerts / activity — seeded from mock; module events prepend via addEmitted*
-  const [issues,   setIssues]   = useState<Issue[]>(MOCK_ISSUES);
-  const [alerts,   setAlerts]   = useState<Alert[]>(MOCK_ALERTS);
-  const [activity, setActivity] = useState<ActivityEvent[]>(MOCK_ACTIVITY);
-
-  // Entity state — seeded from mock files
-  const orgId = config.org.id;
-  // Phase 1: MOCK_PROJECTS and MOCK_ASSETS have no orgId field — single-org, no filter needed.
-  // Phase 3: replace with org-scoped Supabase fetches.
-  const [projects, setProjects] = useState<Project[]>(
-    initialProjects ?? MOCK_PROJECTS,
+  const [issues, setIssues] = useState<Issue[]>(
+    () => initialOrFallback(initialIssues, "issues", "Supabase returned no issues", () => MOCK_ISSUES),
   );
-  const [assets,   setAssets]   = useState<Asset[]>(MOCK_ASSETS);
+  const [alerts, setAlerts] = useState<Alert[]>(
+    () => initialOrFallback(initialAlerts, "alerts", "Supabase returned no alerts", () => MOCK_ALERTS),
+  );
+  const [activity, setActivity] = useState<ActivityEvent[]>(
+    () => initialOrFallback(initialActivity, "activity", "Supabase returned no activity", () => MOCK_ACTIVITY),
+  );
+
+  // Entity state. Live-backed domains only fall back to mock when explicitly enabled.
+  const orgId = config.org.id;
+  const [projects, setProjects] = useState<Project[]>(
+    () =>
+      initialOrFallback(initialProjects, "projects", "Supabase returned no projects", () => MOCK_PROJECTS),
+  );
+  const [assets, setAssets] = useState<Asset[]>(
+    () =>
+      initialOrFallback(initialAssets, "assets", "Supabase returned no assets", () => MOCK_ASSETS),
+  );
   const [workers, setWorkers] = useState<OrgWorker[]>(() =>
     initialWorkers.length > 0
       ? initialWorkers
-      : MOCK_WORKERS.filter((w) => w.orgId === orgId),
+      : getMockFallback("workers", "Supabase returned no workers", () =>
+          MOCK_WORKERS.filter((w) => w.orgId === orgId),
+        ) ?? [],
   );
   const [crews, setCrews] = useState<OrgCrew[]>(
-    initialCrews ?? seedCrews(orgId),
+    () =>
+      initialOrFallback(initialCrews, "crews", "Supabase returned no crews", () => seedCrews(orgId)),
   );
   const [skillCatalog, setSkillCatalog] = useState<Record<WorkerRole, string[]>>(
     () => ({
@@ -164,7 +212,7 @@ export function OrgProvider({
   const [workerProjectRoles, setWorkerProjectRoles] = useState<WorkerProjectRole[]>(
     initialWorkerProjectRoles ?? [],
   );
-  const sessionPositionsRef = useRef<WorkerProjectRole[]>(initialWorkerPositions ?? []);
+  const [sessionPositions] = useState<WorkerProjectRole[]>(initialWorkerPositions ?? []);
 
   function addEmittedActivity(event: ActivityEvent): void {
     setActivity((prev) => [event, ...prev]);
@@ -180,7 +228,7 @@ export function OrgProvider({
 
   const setCurrentProject = useCallback((project: ProjectContext) => {
     setConfig((prev) => {
-      const position = sessionPositionsRef.current.find((p) => p.projectId === project.id);
+      const position = sessionPositions.find((p) => p.projectId === project.id);
       return {
         ...prev,
         currentProject: project,
@@ -189,7 +237,7 @@ export function OrgProvider({
           : prev.currentUser,
       };
     });
-  }, []);
+  }, [sessionPositions]);
 
   function setRole(role: UserRole) {
     setConfig((prev) => ({
@@ -253,6 +301,7 @@ export function OrgProvider({
       last_seen:  new Date().toISOString(),
     };
     setAssets((prev) => [asset, ...prev]);
+    serverCreateAsset(asset).catch(logOrgPersistenceFailure(`create asset ${asset.id}`));
     addEmittedActivity({
       id:          crypto.randomUUID(),
       actor_name:  config.currentUser.name,
@@ -322,6 +371,9 @@ export function OrgProvider({
     const asset = assets.find((a) => a.id === assetId);
     if (!asset) return;
     setAssets((prev) => prev.map((a) => a.id === assetId ? { ...a, status } : a));
+    serverUpdateAssetStatus(assetId, status).catch(
+      logOrgPersistenceFailure(`update asset status ${assetId}`),
+    );
     addEmittedActivity({
       id:          crypto.randomUUID(),
       actor_name:  config.currentUser.name,
@@ -340,6 +392,9 @@ export function OrgProvider({
     const project = projects.find((p) => p.id === projectId);
     if (!asset) return;
     setAssets((prev) => prev.map((a) => a.id === assetId ? { ...a, project_id: projectId } : a));
+    serverUpdateAssetProject(assetId, projectId).catch(
+      logOrgPersistenceFailure(`update asset project ${assetId}`),
+    );
     addEmittedActivity({
       id:          crypto.randomUUID(),
       actor_name:  config.currentUser.name,
@@ -581,9 +636,9 @@ export function OrgProvider({
     slug: p.slug,
   }));
 
-  const availableProjects: ProjectContext[] = sessionPositionsRef.current.length > 0
+  const availableProjects: ProjectContext[] = sessionPositions.length > 0
     ? allProjectContexts.filter((p) =>
-        sessionPositionsRef.current.some((sp) => sp.projectId === p.id),
+        sessionPositions.some((sp) => sp.projectId === p.id),
       )
     : allProjectContexts;
 
