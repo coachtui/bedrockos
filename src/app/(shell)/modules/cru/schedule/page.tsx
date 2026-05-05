@@ -9,6 +9,7 @@ import { GanttPanel } from "@/components/cx/GanttPanel";
 import { useOrg } from "@/providers/OrgProvider";
 import { useCx } from "@/providers/CxProvider";
 import { localDateString } from "@/lib/utils/time";
+import { isNonWorkingDay } from "@/lib/cx/holidays";
 import type { CxTask, CxEvent, CreateCxTaskInput } from "@/lib/cx/types";
 import { ArrowLeft, Plus, CalendarDays, BarChart2 } from "lucide-react";
 
@@ -55,12 +56,13 @@ const EVENT_TYPE_COLOR: Record<string, string> = {
 
 // ── Calendar View ─────────────────────────────────────────────────────────────
 
-function CalendarView({ events, tasks, projectId, today, monday }: {
-  events:    CxEvent[];
-  tasks:     CxTask[];
-  projectId: string;
-  today:     string;
-  monday:    string;
+function CalendarView({ events, tasks, projectId, today, monday, workingHolidayDates }: {
+  events:               CxEvent[];
+  tasks:                CxTask[];
+  projectId:            string;
+  today:                string;
+  monday:               string;
+  workingHolidayDates:  string[];
 }) {
   const allDates = Array.from({ length: 28 }, (_, i) => addDays(monday, i));
   const weeks = [
@@ -87,15 +89,18 @@ function CalendarView({ events, tasks, projectId, today, monday }: {
           </p>
           <div className="grid grid-cols-7 gap-1">
             {week.map((date) => {
-              const dayEvents = projectEvents.filter((e) => e.date === date);
-              const dayTasks  = activeTasks.filter((t) => date >= t.startDate && date <= t.endDate);
-              const isToday   = date === today;
+              const nonWorking = isNonWorkingDay(date, workingHolidayDates);
+              const dayEvents  = nonWorking ? [] : projectEvents.filter((e) => e.date === date);
+              const dayTasks   = nonWorking ? [] : activeTasks.filter((t) => date >= t.startDate && date <= t.endDate);
+              const isToday    = date === today;
               return (
                 <div
                   key={date}
                   className={`min-h-[72px] rounded-lg border p-1.5 ${
                     isToday
                       ? "border-gold/40 bg-gold/5"
+                      : nonWorking
+                      ? "border-surface-border bg-surface-raised/40 opacity-50"
                       : "border-surface-border bg-surface-raised"
                   }`}
                 >
@@ -219,6 +224,7 @@ export default function SchedulePage() {
           projectId={currentProject.id}
           today={today}
           monday={monday}
+          workingHolidayDates={workingHolidayDates}
         />
       ) : (
         <div className="mt-4">
