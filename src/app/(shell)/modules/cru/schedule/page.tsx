@@ -135,7 +135,7 @@ function CalendarView({ events, tasks, projectId, today, monday }: {
 type ScheduleTab = "calendar" | "gantt";
 
 export default function SchedulePage() {
-  const { workers, currentProject, role } = useOrg();
+  const { workers, currentProject, projects, role } = useOrg();
   const { tasks, events, addTask, updateTask } = useCx();
 
   const today  = useMemo(() => localDateString(), []);
@@ -147,6 +147,7 @@ export default function SchedulePage() {
   const selectedTask = selectedTaskId ? tasks.find((t) => t.id === selectedTaskId) : undefined;
 
   const canEdit = role === "project_engineer" || role === "superintendent" || role === "owner" || role === "admin";
+  const workingHolidayDates = projects.find((p) => p.id === currentProject.id)?.working_holiday_dates ?? [];
 
   function openCreate() {
     setSelectedTaskId(undefined);
@@ -229,6 +230,7 @@ export default function SchedulePage() {
             monday={monday}
             onTaskClick={openEdit}
             canEdit={canEdit}
+            workingHolidayDates={workingHolidayDates}
           />
         </div>
       )}
