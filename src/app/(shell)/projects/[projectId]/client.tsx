@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, MapPin, User, Calendar,
   Wrench, Users, ClipboardCheck, ChevronRight,
-  AlertCircle, Bell, Truck, DollarSign, Pencil,
+  AlertCircle, Bell, Truck, DollarSign, Pencil, Settings,
 } from "lucide-react";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { Card } from "@/components/ui/Card";
@@ -426,16 +426,24 @@ export function ProjectCommandCenterClient({ projectId, orgId, initialFiles }: P
     <PageContainer maxWidth="wide">
 
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 mb-6">
+      <div className="flex items-center justify-between gap-2 mb-6">
+        <div className="flex items-center gap-2">
+          <Link
+            href="/projects"
+            className="flex items-center gap-1.5 text-sm text-content-muted hover:text-content-primary transition-colors"
+          >
+            <ArrowLeft size={14} />
+            Projects
+          </Link>
+          <span className="text-content-muted">/</span>
+          <span className="text-sm text-content-secondary truncate">{project.name}</span>
+        </div>
         <Link
-          href="/projects"
-          className="flex items-center gap-1.5 text-sm text-content-muted hover:text-content-primary transition-colors"
+          href={`/projects/${projectId}/settings`}
+          className="flex items-center gap-1.5 text-xs text-content-muted hover:text-content-primary transition-colors"
         >
-          <ArrowLeft size={14} />
-          Projects
+          <Settings size={12} /> Settings
         </Link>
-        <span className="text-content-muted">/</span>
-        <span className="text-sm text-content-secondary truncate">{project.name}</span>
       </div>
 
       {/* ── Project Header ─────────────────────────────────────────────────── */}
