@@ -1,6 +1,6 @@
-export type ModuleId = "cru" | "fix" | "inspect" | "datum" | "ops" | "mx" | "schedule";
+export type ModuleId = "cru" | "fix" | "inspect" | "datum" | "ops" | "mx" | "schedule" | "safety";
 
-export type BundleId = "field_ops" | "equipment" | "operations";
+export type BundleId = "field_ops" | "equipment" | "operations" | "safety";
 
 export type ModuleScope = "full" | "read" | "my_work" | "field" | "hidden";
 

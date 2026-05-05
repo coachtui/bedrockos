@@ -15,6 +15,7 @@ const ALL_MODULES: { id: ModuleId; label: string }[] = [
   { id: "ops",     label: "Operations"       },
   { id: "inspect", label: "Inspections"      },
   { id: "datum",   label: "Geospatial"       },
+  { id: "safety",  label: "Safety"           },
 ];
 
 function toSlug(name: string): string {

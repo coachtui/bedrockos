@@ -23,16 +23,18 @@ const MODULE_LABEL: Record<ModuleId, string> = {
   ops:      "OPS",
   mx:       "MX",
   schedule: "Schedule",
+  safety:   "Safety",
 };
 
 const MODULE_COLOR: Record<ModuleId, string> = {
-  fix:      "text-teal       border-teal/30       bg-teal/10",
-  cru:      "text-gold       border-gold/30       bg-gold/10",
-  inspect:  "text-blue-brand border-blue-brand/30 bg-blue-brand/10",
-  datum:    "text-teal       border-teal/30       bg-teal/10",
-  ops:      "text-gold       border-gold/30       bg-gold/10",
-  mx:       "text-teal       border-teal/30       bg-teal/10",
-  schedule: "text-teal       border-teal/30       bg-teal/10",
+  fix:      "text-teal            border-teal/30            bg-teal/10",
+  cru:      "text-gold            border-gold/30            bg-gold/10",
+  inspect:  "text-blue-brand      border-blue-brand/30      bg-blue-brand/10",
+  datum:    "text-teal            border-teal/30            bg-teal/10",
+  ops:      "text-gold            border-gold/30            bg-gold/10",
+  mx:       "text-teal            border-teal/30            bg-teal/10",
+  schedule: "text-teal            border-teal/30            bg-teal/10",
+  safety:   "text-status-critical border-status-critical/30 bg-status-critical/10",
 };
 
 function formatDate(iso: string): string {

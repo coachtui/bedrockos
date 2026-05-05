@@ -10,7 +10,8 @@ import { fetchOrgPours }        from "@/lib/supabase/ops-pours";
 import { fetchOrgRequests }     from "@/lib/supabase/ops-requests";
 import { fetchOrgTasks }       from "@/lib/supabase/cx-tasks";
 import { fetchOrgAssignments } from "@/lib/supabase/cx-assignments";
-import { fetchOrgUser }        from "@/lib/supabase/org-users";
+import { fetchOrgUserByAuthId } from "@/lib/supabase/org-users";
+import { fetchPlatformOrg }     from "@/lib/supabase/platform-orgs";
 import { getSessionUser }      from "@/lib/supabase/ssr";
 import {
   fetchOrgWorkerProjectRoles,
@@ -20,33 +21,35 @@ import {
 import type { WorkerProjectRole } from "@/types/domain";
 import { ShellClientRoot }     from "./shell-client";
 
-const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
+const FALLBACK_ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
 
 export default async function ShellRootLayout({ children }: { children: React.ReactNode }) {
   const sessionUser = await getSessionUser();
 
-  const [workers, projects, assets, crews, issues, alerts, activity, mxWorkOrders, pours, requests, tasks, assignments, workerProjectRoles] = await Promise.all([
-    fetchOrgWorkers(ORG_ID),
-    fetchOrgProjects(ORG_ID),
-    fetchOrgAssets(ORG_ID),
-    fetchOrgCrews(ORG_ID),
-    fetchOrgIssues(ORG_ID),
-    fetchOrgAlerts(ORG_ID),
-    fetchOrgActivity(ORG_ID),
-    fetchOrgMxWorkOrders(ORG_ID),
-    fetchOrgPours(ORG_ID),
-    fetchOrgRequests(ORG_ID),
-    fetchOrgTasks(ORG_ID),
-    fetchOrgAssignments(ORG_ID),
-    fetchOrgWorkerProjectRoles(ORG_ID),
+  // Resolve the active org from the signed-in user's org_users record.
+  // Fall back to the env var when there is no session (or no membership row).
+  const orgUser = sessionUser ? await fetchOrgUserByAuthId(sessionUser.id) : null;
+  const activeOrgId = orgUser?.org_id ?? FALLBACK_ORG_ID;
+
+  const [org, workers, projects, assets, crews, issues, alerts, activity, mxWorkOrders, pours, requests, tasks, assignments, workerProjectRoles] = await Promise.all([
+    fetchPlatformOrg(activeOrgId),
+    fetchOrgWorkers(activeOrgId),
+    fetchOrgProjects(activeOrgId),
+    fetchOrgAssets(activeOrgId),
+    fetchOrgCrews(activeOrgId),
+    fetchOrgIssues(activeOrgId),
+    fetchOrgAlerts(activeOrgId),
+    fetchOrgActivity(activeOrgId),
+    fetchOrgMxWorkOrders(activeOrgId),
+    fetchOrgPours(activeOrgId),
+    fetchOrgRequests(activeOrgId),
+    fetchOrgTasks(activeOrgId),
+    fetchOrgAssignments(activeOrgId),
+    fetchOrgWorkerProjectRoles(activeOrgId),
   ]);
 
-  const orgUser = sessionUser
-    ? await fetchOrgUser(ORG_ID, sessionUser.id)
-    : null;
-
   const sessionWorker = sessionUser
-    ? await fetchWorkerByUserId(ORG_ID, sessionUser.id)
+    ? await fetchWorkerByUserId(activeOrgId, sessionUser.id)
     : null;
   const sessionWorkerPositions: WorkerProjectRole[] = sessionWorker
     ? await fetchWorkerPositions(sessionWorker.id)
@@ -54,6 +57,7 @@ export default async function ShellRootLayout({ children }: { children: React.Re
 
   return (
     <ShellClientRoot
+      initialOrg={org}
       initialWorkers={workers}
       initialProjects={projects}
       initialAssets={assets}

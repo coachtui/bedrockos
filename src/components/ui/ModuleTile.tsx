@@ -11,9 +11,10 @@ interface ModuleTileProps {
 }
 
 const ACCENT_STYLES: Record<string, { dot: string; arrow: string; border: string }> = {
-  gold: { dot: "bg-gold",       arrow: "text-gold",       border: "hover:border-gold/40" },
-  teal: { dot: "bg-teal",       arrow: "text-teal",       border: "hover:border-teal/40" },
-  blue: { dot: "bg-blue-brand", arrow: "text-blue-brand", border: "hover:border-blue-brand/40" },
+  gold: { dot: "bg-gold",            arrow: "text-gold",            border: "hover:border-gold/40" },
+  teal: { dot: "bg-teal",            arrow: "text-teal",            border: "hover:border-teal/40" },
+  blue: { dot: "bg-blue-brand",      arrow: "text-blue-brand",      border: "hover:border-blue-brand/40" },
+  red:  { dot: "bg-status-critical", arrow: "text-status-critical", border: "hover:border-status-critical/40" },
 };
 
 export function ModuleTile({ module: mod, isEnabled }: ModuleTileProps) {

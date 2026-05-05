@@ -5,8 +5,8 @@ export interface ModuleDefinition {
   label:       string;
   description: string;
   route:       string;
-  category:    "field_ops" | "equipment" | "data" | "diagnostics" | "operations";
-  accentColor: "gold" | "teal" | "blue";
+  category:    "field_ops" | "equipment" | "data" | "diagnostics" | "operations" | "safety";
+  accentColor: "gold" | "teal" | "blue" | "red";
   tagline:     string;
 }
 
@@ -64,6 +64,15 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     route:       "/modules/mx",
     category:    "equipment",
     accentColor: "teal",
+  },
+  {
+    id:          "safety",
+    label:       "SX",
+    description: "Safety incidents, hazard observations, and near-miss reporting",
+    tagline:     "Capture incidents and hazards on the spot. Audit-ready records.",
+    route:       "/modules/safety",
+    category:    "safety",
+    accentColor: "red",
   },
 ];
 

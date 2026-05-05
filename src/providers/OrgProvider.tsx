@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import type { OrgConfig, ProjectContext, ModuleId, UserRole } from "@/types/org";
 import type { OrgUserRow } from "@/lib/supabase/org-users";
+import type { PlatformOrg } from "@/types/platform";
 import type { ModuleFeatureMap } from "@/types/org";
 import type {
   Issue, ActivityEvent, Alert, Project, Asset, OrgWorker, OrgCrew,
@@ -129,6 +130,7 @@ export function OrgProvider({
   initialIssues,
   initialAlerts,
   initialActivity,
+  initialOrg,
   initialUser,
   initialWorkerProjectRoles,
   initialWorkerPositions,
@@ -141,18 +143,35 @@ export function OrgProvider({
   initialIssues?:              Issue[];
   initialAlerts?:              Alert[];
   initialActivity?:            ActivityEvent[];
+  initialOrg?:                 PlatformOrg | null;
   initialUser?:                OrgUserRow;
   initialWorkerProjectRoles?:  WorkerProjectRole[];
   initialWorkerPositions?:     WorkerProjectRole[];
 }) {
   const [config, setConfig] = useState<OrgConfig>(() => {
     const base = getOrgConfig();
+    let next: OrgConfig = base;
+
+    // Override organization identity with the signed-in user's actual org.
+    if (initialOrg) {
+      next = {
+        ...next,
+        org: {
+          ...next.org,
+          id:   initialOrg.id,
+          name: initialOrg.name,
+          slug: initialOrg.slug,
+        },
+      };
+    }
+
     const liveDefaultProject = initialProjects && initialProjects.length > 0
       ? { id: initialProjects[0].id, name: initialProjects[0].name, slug: initialProjects[0].slug }
       : null;
-    const next: OrgConfig = liveDefaultProject
-      ? { ...base, currentProject: liveDefaultProject }
-      : base;
+    if (liveDefaultProject) {
+      next = { ...next, currentProject: liveDefaultProject };
+    }
+
     if (initialUser) {
       return {
         ...next,
@@ -624,7 +643,11 @@ export function OrgProvider({
     });
   }
 
-  const enabledModules = getModulesForBundles(config.purchasedBundles);
+  // Prefer the live organizations.enabled_modules value when present; otherwise
+  // fall back to bundle-derived modules so dev keeps working without a live row.
+  const enabledModules: ModuleId[] = (initialOrg?.enabledModules?.length ?? 0) > 0
+    ? (initialOrg!.enabledModules)
+    : getModulesForBundles(config.purchasedBundles);
 
   function isModuleEnabled(id: ModuleId): boolean {
     return enabledModules.includes(id);

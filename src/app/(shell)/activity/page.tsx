@@ -16,6 +16,7 @@ const MODULE_FILTERS: { label: string; value: ModuleId | "all" }[] = [
   { label: "CRU",     value: "cru"     },
   { label: "Datum",   value: "datum"   },
   { label: "Inspect", value: "inspect" },
+  { label: "Safety",  value: "safety"  },
 ];
 
 function getEventHref(event: ActivityEvent): string | undefined {

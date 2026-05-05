@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { ClipboardCheck, ArrowRight } from "lucide-react";
+import { ShieldAlert, ArrowRight } from "lucide-react";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -16,23 +16,23 @@ function relativeTime(iso: string): string {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-export default function InspectPage() {
+export default function SafetyPage() {
   const { currentProject, issues } = useOrg();
 
   const recent = issues
-    .filter((i) => i.module === "inspect" && i.project_id === currentProject.id)
+    .filter((i) => i.module === "safety" && i.project_id === currentProject.id)
     .slice(0, 8);
 
   return (
     <PageContainer>
-      <div className="rounded-[var(--radius-card)] border border-blue-brand/30 bg-gradient-to-br from-surface-raised to-surface-overlay p-8 mb-6">
+      <div className="rounded-[var(--radius-card)] border border-status-critical/30 bg-gradient-to-br from-surface-raised to-surface-overlay p-8 mb-6">
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-3 h-3 rounded-full bg-blue-brand" />
-          <span className="text-xs font-bold uppercase tracking-widest text-blue-brand">Module</span>
+          <div className="w-3 h-3 rounded-full bg-status-critical" />
+          <span className="text-xs font-bold uppercase tracking-widest text-status-critical">Module</span>
         </div>
-        <h1 className="text-2xl font-bold text-content-primary">Inspect</h1>
+        <h1 className="text-2xl font-bold text-content-primary">Safety</h1>
         <p className="text-content-secondary mt-2 max-w-md leading-relaxed">
-          Walk a task, capture conditions, file an issue. The supe and foreman see it on their dashboards.
+          Log a near-miss, hazard, or incident on a task. Photos optional. Audit-ready records.
         </p>
       </div>
 
@@ -40,18 +40,18 @@ export default function InspectPage() {
         <div className="lg:col-span-2">
           <Card variant="default">
             <div className="flex items-center gap-2 mb-4">
-              <ClipboardCheck size={16} className="text-blue-brand" />
-              <p className="text-sm font-bold text-content-primary">Inspect a Task</p>
+              <ShieldAlert size={16} className="text-status-critical" />
+              <p className="text-sm font-bold text-content-primary">Report a Safety Event</p>
             </div>
             <TaskFindingForm
-              module="inspect"
-              accent="blue"
+              module="safety"
+              accent="red"
               copy={{
-                titleLabel:       "Finding",
-                titlePlaceholder: "Short summary of what you observed",
-                notesPlaceholder: "Conditions, dimensions, what is blocking the next step…",
-                submitLabel:      "File Issue",
-                successMessage:   "Issue filed.",
+                titleLabel:       "Event",
+                titlePlaceholder: "Near-miss, hazard, or incident — what happened?",
+                notesPlaceholder: "Who was involved, when, conditions, contributing factors…",
+                submitLabel:      "File Safety Event",
+                successMessage:   "Safety event logged.",
               }}
             />
           </Card>
@@ -61,12 +61,12 @@ export default function InspectPage() {
           <Card variant="default">
             <div className="flex items-center justify-between mb-3">
               <p className="text-[11px] font-bold uppercase tracking-widest text-content-muted">Recent on {currentProject.name}</p>
-              <Link href="/issues?source=inspect" className="text-[11px] text-content-muted hover:text-blue-brand transition-colors flex items-center gap-1">
+              <Link href="/issues?source=safety" className="text-[11px] text-content-muted hover:text-status-critical transition-colors flex items-center gap-1">
                 All <ArrowRight size={10} />
               </Link>
             </div>
             {recent.length === 0 ? (
-              <p className="text-xs text-content-muted">No inspect issues yet on this project.</p>
+              <p className="text-xs text-content-muted">No safety events logged on this project.</p>
             ) : (
               <ul className="space-y-2">
                 {recent.map((issue) => (

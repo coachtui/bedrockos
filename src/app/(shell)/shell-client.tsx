@@ -19,6 +19,7 @@ import type { OrgUserRow }                                     from "@/lib/supab
 import type { CxTask, CxDayAssignment }                        from "@/lib/cx/types";
 import type { MxWorkOrder }                                    from "@/lib/mx/types";
 import type { PourEvent, Request as OpsRequest }               from "@/lib/ops/types";
+import type { PlatformOrg }                                    from "@/types/platform";
 
 function useShellActivityEmitter() {
   const { addEmittedActivity, currentUser } = useOrg();
@@ -86,6 +87,7 @@ function ShellLayout({ children }: { children: React.ReactNode }) {
 
 export function ShellClientRoot({
   children,
+  initialOrg,
   initialWorkers,
   initialProjects,
   initialAssets,
@@ -103,6 +105,7 @@ export function ShellClientRoot({
   initialWorkerPositions,
 }: {
   children:                   React.ReactNode;
+  initialOrg:                 PlatformOrg | null;
   initialWorkers:             OrgWorker[];
   initialProjects:            Project[];
   initialAssets:              Asset[];
@@ -121,7 +124,7 @@ export function ShellClientRoot({
 }) {
   return (
     <ThemeProvider>
-      <OrgProvider initialWorkers={initialWorkers} initialProjects={initialProjects} initialAssets={initialAssets} initialCrews={initialCrews} initialIssues={initialIssues} initialAlerts={initialAlerts} initialActivity={initialActivity} initialUser={initialUser} initialWorkerProjectRoles={initialWorkerProjectRoles} initialWorkerPositions={initialWorkerPositions}>
+      <OrgProvider initialOrg={initialOrg} initialWorkers={initialWorkers} initialProjects={initialProjects} initialAssets={initialAssets} initialCrews={initialCrews} initialIssues={initialIssues} initialAlerts={initialAlerts} initialActivity={initialActivity} initialUser={initialUser} initialWorkerProjectRoles={initialWorkerProjectRoles} initialWorkerPositions={initialWorkerPositions}>
         <UIProvider>
           <CxProvider initialTasks={initialTasks} initialAssignments={initialAssignments}>
             <MxLayer initialWorkOrders={initialMxWorkOrders}>
