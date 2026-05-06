@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Building2, Truck, HardHat, Activity,
   MapPin, Wrench, Users, ClipboardCheck, ClipboardList,
   Building, UserCog, Lock, ChevronLeft, ChevronRight,
-  AlertCircle, Bell,
+  AlertCircle, Bell, ShieldAlert,
 } from "lucide-react";
 import { useUI } from "@/providers/UIProvider";
 import { useOrg } from "@/providers/OrgProvider";
@@ -29,12 +29,13 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   AlertCircle:     <AlertCircle     size={16} />,
   Bell:            <Bell            size={16} />,
   ClipboardList:   <ClipboardList   size={16} />,
+  ShieldAlert:     <ShieldAlert     size={16} />,
 };
 
 export function Sidebar() {
   const pathname          = usePathname();
   const { sidebarCollapsed, toggleSidebar } = useUI();
-  const { role } = useOrg();
+  const { role, enabledModules } = useOrg();
 
   return (
     <aside
@@ -73,6 +74,8 @@ export function Sidebar() {
                     (item.href === "/workers" || item.href === "/crews") &&
                     (role === "foreman" || role === "superintendent" || role === "project_engineer" || role === "mechanic")
                   ) return false;
+                  // Module-scoped items only appear when the org has the module enabled
+                  if (item.moduleId && !enabledModules.includes(item.moduleId)) return false;
                   return true;
                 })
                 .map((item) => {
