@@ -1,21 +1,39 @@
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useCallback } from "react";
 import type { OrgConfig, ProjectContext, ModuleId, UserRole } from "@/types/org";
+import type { OrgUserRow } from "@/lib/supabase/org-users";
+import type { PlatformOrg } from "@/types/platform";
 import type { ModuleFeatureMap } from "@/types/org";
 import type {
-  Issue, ActivityEvent, Project, Asset, OrgWorker, OrgCrew,
+  Issue, ActivityEvent, Alert, Project, Asset, OrgWorker, OrgCrew,
   AssetStatus, CrewStatus,
   CreateProjectInput, CreateAssetInput, CreateCrewInput,
   CreateWorkerInput, WorkerRole,
+  UpdateProjectInput,
 } from "@/types/domain";
 import { getOrgConfig, MOCK_USER_BY_ROLE, DEFAULT_USER } from "@/lib/config/org";
+import { ENABLE_MOCK_FALLBACK, warnMockFallback } from "@/lib/config/data-source";
 import { getModulesForBundles } from "@/lib/modules/bundles";
 import { MOCK_PROJECTS } from "@/lib/mock/projects";
 import { MOCK_ASSETS }   from "@/lib/mock/assets";
 import { MOCK_WORKERS }  from "@/lib/mock/workers";
 import { MOCK_CREWS }    from "@/lib/mock/crews";
 import { SKILL_CATALOG } from "@/lib/mock/skills";
+import { MOCK_ISSUES }   from "@/lib/mock/issues";
+import { MOCK_ALERTS }   from "@/lib/mock/alerts";
+import { MOCK_ACTIVITY } from "@/lib/mock/activity";
+import { serverCreateProject, serverUpdateProject } from "@/lib/actions/projects";
+import { serverCreateAsset, serverUpdateAssetProject, serverUpdateAssetStatus } from "@/lib/actions/assets";
+import { serverCreateCrew, serverAddCrewMember, serverRemoveCrewMember } from "@/lib/actions/crews";
+import { serverCreateWorker, serverUpdateWorker } from "@/lib/actions/workers";
+import { serverInsertActivity } from "@/lib/actions/activity";
+import { serverInsertIssue } from "@/lib/actions/issues";
+import type { WorkerProjectRole, ProjectPosition } from "@/types/domain";
+import {
+  serverAssignProjectPosition,
+  serverRemoveProjectPosition,
+} from "@/lib/actions/worker-project-roles";
 
 interface OrgContextValue {
   currentOrganization: OrgConfig["org"];
@@ -29,22 +47,26 @@ interface OrgContextValue {
   setRole:             (role: UserRole) => void;
   isModuleEnabled:     (id: ModuleId) => boolean;
   getModuleFeatures:   (id: ModuleId) => ModuleFeatureMap;
-  emittedIssues:       Issue[];
-  emittedActivity:     ActivityEvent[];
-  addEmittedIssue:     (issue: Issue) => void;
-  addEmittedActivity:  (event: ActivityEvent) => void;
+  issues:   Issue[];
+  alerts:   Alert[];
+  activity: ActivityEvent[];
+  addEmittedIssue:    (issue: Issue) => void;
+  addEmittedAlert:    (alert: Alert) => void;
+  addEmittedActivity: (event: ActivityEvent) => void;
   // Entity state
   projects:   Project[];
   assets:     Asset[];
   workers:    OrgWorker[];
   crews:      OrgCrew[];
   // Entity mutators
-  addProject: (input: CreateProjectInput) => Project;
+  addProject:    (input: CreateProjectInput) => Project;
+  updateProject: (id: string, patch: UpdateProjectInput) => void;
   addAsset:   (input: CreateAssetInput)   => Asset;
   addCrew:    (input: CreateCrewInput)    => OrgCrew;
   skillCatalog:   Record<WorkerRole, string[]>;
   addWorker:      (input: CreateWorkerInput) => OrgWorker;
   addSkillToRole: (role: WorkerRole, skill: string) => void;
+  updateWorkerBasicInfo: (workerId: string, patch: { name?: string; role?: WorkerRole }) => void;
   updateWorkerSkills: (workerId: string, skills: string[]) => void;
   reassignWorker:     (workerId: string, projectId: string | undefined, crewId: string | undefined) => void;
   toggleWorkerAvailability: (workerId: string) => void;
@@ -54,6 +76,9 @@ interface OrgContextValue {
   updateCrewName:       (crewId: string, name: string) => void;
   addWorkerToCrew:      (crewId: string, workerId: string) => void;
   removeWorkerFromCrew: (crewId: string, workerId: string) => void;
+  workerProjectRoles:      WorkerProjectRole[];
+  assignProjectPosition:   (workerId: string, projectId: string, position: ProjectPosition) => void;
+  removeProjectPosition:   (workerId: string, projectId: string) => void;
 }
 
 const OrgContext = createContext<OrgContextValue | null>(null);
@@ -74,21 +99,125 @@ function slugify(name: string): string {
   return name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 }
 
-export function OrgProvider({ children }: { children: React.ReactNode }) {
-  const [config, setConfig] = useState<OrgConfig>(getOrgConfig);
+function getMockFallback<T>(scope: string, reason: string, fallback: () => T): T | undefined {
+  if (!ENABLE_MOCK_FALLBACK) return undefined;
+  warnMockFallback(scope, reason);
+  return fallback();
+}
 
-  // Emitter state
-  const [emittedIssues,   setEmittedIssues]   = useState<Issue[]>([]);
-  const [emittedActivity, setEmittedActivity] = useState<ActivityEvent[]>([]);
+function initialOrFallback<T>(
+  initial: T[] | undefined,
+  scope: string,
+  reason: string,
+  fallback: () => T[],
+): T[] {
+  if (initial && (initial.length > 0 || !ENABLE_MOCK_FALLBACK)) return initial;
+  return getMockFallback(scope, reason, fallback) ?? [];
+}
 
-  // Entity state — seeded from mock files
+function logOrgPersistenceFailure(operation: string): (error: unknown) => void {
+  return (error) => {
+    console.error(`[org:persist] ${operation} failed`, error);
+  };
+}
+
+export function OrgProvider({
+  children,
+  initialWorkers  = [],
+  initialProjects,
+  initialAssets,
+  initialCrews,
+  initialIssues,
+  initialAlerts,
+  initialActivity,
+  initialOrg,
+  initialUser,
+  initialWorkerProjectRoles,
+  initialWorkerPositions,
+}: {
+  children:                    React.ReactNode;
+  initialWorkers?:             OrgWorker[];
+  initialProjects?:            Project[];
+  initialAssets?:              Asset[];
+  initialCrews?:               OrgCrew[];
+  initialIssues?:              Issue[];
+  initialAlerts?:              Alert[];
+  initialActivity?:            ActivityEvent[];
+  initialOrg?:                 PlatformOrg | null;
+  initialUser?:                OrgUserRow;
+  initialWorkerProjectRoles?:  WorkerProjectRole[];
+  initialWorkerPositions?:     WorkerProjectRole[];
+}) {
+  const [config, setConfig] = useState<OrgConfig>(() => {
+    const base = getOrgConfig();
+    let next: OrgConfig = base;
+
+    // Override organization identity with the signed-in user's actual org.
+    if (initialOrg) {
+      next = {
+        ...next,
+        org: {
+          ...next.org,
+          id:   initialOrg.id,
+          name: initialOrg.name,
+          slug: initialOrg.slug,
+        },
+      };
+    }
+
+    const liveDefaultProject = initialProjects && initialProjects.length > 0
+      ? { id: initialProjects[0].id, name: initialProjects[0].name, slug: initialProjects[0].slug }
+      : null;
+    if (liveDefaultProject) {
+      next = { ...next, currentProject: liveDefaultProject };
+    }
+
+    if (initialUser) {
+      return {
+        ...next,
+        currentUser: {
+          id:     initialUser.auth_id,
+          name:   initialUser.name,
+          email:  initialUser.email,
+          role:   initialUser.role,
+          avatar: null,
+        },
+      };
+    }
+    return next;
+  });
+
+  const [issues, setIssues] = useState<Issue[]>(
+    () => initialOrFallback(initialIssues, "issues", "Supabase returned no issues", () => MOCK_ISSUES),
+  );
+  const [alerts, setAlerts] = useState<Alert[]>(
+    () => initialOrFallback(initialAlerts, "alerts", "Supabase returned no alerts", () => MOCK_ALERTS),
+  );
+  const [activity, setActivity] = useState<ActivityEvent[]>(
+    () => initialOrFallback(initialActivity, "activity", "Supabase returned no activity", () => MOCK_ACTIVITY),
+  );
+
+  // Entity state. Live-backed domains only fall back to mock when explicitly enabled.
   const orgId = config.org.id;
-  // Phase 1: MOCK_PROJECTS and MOCK_ASSETS have no orgId field — single-org, no filter needed.
-  // Phase 3: replace with org-scoped Supabase fetches.
-  const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS);
-  const [assets,   setAssets]   = useState<Asset[]>(MOCK_ASSETS);
-  const [workers, setWorkers]   = useState<OrgWorker[]>(MOCK_WORKERS.filter((w) => w.orgId === orgId));
-  const [crews,    setCrews]    = useState<OrgCrew[]>(seedCrews(orgId));
+  const [projects, setProjects] = useState<Project[]>(
+    () =>
+      initialOrFallback(initialProjects, "projects", "Supabase returned no projects", () => MOCK_PROJECTS),
+  );
+  const [assets, setAssets] = useState<Asset[]>(
+    () =>
+      initialOrFallback(initialAssets, "assets", "Supabase returned no assets", () => MOCK_ASSETS),
+  );
+  const [workers, setWorkers] = useState<OrgWorker[]>(() =>
+    initialWorkers.length > 0
+      ? initialWorkers
+      : getMockFallback("workers", "Supabase returned no workers", () =>
+          MOCK_WORKERS.filter((w) => w.orgId === orgId),
+        ) ?? [],
+  );
+  const [crews, setCrews] = useState<OrgCrew[]>(
+    () =>
+      initialOrFallback(initialCrews, "crews", "Supabase returned no crews", () => seedCrews(orgId)),
+  );
   const [skillCatalog, setSkillCatalog] = useState<Record<WorkerRole, string[]>>(
     () => ({
       operator:       [...SKILL_CATALOG.operator],
@@ -101,18 +230,37 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
       superintendent: [...SKILL_CATALOG.superintendent],
     })
   );
+  const [workerProjectRoles, setWorkerProjectRoles] = useState<WorkerProjectRole[]>(
+    initialWorkerProjectRoles ?? [],
+  );
+  const [sessionPositions] = useState<WorkerProjectRole[]>(initialWorkerPositions ?? []);
 
   function addEmittedActivity(event: ActivityEvent): void {
-    setEmittedActivity((prev) => [event, ...prev]);
+    setActivity((prev) => [event, ...prev]);
+    serverInsertActivity(event).catch(logOrgPersistenceFailure(`emit activity ${event.id}`));
   }
 
   function addEmittedIssue(issue: Issue): void {
-    setEmittedIssues((prev) => [issue, ...prev]);
+    setIssues((prev) => [issue, ...prev]);
+    serverInsertIssue(issue).catch(logOrgPersistenceFailure(`emit issue ${issue.id}`));
   }
 
-  function setCurrentProject(project: ProjectContext) {
-    setConfig((prev) => ({ ...prev, currentProject: project }));
+  function addEmittedAlert(alert: Alert): void {
+    setAlerts((prev) => [alert, ...prev]);
   }
+
+  const setCurrentProject = useCallback((project: ProjectContext) => {
+    setConfig((prev) => {
+      const position = sessionPositions.find((p) => p.projectId === project.id);
+      return {
+        ...prev,
+        currentProject: project,
+        currentUser: position
+          ? { ...prev.currentUser, role: position.position }
+          : prev.currentUser,
+      };
+    });
+  }, [sessionPositions]);
 
   function setRole(role: UserRole) {
     setConfig((prev) => ({
@@ -135,8 +283,12 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
       last_activity: new Date().toISOString(),
       start_date:    input.startDate,
       end_date:      input.endDate,
+      description:           input.description,
+      award_price:           input.awardPrice,
+      working_holiday_dates: [],
     };
     setProjects((prev) => [project, ...prev]);
+    serverCreateProject(project).catch(console.error);
     addEmittedActivity({
       id:          crypto.randomUUID(),
       actor_name:  config.currentUser.name,
@@ -150,6 +302,18 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     return project;
   }
 
+  function updateProject(id: string, patch: UpdateProjectInput): void {
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id !== id) return p;
+        const updated: Project = { ...p, ...patch };
+        if (patch.name) updated.slug = slugify(patch.name);
+        return updated;
+      }),
+    );
+    serverUpdateProject(id, patch).catch(console.error);
+  }
+
   function addAsset(input: CreateAssetInput): Asset {
     const asset: Asset = {
       id:         crypto.randomUUID(),
@@ -160,6 +324,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
       last_seen:  new Date().toISOString(),
     };
     setAssets((prev) => [asset, ...prev]);
+    serverCreateAsset(asset).catch(logOrgPersistenceFailure(`create asset ${asset.id}`));
     addEmittedActivity({
       id:          crypto.randomUUID(),
       actor_name:  config.currentUser.name,
@@ -185,6 +350,8 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
       status:    "on_site",
     };
     setCrews((prev) => [crew, ...prev]);
+    serverCreateCrew(crew).catch(console.error);
+    crew.memberIds.forEach((wid) => serverAddCrewMember(crew.id, wid).catch(console.error));
     addEmittedActivity({
       id:          crypto.randomUUID(),
       actor_name:  config.currentUser.name,
@@ -209,6 +376,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
       skills:    input.skills,
     };
     setWorkers((prev) => [worker, ...prev]);
+    serverCreateWorker(worker).catch(console.error);
     addEmittedActivity({
       id:          crypto.randomUUID(),
       actor_name:  config.currentUser.name,
@@ -226,6 +394,9 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     const asset = assets.find((a) => a.id === assetId);
     if (!asset) return;
     setAssets((prev) => prev.map((a) => a.id === assetId ? { ...a, status } : a));
+    serverUpdateAssetStatus(assetId, status).catch(
+      logOrgPersistenceFailure(`update asset status ${assetId}`),
+    );
     addEmittedActivity({
       id:          crypto.randomUUID(),
       actor_name:  config.currentUser.name,
@@ -244,6 +415,9 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     const project = projects.find((p) => p.id === projectId);
     if (!asset) return;
     setAssets((prev) => prev.map((a) => a.id === assetId ? { ...a, project_id: projectId } : a));
+    serverUpdateAssetProject(assetId, projectId).catch(
+      logOrgPersistenceFailure(`update asset project ${assetId}`),
+    );
     addEmittedActivity({
       id:          crypto.randomUUID(),
       actor_name:  config.currentUser.name,
@@ -299,6 +473,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     setCrews((prev) =>
       prev.map((c) => c.id === crewId ? { ...c, memberIds: [...c.memberIds, workerId] } : c),
     );
+    serverAddCrewMember(crewId, workerId).catch(console.error);
     addEmittedActivity({
       id:          crypto.randomUUID(),
       actor_name:  config.currentUser.name,
@@ -321,6 +496,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
         c.id === crewId ? { ...c, memberIds: c.memberIds.filter((id) => id !== workerId) } : c,
       ),
     );
+    serverRemoveCrewMember(crewId, workerId).catch(console.error);
     addEmittedActivity({
       id:          crypto.randomUUID(),
       actor_name:  config.currentUser.name,
@@ -334,6 +510,36 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     });
   }
 
+  function assignProjectPosition(
+    workerId: string,
+    projectId: string,
+    position: ProjectPosition,
+  ): void {
+    setWorkerProjectRoles((prev) => {
+      const without = prev.filter(
+        (r) => !(r.workerId === workerId && r.projectId === projectId),
+      );
+      const newRow: WorkerProjectRole = {
+        id:        `wpr_${workerId}_${projectId}`,
+        orgId,
+        workerId,
+        projectId,
+        position,
+      };
+      return [...without, newRow];
+    });
+    serverAssignProjectPosition(workerId, projectId, position).catch(console.error);
+  }
+
+  function removeProjectPosition(workerId: string, projectId: string): void {
+    setWorkerProjectRoles((prev) =>
+      prev.filter(
+        (r) => !(r.workerId === workerId && r.projectId === projectId),
+      ),
+    );
+    serverRemoveProjectPosition(workerId, projectId).catch(console.error);
+  }
+
   function addSkillToRole(role: WorkerRole, skill: string): void {
     setSkillCatalog((prev) => ({
       ...prev,
@@ -341,10 +547,18 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     }));
   }
 
+  function updateWorkerBasicInfo(workerId: string, patch: { name?: string; role?: WorkerRole }): void {
+    setWorkers((prev) =>
+      prev.map((w) => (w.id === workerId ? { ...w, ...patch } : w))
+    );
+    serverUpdateWorker(workerId, patch).catch(console.error);
+  }
+
   function updateWorkerSkills(workerId: string, skills: string[]): void {
     setWorkers((prev) =>
       prev.map((w) => (w.id === workerId ? { ...w, skills } : w))
     );
+    serverUpdateWorker(workerId, { skills }).catch(console.error);
   }
 
   function toggleWorkerAvailability(workerId: string): void {
@@ -355,6 +569,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     setWorkers((prev) =>
       prev.map((w) => (w.id === workerId ? { ...w, available: next } : w))
     );
+    serverUpdateWorker(workerId, { available: next }).catch(console.error);
 
     addEmittedActivity({
       id:          crypto.randomUUID(),
@@ -383,6 +598,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
         w.id === workerId ? { ...w, projectId, siteName: undefined } : w,
       ),
     );
+    serverUpdateWorker(workerId, { projectId: projectId ?? null, siteName: null }).catch(console.error);
 
     // 2. Remove worker from all crew memberIds
     setCrews((prev) =>
@@ -427,7 +643,11 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     });
   }
 
-  const enabledModules = getModulesForBundles(config.purchasedBundles);
+  // Prefer the live organizations.enabled_modules value when present; otherwise
+  // fall back to bundle-derived modules so dev keeps working without a live row.
+  const enabledModules: ModuleId[] = (initialOrg?.enabledModules?.length ?? 0) > 0
+    ? (initialOrg!.enabledModules)
+    : getModulesForBundles(config.purchasedBundles);
 
   function isModuleEnabled(id: ModuleId): boolean {
     return enabledModules.includes(id);
@@ -437,11 +657,17 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     return config.features[id] ?? {};
   }
 
-  const availableProjects: ProjectContext[] = projects.map((p) => ({
+  const allProjectContexts: ProjectContext[] = projects.map((p) => ({
     id:   p.id,
     name: p.name,
     slug: p.slug,
   }));
+
+  const availableProjects: ProjectContext[] = sessionPositions.length > 0
+    ? allProjectContexts.filter((p) =>
+        sessionPositions.some((sp) => sp.projectId === p.id),
+      )
+    : allProjectContexts;
 
   return (
     <OrgContext.Provider
@@ -457,20 +683,24 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
         setRole,
         isModuleEnabled,
         getModuleFeatures,
-        emittedIssues,
-        emittedActivity,
+        issues,
+        alerts,
+        activity,
         addEmittedIssue,
+        addEmittedAlert,
         addEmittedActivity,
         projects,
         assets,
         workers,
         crews,
         addProject,
+        updateProject,
         addAsset,
         addCrew,
         skillCatalog,
         addWorker,
         addSkillToRole,
+        updateWorkerBasicInfo,
         updateWorkerSkills,
         reassignWorker,
         toggleWorkerAvailability,
@@ -480,6 +710,9 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
         updateCrewName,
         addWorkerToCrew,
         removeWorkerFromCrew,
+        workerProjectRoles,
+        assignProjectPosition,
+        removeProjectPosition,
       }}
     >
       {children}

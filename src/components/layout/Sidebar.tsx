@@ -1,16 +1,17 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Building2, Truck, HardHat, Activity,
-  MapPin, Wrench, Users, BarChart3, ClipboardCheck, ClipboardList,
+  MapPin, Wrench, Users, ClipboardCheck, ClipboardList,
   Building, UserCog, Lock, ChevronLeft, ChevronRight,
-  AlertCircle, Bell,
+  AlertCircle, Bell, ShieldAlert,
 } from "lucide-react";
 import { useUI } from "@/providers/UIProvider";
+import { useOrg } from "@/providers/OrgProvider";
 import { NAV_SECTIONS } from "@/lib/nav/nav-config";
+import { BedrockGrid } from "@/components/brand/BedrockGrid";
 
 const ICON_MAP: Record<string, React.ReactNode> = {
   LayoutDashboard: <LayoutDashboard size={16} />,
@@ -21,7 +22,6 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   MapPin:          <MapPin          size={16} />,
   Wrench:          <Wrench          size={16} />,
   Users:           <Users           size={16} />,
-  BarChart3:       <BarChart3       size={16} />,
   ClipboardCheck:  <ClipboardCheck  size={16} />,
   Building:        <Building        size={16} />,
   UserCog:         <UserCog         size={16} />,
@@ -29,11 +29,13 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   AlertCircle:     <AlertCircle     size={16} />,
   Bell:            <Bell            size={16} />,
   ClipboardList:   <ClipboardList   size={16} />,
+  ShieldAlert:     <ShieldAlert     size={16} />,
 };
 
 export function Sidebar() {
   const pathname          = usePathname();
   const { sidebarCollapsed, toggleSidebar } = useUI();
+  const { role, enabledModules } = useOrg();
 
   return (
     <aside
@@ -45,13 +47,11 @@ export function Sidebar() {
       `}
     >
       {/* Logo / brand mark */}
-      <div className="flex items-center gap-3 px-4 h-14 border-b border-surface-border shrink-0">
-        <div className="w-7 h-7 rounded-lg bg-gold flex items-center justify-center shrink-0">
-          <span className="text-content-inverse text-[11px] font-black tracking-tighter">AC</span>
-        </div>
+      <div className="flex items-center gap-2.5 px-4 h-14 border-b border-surface-border shrink-0">
+        <BedrockGrid size="sm" variant="icon" className="shrink-0" />
         {!sidebarCollapsed && (
-          <span className="font-bold text-sm text-content-primary tracking-tight whitespace-nowrap overflow-hidden">
-            AIGA Construction
+          <span className="font-mono font-bold text-[13px] uppercase tracking-[0.18em] text-content-primary leading-none whitespace-nowrap overflow-hidden">
+            BEDROCK<span className="text-gold">OS</span>
           </span>
         )}
       </div>
@@ -67,7 +67,18 @@ export function Sidebar() {
             )}
             {sidebarCollapsed && <div className="h-px bg-surface-border mx-2 mb-2" />}
             <ul className="space-y-0.5">
-              {section.items.map((item) => {
+              {section.items
+                .filter((item) => {
+                  // Field roles manage workers and crews through CX module, not core shell views
+                  if (
+                    (item.href === "/workers" || item.href === "/crews") &&
+                    (role === "foreman" || role === "superintendent" || role === "project_engineer" || role === "mechanic")
+                  ) return false;
+                  // Module-scoped items only appear when the org has the module enabled
+                  if (item.moduleId && !enabledModules.includes(item.moduleId)) return false;
+                  return true;
+                })
+                .map((item) => {
                 const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
                 return (
                   <li key={item.href}>

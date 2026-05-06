@@ -17,12 +17,13 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: "Modules",
     items: [
-      { label: "CRU",     href: "/modules/cru",     icon: "Users" },
-      { label: "Datum",   href: "/modules/datum",   icon: "MapPin" },
-      { label: "Inspect", href: "/modules/inspect", icon: "ClipboardCheck" },
-      { label: "Fix",     href: "/modules/fix",     icon: "Wrench" },
-      { label: "OPS",     href: "/modules/ops",     icon: "ClipboardList" },
-      { label: "MX",      href: "/modules/mx",      icon: "Wrench" },
+      { label: "CX", href: "/modules/cru",     icon: "Users",          moduleId: "cru" },
+      { label: "DX", href: "/modules/datum",   icon: "MapPin",         moduleId: "datum" },
+      { label: "IX", href: "/modules/inspect", icon: "ClipboardCheck", moduleId: "inspect" },
+      { label: "FX", href: "/modules/fix",     icon: "Wrench",         moduleId: "fix" },
+      { label: "OX", href: "/modules/ops",     icon: "ClipboardList",  moduleId: "ops" },
+      { label: "MX", href: "/modules/mx",      icon: "Wrench",         moduleId: "mx" },
+      { label: "SX", href: "/modules/safety",  icon: "ShieldAlert",    moduleId: "safety" },
     ],
   },
   {

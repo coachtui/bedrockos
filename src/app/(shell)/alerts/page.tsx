@@ -3,10 +3,12 @@ import Link from "next/link";
 import { AlertTriangle, Clock, Wrench, Shield, ClipboardCheck, ArrowRight } from "lucide-react";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { MOCK_ALERTS } from "@/lib/mock/alerts";
+import { fetchOrgAlerts } from "@/lib/supabase/alerts";
 import type { AlertType, AlertSeverity } from "@/types/domain";
 
 export const metadata = { title: "Alerts" };
+
+const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
 
 const TYPE_ICON: Record<AlertType, React.ReactNode> = {
   safety:     <AlertTriangle  size={14} className="text-status-critical" />,
@@ -42,14 +44,15 @@ export default async function AlertsPage({ searchParams }: { searchParams: Searc
   const params   = await searchParams;
   const severity = typeof params.severity === "string" ? params.severity : "all";
 
-  const filtered = MOCK_ALERTS.filter((a) => severity === "all" || a.severity === severity);
-  const unreadCount = MOCK_ALERTS.filter((a) => !a.is_read).length;
+  const alerts = await fetchOrgAlerts(ORG_ID);
+  const filtered = alerts.filter((a) => severity === "all" || a.severity === severity);
+  const unreadCount = alerts.filter((a) => !a.is_read).length;
 
   return (
     <PageContainer maxWidth="wide">
       <SectionHeader
         title="Alerts"
-        subtitle={`${unreadCount} unread · ${MOCK_ALERTS.length} total`}
+        subtitle={`${unreadCount} unread · ${alerts.length} total`}
       />
 
       {/* Filter pills */}

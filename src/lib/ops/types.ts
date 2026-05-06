@@ -1,5 +1,6 @@
-export type RequestType   = "mason" | "pump_truck" | "equipment";
-export type RequestStatus = "pending" | "approved" | "assigned";
+export type RequestType    = "mason" | "pump_truck" | "equipment" | "manpower";
+export type RequestStatus  = "pending" | "approved" | "assigned" | "open" | "closed";
+export type ManpowerTrade  = "laborer" | "operator" | "mason" | "carpenter" | "ironworker" | "finisher" | "foreman";
 
 // Legacy — kept for CRU-event display in the pour schedule (CRU has its own
 // simplified status model). New OPS pours use PourStatus from pourRules.ts.
@@ -8,21 +9,32 @@ export type PourEventStatus = "planned" | "confirmed" | "completed";
 export interface Request {
   id:                  string;
   type:                RequestType;
+  // Manpower detail (used when type === "manpower")
+  trade?:              ManpowerTrade;
+  // Equipment detail (used when type === "equipment")
+  equipmentType?:      string;
+  // How many workers / units needed
+  quantity?:           number;
   jobsite:             string;
+  jobsiteId?:          string;
   dateNeeded:          string;
-  notes:               string;
+  notes?:              string;
   status:              RequestStatus;
   requestedBy?:        string;
   requestedByUserId?:  string;
-  /** Set when request is assigned through CRU worker selection */
+  // Dispatch assignment (set when closed/assigned)
+  assignedTo?:         string;
+  assignedFrom?:       string;
+  assignedFromCustom?: string;
+  assignedAt?:         string;
+  assignedBy?:         string;
+  // Legacy CRU assignment fields (pour-linked requests only)
   assignedToId?:       string;
   assignedToLabel?:    string;
   assignedToRole?:     string;
-  /** Number of workers / units requested (e.g. mason headcount) */
+  /** Legacy headcount field — use quantity for new requests */
   requestedCount?:     number;
-  /** ID of the PourEvent that auto-generated this request on approval. */
   sourcePourId?:       string;
-  /** MX work order ID created when this request was assigned */
   linkedMxWorkOrderId?: string;
 }
 

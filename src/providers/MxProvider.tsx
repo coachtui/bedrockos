@@ -1,12 +1,11 @@
 "use client";
 
 /**
- * MxProvider — Maintenance Execution session state
+ * MxProvider — Maintenance module session state
  *
- * Follows the OpsProvider pattern: createContext + useReducer + custom hook.
- * Lives at shell layout level so state persists across MX sub-page navigations.
- *
- * Phase 3 migration: swap workOrdersService load/persist for Supabase calls.
+ * Hydrates from server-fetched initialWorkOrders (props). Mutations follow the
+ * optimistic-then-reconcile pattern: dispatch optimistic state immediately,
+ * fire server action, then UPSERT with the persisted row when it lands.
  *
  * Responsibilities:
  *   - MX work orders (CRUD + status transitions)
@@ -15,17 +14,22 @@
  *
  * NOT responsible for:
  *   - CRU data fetching (stays in src/lib/integrations/cru.ts)
- *   - Persistence implementation (delegated to workOrdersService)
  */
 
 import React, {
   createContext,
   useContext,
   useReducer,
-  useEffect,
   useMemo,
+  useRef,
 } from "react";
-import * as workOrdersService from "@/lib/mx/workOrdersService";
+import {
+  serverCreateMxWorkOrder,
+  serverUpdateMxWorkOrderStatus,
+  serverUpdateMxWorkOrder,
+  serverAssignMechanic,
+  serverUnassignMechanic,
+} from "@/lib/actions/mx-work-orders";
 import { deriveAllReadiness } from "@/lib/mx/readiness";
 import { WO_TRANSITIONS } from "@/lib/mx/rules";
 import type {
@@ -35,6 +39,12 @@ import type {
   MxWorkOrderUpdate,
   EquipmentReadiness,
 } from "@/lib/mx/types";
+import type { ActivityEvent } from "@/types/domain";
+
+type EmitActivityInput =
+  Omit<ActivityEvent, "id" | "timestamp" | "actor_name"> &
+  { actor_name?: string };
+export type EmitActivityFn = (event: EmitActivityInput) => void;
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -43,37 +53,25 @@ interface MxState {
 }
 
 type MxAction =
-  | { type: "INIT_WORK_ORDERS"; workOrders: MxWorkOrder[] }
   | { type: "UPSERT_WORK_ORDER"; workOrder: MxWorkOrder }
-  | { type: "CREATE_WORK_ORDER"; workOrder: MxWorkOrder };
-
-// ── Reducer ───────────────────────────────────────────────────────────────────
+  | { type: "REMOVE_WORK_ORDER"; id: string };
 
 function mxReducer(state: MxState, action: MxAction): MxState {
   switch (action.type) {
-    case "INIT_WORK_ORDERS":
-      return { workOrders: action.workOrders };
-
-    case "CREATE_WORK_ORDER":
-      return { workOrders: [...state.workOrders, action.workOrder] };
-
     case "UPSERT_WORK_ORDER": {
       const exists = state.workOrders.some((w) => w.id === action.workOrder.id);
       return {
         workOrders: exists
-          ? state.workOrders.map((w) =>
-              w.id === action.workOrder.id ? action.workOrder : w,
-            )
+          ? state.workOrders.map((w) => (w.id === action.workOrder.id ? action.workOrder : w))
           : [...state.workOrders, action.workOrder],
       };
     }
-
+    case "REMOVE_WORK_ORDER":
+      return { workOrders: state.workOrders.filter((w) => w.id !== action.id) };
     default:
       return state;
   }
 }
-
-const INITIAL_STATE: MxState = { workOrders: [] };
 
 // ── Context ───────────────────────────────────────────────────────────────────
 
@@ -89,55 +87,192 @@ interface MxContextValue {
 
 const MxContext = createContext<MxContextValue | null>(null);
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function maxWoNumber(workOrders: MxWorkOrder[]): number {
+  let max = 0;
+  for (const wo of workOrders) {
+    const m = /^WO-(\d+)$/.exec(wo.woNumber);
+    if (m) {
+      const n = parseInt(m[1], 10);
+      if (n > max) max = n;
+    }
+  }
+  return max;
+}
+
+function logMutationFailure(operation: string): (error: unknown) => void {
+  return (error) => {
+    console.error(`[mx:persist] ${operation} failed`, error);
+  };
+}
+
 // ── Provider ──────────────────────────────────────────────────────────────────
 
-export function MxProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(mxReducer, INITIAL_STATE);
+export function MxProvider({
+  children,
+  initialWorkOrders = [],
+  onEmitActivity,
+}: {
+  children:           React.ReactNode;
+  initialWorkOrders?: MxWorkOrder[];
+  onEmitActivity?:    EmitActivityFn;
+}) {
+  const [state, dispatch] = useReducer(mxReducer, { workOrders: initialWorkOrders });
 
-  // Load from localStorage after hydration to avoid SSR/client mismatch
-  useEffect(() => {
-    dispatch({
-      type:       "INIT_WORK_ORDERS",
-      workOrders: workOrdersService.getAllWorkOrders(),
-    });
-  }, []);
+  // Local-only WO number counter for optimistic display. Server trigger is the
+  // source of truth — UPSERT reconciles when the persisted row lands.
+  const localWoCounterRef = useRef(maxWoNumber(initialWorkOrders) + 1);
+  const nextOptimisticWoNumber = (): string =>
+    `WO-${String(localWoCounterRef.current++).padStart(4, "0")}`;
 
-  // Derived readiness — recomputed whenever work orders change
   const readiness = useMemo(
     () => deriveAllReadiness(state.workOrders),
     [state.workOrders],
   );
 
-  // ── Actions ───────────────────────────────────────────────────────────────
-
   function createWorkOrder(input: CreateMxWorkOrderInput): MxWorkOrder {
-    const wo = workOrdersService.createWorkOrder(input);
-    dispatch({ type: "CREATE_WORK_ORDER", workOrder: wo });
-    return wo;
+    const now = new Date().toISOString();
+    const optimistic: MxWorkOrder = {
+      id:                  crypto.randomUUID(),
+      woNumber:            nextOptimisticWoNumber(),
+      title:               input.title,
+      description:         input.description,
+      category:            input.category,
+      priority:            input.priority,
+      status:              "open",
+      sourceType:          "manual",
+      equipmentId:         input.equipmentId,
+      equipmentLabel:      input.equipmentLabel,
+      projectId:           input.projectId,
+      projectName:         input.projectName,
+      requestedBy:         input.requestedBy,
+      requestedByUserId:   input.requestedByUserId,
+      requestedDate:       input.requestedDate,
+      neededByDate:        input.neededByDate,
+      requiredSkills:      input.requiredSkills ?? [],
+      estimatedHours:      input.estimatedHours,
+      readinessImpact:     input.readinessImpact,
+      opsBlocking:         input.opsBlocking,
+      assignedMechanicIds: [],
+      createdAt:           now,
+      updatedAt:           now,
+    };
+    dispatch({ type: "UPSERT_WORK_ORDER", workOrder: optimistic });
+
+    serverCreateMxWorkOrder(optimistic.id, input)
+      .then((persisted) => dispatch({ type: "UPSERT_WORK_ORDER", workOrder: persisted }))
+      .catch((err) => {
+        logMutationFailure(`createWorkOrder(${optimistic.id})`)(err);
+        dispatch({ type: "REMOVE_WORK_ORDER", id: optimistic.id });
+      });
+
+    onEmitActivity?.({
+      action:      "created work order",
+      entity_type: "work_order",
+      entity_id:   optimistic.id,
+      entity_name: optimistic.woNumber,
+      project_id:  input.projectId ?? "",
+      module:      "mx",
+    });
+
+    return optimistic;
   }
 
   function updateWorkOrderStatus(id: string, status: MxWorkOrderStatus): void {
     const wo = state.workOrders.find((w) => w.id === id);
     if (!wo) return;
-    if (!WO_TRANSITIONS[wo.status].includes(status)) return; // guard invalid transition
+    if (!WO_TRANSITIONS[wo.status].includes(status)) return;
 
-    const updated = workOrdersService.updateWorkOrderStatus(id, status);
-    if (updated) dispatch({ type: "UPSERT_WORK_ORDER", workOrder: updated });
-  }
+    const now = new Date().toISOString();
+    const optimistic: MxWorkOrder = {
+      ...wo,
+      status,
+      actualStart: status === "in_progress" ? now : wo.actualStart,
+      actualEnd:   status === "completed"   ? now : wo.actualEnd,
+      updatedAt:   now,
+    };
+    dispatch({ type: "UPSERT_WORK_ORDER", workOrder: optimistic });
 
-  function assignMechanic(workOrderId: string, mechanicId: string): void {
-    const updated = workOrdersService.assignMechanic(workOrderId, mechanicId);
-    if (updated) dispatch({ type: "UPSERT_WORK_ORDER", workOrder: updated });
+    serverUpdateMxWorkOrderStatus(id, status)
+      .then((persisted) => dispatch({ type: "UPSERT_WORK_ORDER", workOrder: persisted }))
+      .catch(logMutationFailure(`updateWorkOrderStatus(${id})`));
+
+    onEmitActivity?.({
+      action:      `moved work order to ${status.replace("_", " ")}`,
+      entity_type: "work_order",
+      entity_id:   id,
+      entity_name: wo.woNumber,
+      project_id:  wo.projectId ?? "",
+      module:      "mx",
+    });
   }
 
   function updateWorkOrder(id: string, updates: MxWorkOrderUpdate): void {
-    const updated = workOrdersService.updateWorkOrder(id, updates);
-    if (updated) dispatch({ type: "UPSERT_WORK_ORDER", workOrder: updated });
+    const wo = state.workOrders.find((w) => w.id === id);
+    if (!wo) return;
+
+    const optimistic: MxWorkOrder = {
+      ...wo,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    dispatch({ type: "UPSERT_WORK_ORDER", workOrder: optimistic });
+
+    serverUpdateMxWorkOrder(id, updates)
+      .then((persisted) => dispatch({ type: "UPSERT_WORK_ORDER", workOrder: persisted }))
+      .catch(logMutationFailure(`updateWorkOrder(${id})`));
+  }
+
+  function assignMechanic(workOrderId: string, mechanicId: string): void {
+    const wo = state.workOrders.find((w) => w.id === workOrderId);
+    if (!wo) return;
+    if (wo.assignedMechanicIds.includes(mechanicId)) return;
+
+    const optimistic: MxWorkOrder = {
+      ...wo,
+      assignedMechanicIds: [...wo.assignedMechanicIds, mechanicId],
+      updatedAt:           new Date().toISOString(),
+    };
+    dispatch({ type: "UPSERT_WORK_ORDER", workOrder: optimistic });
+
+    serverAssignMechanic(workOrderId, mechanicId)
+      .then((persisted) => dispatch({ type: "UPSERT_WORK_ORDER", workOrder: persisted }))
+      .catch(logMutationFailure(`assignMechanic(${workOrderId}, ${mechanicId})`));
+
+    onEmitActivity?.({
+      action:      "assigned mechanic to",
+      entity_type: "work_order",
+      entity_id:   workOrderId,
+      entity_name: wo.woNumber,
+      project_id:  wo.projectId ?? "",
+      module:      "mx",
+    });
   }
 
   function unassignMechanic(workOrderId: string, mechanicId: string): void {
-    const updated = workOrdersService.unassignMechanic(workOrderId, mechanicId);
-    if (updated) dispatch({ type: "UPSERT_WORK_ORDER", workOrder: updated });
+    const wo = state.workOrders.find((w) => w.id === workOrderId);
+    if (!wo) return;
+
+    const optimistic: MxWorkOrder = {
+      ...wo,
+      assignedMechanicIds: wo.assignedMechanicIds.filter((id) => id !== mechanicId),
+      updatedAt:           new Date().toISOString(),
+    };
+    dispatch({ type: "UPSERT_WORK_ORDER", workOrder: optimistic });
+
+    serverUnassignMechanic(workOrderId, mechanicId)
+      .then((persisted) => dispatch({ type: "UPSERT_WORK_ORDER", workOrder: persisted }))
+      .catch(logMutationFailure(`unassignMechanic(${workOrderId}, ${mechanicId})`));
+
+    onEmitActivity?.({
+      action:      "removed mechanic from",
+      entity_type: "work_order",
+      entity_id:   workOrderId,
+      entity_name: wo.woNumber,
+      project_id:  wo.projectId ?? "",
+      module:      "mx",
+    });
   }
 
   return (

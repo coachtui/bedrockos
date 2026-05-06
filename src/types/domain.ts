@@ -21,6 +21,9 @@ export interface Project {
   last_activity: string;
   start_date:    string;
   end_date:      string;
+  description?:          string;
+  award_price?:          number;
+  working_holiday_dates: string[];
 }
 
 export interface Issue {
@@ -34,10 +37,13 @@ export interface Issue {
   assignee_name:   string | null;
   status:          IssueStatus;
   /* Enriched context */
-  asset_id?:       string;
-  asset_name?:     string;
-  inspection_id?:  string;
-  description?:    string;
+  asset_id?:               string;
+  asset_name?:             string;
+  inspection_id?:          string;
+  description?:            string;
+  related_work_order_id?:  string;
+  related_task_id?:        string;
+  photo_paths?:            string[];
 }
 
 export interface Alert {
@@ -104,6 +110,16 @@ export type WorkerRole =
   | "operator"
   | "laborer";
 
+export type ProjectPosition = "superintendent" | "foreman";
+
+export interface WorkerProjectRole {
+  id:        string;
+  orgId:     string;
+  workerId:  string;
+  projectId: string;
+  position:  ProjectPosition;
+}
+
 export interface OrgWorker {
   id:        string;
   orgId:     string;
@@ -134,7 +150,15 @@ export interface CreateProjectInput {
   pmName:    string;
   startDate: string;  // YYYY-MM-DD
   endDate:   string;  // YYYY-MM-DD
+  description?: string;
+  awardPrice?:  number;
 }
+
+export type UpdateProjectInput = Partial<Pick<Project,
+  "name" | "location" | "phase" | "pm_name" | "status" |
+  "start_date" | "end_date" | "description" | "award_price" |
+  "working_holiday_dates"
+>>;
 
 export interface CreateAssetInput {
   name:      string;
@@ -153,4 +177,16 @@ export interface CreateWorkerInput {
   name:   string;
   role:   WorkerRole;
   skills: string[];
+}
+
+export interface ProjectFile {
+  id:          string;
+  orgId:       string;
+  projectId:   string;
+  storagePath: string;
+  fileName:    string;
+  fileSize:    number;    // bytes
+  mimeType:    string;
+  uploadedBy:  string;   // display name
+  uploadedAt:  string;   // ISO 8601 string
 }

@@ -3,10 +3,10 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    template: "%s · AIGA Construction Platform",
-    default:  "AIGA Construction Platform",
+    template: "%s · BedrockOS",
+    default:  "BedrockOS",
   },
-  description: "The construction operating system — powered by AIGA.",
+  description: "The construction operating system — BedrockOS.",
 };
 
 export const viewport: Viewport = {

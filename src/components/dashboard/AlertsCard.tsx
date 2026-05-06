@@ -5,7 +5,6 @@ import Link from "next/link";
 import { AlertTriangle, Clock, Wrench, Shield, ClipboardCheck, ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { MetricTile } from "@/components/ui/MetricTile";
-import { MOCK_ALERTS } from "@/lib/mock/alerts";
 import { useOrg } from "@/providers/OrgProvider";
 import { getRoleGroup } from "@/lib/utils/roles";
 import type { Alert, AlertType } from "@/types/domain";
@@ -34,10 +33,10 @@ function relativeTime(iso: string): string {
 }
 
 export function AlertsCard() {
-  const { role, currentProject } = useOrg();
+  const { role, currentProject, alerts: allAlerts } = useOrg();
   const roleGroup = getRoleGroup(role);
 
-  let alerts: Alert[] = [...MOCK_ALERTS];
+  let alerts: Alert[] = [...allAlerts];
 
   // Role-based filtering and ordering
   if (roleGroup === "field") {

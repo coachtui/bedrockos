@@ -8,24 +8,36 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { CreateProjectModal } from "@/components/shell/CreateProjectModal";
 import { useOrg } from "@/providers/OrgProvider";
+import { getRoleGroup } from "@/lib/utils/roles";
 
 export function ProjectsClient() {
-  const { projects } = useOrg();
+  const { projects, role, currentProject } = useOrg();
   const [showModal, setShowModal] = useState(false);
+
+  const roleGroup       = getRoleGroup(role);
+  const visibleProjects = (roleGroup === "field" || roleGroup === "maintenance")
+    ? projects.filter((p) => p.id === currentProject.id)
+    : projects;
 
   return (
     <PageContainer maxWidth="wide">
       <SectionHeader
         title="Projects"
-        subtitle={`${projects.length} projects across your organization`}
+        subtitle={
+          roleGroup === "field" || roleGroup === "maintenance"
+            ? "Your assigned project"
+            : `${projects.length} projects across your organization`
+        }
         action={
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gold text-black rounded hover:bg-gold/90 transition-colors"
-          >
-            <Plus size={13} />
-            New Project
-          </button>
+          roleGroup !== "field" && roleGroup !== "maintenance" && role !== "viewer" ? (
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gold text-black rounded hover:bg-gold/90 transition-colors"
+            >
+              <Plus size={13} />
+              New Project
+            </button>
+          ) : undefined
         }
       />
 
@@ -41,7 +53,7 @@ export function ProjectsClient() {
             </tr>
           </thead>
           <tbody>
-            {projects.map((project) => (
+            {visibleProjects.map((project) => (
               <tr key={project.id} className="border-b border-surface-border last:border-0 hover:bg-surface-overlay transition-colors">
                 <td className="px-4 py-3.5">
                   <Link href={`/projects/${project.id}`} className="group block">

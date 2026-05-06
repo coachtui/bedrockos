@@ -1,10 +1,12 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ActivityFeedItem } from "@/components/ui/ActivityFeedItem";
-import { MOCK_ACTIVITY } from "@/lib/mock/activity";
+import { useOrg } from "@/providers/OrgProvider";
 import type { ActivityEvent } from "@/types/domain";
 
 function getEventHref(event: ActivityEvent): string | undefined {
@@ -15,7 +17,8 @@ function getEventHref(event: ActivityEvent): string | undefined {
 }
 
 export function RecentActivityFeed() {
-  const events = MOCK_ACTIVITY.slice(0, 8);
+  const { activity } = useOrg();
+  const events = activity.slice(0, 8);
 
   return (
     <Card variant="default" className="!p-0">

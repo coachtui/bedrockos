@@ -19,12 +19,14 @@ export function CreateProjectModal({ onClose, onCreated }: Props) {
   const { currentUser, addProject } = useOrg();
 
   const [form, setForm] = useState({
-    name:      "",
-    location:  "",
-    phase:     "Pre-Construction",
-    pmName:    currentUser.name,
-    startDate: "",
-    endDate:   "",
+    name:        "",
+    location:    "",
+    phase:       "Pre-Construction",
+    pmName:      currentUser.name,
+    startDate:   "",
+    endDate:     "",
+    description: "",
+    awardPrice:  "",
   });
   const [error, setError] = useState("");
 
@@ -40,12 +42,14 @@ export function CreateProjectModal({ onClose, onCreated }: Props) {
     if (!form.endDate)         { setError("End date is required."); return; }
 
     const input: CreateProjectInput = {
-      name:      form.name.trim(),
-      location:  form.location.trim(),
-      phase:     form.phase,
-      pmName:    form.pmName.trim() || currentUser.name,
-      startDate: form.startDate,
-      endDate:   form.endDate,
+      name:        form.name.trim(),
+      location:    form.location.trim(),
+      phase:       form.phase,
+      pmName:      form.pmName.trim() || currentUser.name,
+      startDate:   form.startDate,
+      endDate:     form.endDate,
+      description: form.description.trim() || undefined,
+      awardPrice:  form.awardPrice !== "" ? Number(form.awardPrice) : undefined,
     };
 
     const project = addProject(input);
@@ -127,6 +131,38 @@ export function CreateProjectModal({ onClose, onCreated }: Props) {
                 value={form.endDate}
                 onChange={(e) => set("endDate", e.target.value)}
                 className="w-full text-sm bg-surface-overlay border border-surface-border rounded px-3 py-2 text-content-primary focus:outline-none focus:border-gold"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-content-secondary mb-1">
+              Description{" "}
+              <span className="text-content-muted font-normal">(optional)</span>
+            </label>
+            <textarea
+              value={form.description}
+              onChange={(e) => set("description", e.target.value)}
+              placeholder="Brief description of project scope and objectives..."
+              rows={3}
+              className="w-full text-sm bg-surface-overlay border border-surface-border rounded px-3 py-2 text-content-primary placeholder:text-content-muted focus:outline-none focus:border-gold resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-content-secondary mb-1">
+              Award Price{" "}
+              <span className="text-content-muted font-normal">(optional)</span>
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted text-sm">$</span>
+              <input
+                type="number"
+                min="0"
+                value={form.awardPrice}
+                onChange={(e) => set("awardPrice", e.target.value)}
+                placeholder="0"
+                className="w-full text-sm bg-surface-overlay border border-surface-border rounded pl-7 pr-3 py-2 text-content-primary placeholder:text-content-muted focus:outline-none focus:border-gold"
               />
             </div>
           </div>

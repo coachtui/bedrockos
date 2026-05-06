@@ -22,18 +22,8 @@ export function FixEscalateButton({ assetId, assetName, projectId }: FixEscalate
   const [state, setState] = useState<"idle" | "done">("idle");
 
   function handleEscalate() {
-    // 1. Emit issue to shell
-    const issueId = emitIssue({
-      title:       `Field escalation — ${assetName} requires mechanic`,
-      module:      "fix",
-      severity:    "high",
-      projectId,
-      assetId,
-      description: `Field diagnostic could not resolve the issue. Escalated by ${currentUser.name}.`,
-    });
-
-    // 2. Create MX work order
-    createWorkOrder({
+    // 1. Create MX work order first so we can link the issue to it
+    const wo = createWorkOrder({
       title:             `Field escalation — ${assetName}`,
       description:       `Escalated from Fix field diagnostic by ${currentUser.name}.`,
       category:          "corrective",
@@ -46,6 +36,17 @@ export function FixEscalateButton({ assetId, assetName, projectId }: FixEscalate
       requestedDate:     new Date().toISOString().slice(0, 10),
       readinessImpact:   "at_risk",
       opsBlocking:       false,
+    });
+
+    // 2. Emit issue, linked to the WO. Auto-resolves when the WO completes.
+    const issueId = emitIssue({
+      title:              `Field escalation — ${assetName} requires mechanic`,
+      module:             "fix",
+      severity:           "high",
+      projectId,
+      assetId,
+      description:        `Field diagnostic could not resolve the issue. Escalated by ${currentUser.name}.`,
+      relatedWorkOrderId: wo.id,
     });
 
     // 3. Emit activity

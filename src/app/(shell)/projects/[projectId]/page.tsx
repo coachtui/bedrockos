@@ -1,19 +1,18 @@
-import { notFound } from "next/navigation";
-import { MOCK_PROJECTS } from "@/lib/mock/projects";
+import type { Metadata } from "next";
 import { ProjectCommandCenterClient } from "./client";
+import { fetchProjectFiles } from "@/lib/supabase/project-files";
 
 type Params = Promise<{ projectId: string }>;
 
-export async function generateMetadata({ params }: { params: Params }) {
-  const { projectId } = await params;
-  const project = MOCK_PROJECTS.find((p) => p.id === projectId);
-  return { title: project ? `${project.name} — Command Center` : "Project Not Found" };
+const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
+
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { projectId: _ } = await params;
+  return { title: "Project — Command Center" };
 }
 
 export default async function ProjectCommandCenterPage({ params }: { params: Params }) {
   const { projectId } = await params;
-  const project = MOCK_PROJECTS.find((p) => p.id === projectId);
-  if (!project) notFound();
-
-  return <ProjectCommandCenterClient projectId={projectId} />;
+  const files = await fetchProjectFiles(projectId, ORG_ID);
+  return <ProjectCommandCenterClient projectId={projectId} orgId={ORG_ID} initialFiles={files} />;
 }

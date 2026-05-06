@@ -3,9 +3,14 @@
 import { useState, useEffect } from "react";
 import { InspectorPanel } from "@/components/ui/InspectorPanel";
 import { useOrg } from "@/providers/OrgProvider";
-import { MOCK_ACTIVITY } from "@/lib/mock/activity";
 import { relativeTime } from "@/lib/utils/time";
 import type { UserRole } from "@/types/org";
+import type { ProjectPosition, WorkerProjectRole, WorkerRole } from "@/types/domain";
+
+const WORKER_ROLES: WorkerRole[] = [
+  "mason", "laborer", "operator", "carpenter",
+  "foreman", "superintendent", "mechanic", "driver",
+];
 
 const CAN_EDIT           = new Set<UserRole>(["owner", "admin", "superintendent"]);
 const CAN_CHANGE_PROJECT = new Set<UserRole>(["owner", "admin"]);
@@ -18,17 +23,28 @@ interface WorkerInspectorPanelProps {
 export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanelProps) {
   const {
     workers, crews, projects, skillCatalog,
-    currentProject, role, emittedActivity,
-    updateWorkerSkills, reassignWorker, addSkillToRole,
+    currentProject, role, activity,
+    updateWorkerBasicInfo, updateWorkerSkills, reassignWorker, addSkillToRole,
     toggleWorkerAvailability,
+    workerProjectRoles, assignProjectPosition, removeProjectPosition,
   } = useOrg();
 
   const worker = workerId ? (workers.find((w) => w.id === workerId) ?? null) : null;
+
+  // Edit details state
+  const [editDetails,    setEditDetails]    = useState(false);
+  const [editName,       setEditName]       = useState("");
+  const [editRole,       setEditRole]       = useState<WorkerRole>("laborer");
 
   // Reassign form state
   const [showReassign,      setShowReassign]      = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
   const [selectedCrewId,    setSelectedCrewId]    = useState<string | undefined>();
+
+  // Project position form state
+  const [showAddPosition,     setShowAddPosition]     = useState(false);
+  const [addPositionProjectId, setAddPositionProjectId] = useState("");
+  const [addPositionRole,     setAddPositionRole]     = useState<ProjectPosition>("foreman");
 
   // Skills edit state
   const [editSkills,       setEditSkills]       = useState(false);
@@ -38,6 +54,9 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
 
   // Reset all panel state whenever the selected worker changes
   useEffect(() => {
+    setEditDetails(false);
+    setEditName(worker?.name ?? "");
+    setEditRole((worker?.role ?? "laborer") as WorkerRole);
     setShowReassign(false);
     setEditSkills(false);
     setShowSkillPicker(false);
@@ -45,6 +64,9 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
     setCustomSkillInput("");
     setSelectedProjectId(worker?.projectId);
     setSelectedCrewId(undefined);
+    setShowAddPosition(false);
+    setAddPositionProjectId("");
+    setAddPositionRole("foreman");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workerId]);
 
@@ -63,6 +85,11 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
   const reassignProjectId = canChangeProject ? selectedProjectId : currentProject.id;
   const projectCrews = crews.filter((c) => c.projectId === reassignProjectId);
 
+  // This worker's project-scoped position assignments
+  const workerPositions: WorkerProjectRole[] = worker
+    ? workerProjectRoles.filter((r) => r.workerId === worker.id)
+    : [];
+
   // Skills not already on the worker (for picker)
   const availableSkills = worker
     ? (skillCatalog[worker.role] ?? []).filter((s) => !worker.skills.includes(s))
@@ -70,7 +97,7 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
 
   // Activity for this worker (mock + emitted)
   const workerActivity = worker
-    ? [...MOCK_ACTIVITY, ...emittedActivity]
+    ? activity
         .filter((e) => e.entity_type === "worker" && e.entity_id === worker.id)
         .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
     : [];
@@ -105,10 +132,24 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
     setCustomSkillInput("");
   }
 
+  function handleSaveDetails() {
+    if (!worker) return;
+    updateWorkerBasicInfo(worker.id, { name: editName, role: editRole });
+    setEditDetails(false);
+  }
+
   function handleConfirmReassign() {
     if (!worker) return;
     reassignWorker(worker.id, reassignProjectId, selectedCrewId);
     setShowReassign(false);
+  }
+
+  function handleAddPosition(): void {
+    if (!worker || !addPositionProjectId) return;
+    assignProjectPosition(worker.id, addPositionProjectId, addPositionRole);
+    setAddPositionProjectId("");
+    setAddPositionRole("foreman");
+    setShowAddPosition(false);
   }
 
   const subtitle = worker
@@ -124,6 +165,78 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
     >
       {worker && (
         <div className="px-5 py-4 space-y-5">
+
+          {/* ── Details ────────────────────────────────────────────────── */}
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-content-muted">
+                Details
+              </h3>
+              {canEdit && !editDetails && (
+                <button
+                  onClick={() => setEditDetails(true)}
+                  className="text-[10px] font-semibold text-content-muted hover:text-teal transition-colors"
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+
+            {!editDetails ? (
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-content-muted">Name</span>
+                  <span className="font-semibold text-content-primary">{worker.name}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-content-muted">Role</span>
+                  <span className="font-semibold text-content-primary capitalize">{worker.role}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-content-muted mb-1.5">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full text-xs bg-surface-overlay border border-surface-border rounded-lg px-2.5 py-1.5 text-content-primary focus:outline-none focus:border-teal"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-content-muted mb-1.5">
+                    Role
+                  </label>
+                  <select
+                    value={editRole}
+                    onChange={(e) => setEditRole(e.target.value as WorkerRole)}
+                    className="w-full text-xs bg-surface-overlay border border-surface-border rounded-lg px-2.5 py-1.5 text-content-primary focus:outline-none focus:border-teal"
+                  >
+                    {WORKER_ROLES.map((r) => (
+                      <option key={r} value={r} className="capitalize">{r.charAt(0).toUpperCase() + r.slice(1)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={handleSaveDetails}
+                    className="px-3 py-1 text-[10px] font-semibold bg-teal text-white rounded hover:opacity-90 transition-opacity"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => { setEditDetails(false); setEditName(worker.name); setEditRole(worker.role as WorkerRole); }}
+                    className="text-[10px] text-content-muted hover:text-content-primary transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
 
           {/* ── Assignment ─────────────────────────────────────────────── */}
           <section>
@@ -219,6 +332,91 @@ export function WorkerInspectorPanel({ workerId, onClose }: WorkerInspectorPanel
               </div>
             )}
           </section>
+
+          {/* ── Project Position ───────────────────────────────────────── */}
+          {canEdit && (
+            <section className="border-t border-surface-border pt-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-content-secondary uppercase tracking-wide">
+                  Project Position
+                </span>
+                {!showAddPosition && (
+                  <button
+                    onClick={() => setShowAddPosition(true)}
+                    className="text-xs text-blue-brand hover:underline"
+                  >
+                    + Assign
+                  </button>
+                )}
+              </div>
+
+              {workerPositions.length === 0 && !showAddPosition && (
+                <p className="text-xs text-content-tertiary">No project positions assigned.</p>
+              )}
+              <ul className="space-y-1 mb-2">
+                {workerPositions.map((pos) => {
+                  const project = projects.find((p) => p.id === pos.projectId);
+                  return (
+                    <li key={pos.id} className="flex items-center justify-between text-xs">
+                      <span className="text-content-primary">
+                        {project?.name ?? pos.projectId}
+                        <span className="ml-1 text-content-secondary capitalize">
+                          — {pos.position}
+                        </span>
+                      </span>
+                      <button
+                        onClick={() => worker && removeProjectPosition(worker.id, pos.projectId)}
+                        className="text-content-tertiary hover:text-red-500 ml-2"
+                        aria-label="Remove position"
+                      >
+                        ×
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {showAddPosition && (
+                <div className="space-y-2">
+                  <select
+                    value={addPositionProjectId}
+                    onChange={(e) => setAddPositionProjectId(e.target.value)}
+                    className="w-full text-xs border border-surface-border rounded px-2 py-1 bg-surface-base text-content-primary"
+                  >
+                    <option value="">Select project…</option>
+                    {projects
+                      .filter((p) => !workerPositions.some((r) => r.projectId === p.id))
+                      .map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                  </select>
+                  <select
+                    value={addPositionRole}
+                    onChange={(e) => setAddPositionRole(e.target.value as ProjectPosition)}
+                    className="w-full text-xs border border-surface-border rounded px-2 py-1 bg-surface-base text-content-primary"
+                  >
+                    <option value="foreman">Foreman</option>
+                    <option value="superintendent">Superintendent</option>
+                  </select>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleAddPosition}
+                      disabled={!addPositionProjectId}
+                      className="flex-1 text-xs bg-blue-brand text-white rounded px-2 py-1 disabled:opacity-40"
+                    >
+                      Assign
+                    </button>
+                    <button
+                      onClick={() => setShowAddPosition(false)}
+                      className="text-xs text-content-secondary hover:underline px-2"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
 
           {/* ── Skills ─────────────────────────────────────────────────── */}
           <section className="border-t border-surface-border pt-4">

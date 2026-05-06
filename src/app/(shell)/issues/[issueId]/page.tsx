@@ -5,9 +5,15 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { FixLaunchButton } from "@/components/modules/fix/FixLaunchButton";
-import { MOCK_ISSUES } from "@/lib/mock/issues";
+import { fetchOrgIssueById } from "@/lib/supabase/issues";
+import { fetchMxWorkOrderById } from "@/lib/supabase/mx-work-orders";
+import { fetchCxTaskById } from "@/lib/supabase/cx-tasks";
+import { getIssuePhotoSignedUrl } from "@/lib/actions/issues";
+import { IssueStatusButtons } from "@/components/shell/IssueStatusButtons";
 import { notFound } from "next/navigation";
 import type { ModuleId } from "@/types/org";
+
+const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
 
 const MODULE_LABEL: Record<ModuleId, string> = {
   fix:      "Fix",
@@ -17,16 +23,18 @@ const MODULE_LABEL: Record<ModuleId, string> = {
   ops:      "OPS",
   mx:       "MX",
   schedule: "Schedule",
+  safety:   "Safety",
 };
 
 const MODULE_COLOR: Record<ModuleId, string> = {
-  fix:      "text-teal       border-teal/30       bg-teal/10",
-  cru:      "text-gold       border-gold/30       bg-gold/10",
-  inspect:  "text-blue-brand border-blue-brand/30 bg-blue-brand/10",
-  datum:    "text-teal       border-teal/30       bg-teal/10",
-  ops:      "text-gold       border-gold/30       bg-gold/10",
-  mx:       "text-teal       border-teal/30       bg-teal/10",
-  schedule: "text-teal       border-teal/30       bg-teal/10",
+  fix:      "text-teal            border-teal/30            bg-teal/10",
+  cru:      "text-gold            border-gold/30            bg-gold/10",
+  inspect:  "text-blue-brand      border-blue-brand/30      bg-blue-brand/10",
+  datum:    "text-teal            border-teal/30            bg-teal/10",
+  ops:      "text-gold            border-gold/30            bg-gold/10",
+  mx:       "text-teal            border-teal/30            bg-teal/10",
+  schedule: "text-teal            border-teal/30            bg-teal/10",
+  safety:   "text-status-critical border-status-critical/30 bg-status-critical/10",
 };
 
 function formatDate(iso: string): string {
@@ -40,15 +48,24 @@ type Params = Promise<{ issueId: string }>;
 
 export async function generateMetadata({ params }: { params: Params }) {
   const { issueId } = await params;
-  const issue = MOCK_ISSUES.find((i) => i.id === issueId);
+  const issue = await fetchOrgIssueById(ORG_ID, issueId);
   return { title: issue ? issue.title : "Issue Not Found" };
 }
 
 export default async function IssueDetailPage({ params }: { params: Params }) {
   const { issueId } = await params;
-  const issue = MOCK_ISSUES.find((i) => i.id === issueId);
+  const issue = await fetchOrgIssueById(ORG_ID, issueId);
 
   if (!issue) notFound();
+
+  const [linkedWo, linkedTask, photoUrls] = await Promise.all([
+    issue.related_work_order_id ? fetchMxWorkOrderById(issue.related_work_order_id) : Promise.resolve(null),
+    issue.related_task_id       ? fetchCxTaskById(issue.related_task_id)            : Promise.resolve(null),
+    Promise.all((issue.photo_paths ?? []).map(async (path) => {
+      const result = await getIssuePhotoSignedUrl(path);
+      return { path, url: result.url ?? null };
+    })),
+  ]);
 
   const isFromInspect = issue.module === "inspect";
   const isFromFix     = issue.module === "fix";
@@ -91,6 +108,39 @@ export default async function IssueDetailPage({ params }: { params: Params }) {
               <p className="text-sm text-content-secondary leading-relaxed">{issue.description}</p>
             </Card>
           )}
+
+          {/* Photos */}
+          {photoUrls.length > 0 && (
+            <Card variant="default">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-content-muted mb-3">Photos</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {photoUrls.map(({ path, url }) =>
+                  url ? (
+                    <a
+                      key={path}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block aspect-square overflow-hidden rounded-lg border border-surface-border hover:border-blue-brand/40 transition-colors"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt="Inspection photo" className="w-full h-full object-cover" />
+                    </a>
+                  ) : (
+                    <div key={path} className="aspect-square rounded-lg border border-surface-border bg-surface-overlay text-[10px] text-content-muted flex items-center justify-center">
+                      Unavailable
+                    </div>
+                  )
+                )}
+              </div>
+            </Card>
+          )}
+
+          {/* Status controls */}
+          <Card variant="default">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-content-muted mb-3">Status</p>
+            <IssueStatusButtons issueId={issue.id} status={issue.status} />
+          </Card>
 
           {/* Action bar */}
           <div className="flex flex-wrap gap-2">
@@ -138,14 +188,32 @@ export default async function IssueDetailPage({ params }: { params: Params }) {
           <Card variant="default">
             <p className="text-[11px] font-bold uppercase tracking-widest text-content-muted mb-3">Context</p>
             <div className="space-y-0">
-              {[
+              {([
                 { label: "Project",     value: issue.project_name ?? issue.project_id },
                 { label: "Asset",       value: issue.asset_name ?? null          },
                 { label: "Reported by", value: issue.assignee_name ?? "Unassigned" },
                 { label: "Reported",    value: formatDate(issue.created_at)       },
                 { label: "Source",      value: MODULE_LABEL[issue.module]          },
                 { label: "Inspection",  value: issue.inspection_id ?? null         },
-              ].filter((row) => row.value !== null).map(({ label, value }) => (
+                {
+                  label: "Linked Task",
+                  value: linkedTask ? linkedTask.name : null,
+                },
+                {
+                  label: "Linked WO",
+                  value: linkedWo
+                    ? (
+                      <Link
+                        href={`/modules/mx/work-orders/${linkedWo.id}`}
+                        className="text-gold hover:text-gold-hover transition-colors"
+                      >
+                        {linkedWo.woNumber}
+                      </Link>
+                    )
+                    : null,
+                },
+              ] as { label: string; value: React.ReactNode | null }[])
+                .filter((row) => row.value !== null).map(({ label, value }) => (
                 <div key={label} className="flex justify-between gap-3 py-2.5 border-b border-surface-border last:border-0">
                   <span className="text-xs text-content-muted shrink-0">{label}</span>
                   <span className="text-xs font-medium text-content-secondary text-right">{value}</span>

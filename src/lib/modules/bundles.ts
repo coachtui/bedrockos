@@ -22,6 +22,11 @@ export const BUNDLE_REGISTRY: BundleDefinition[] = [
     label:   "Operations",
     modules: ["ops", "schedule"],
   },
+  {
+    id:      "safety",
+    label:   "Safety",
+    modules: ["safety"],
+  },
 ];
 
 /** Returns the unique set of module IDs across all provided bundle IDs. */

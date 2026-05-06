@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { InspectorPanel } from "@/components/ui/InspectorPanel";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useOrg } from "@/providers/OrgProvider";
-import { MOCK_ISSUES } from "@/lib/mock/issues";
 import { relativeTime } from "@/lib/utils/time";
 import type { UserRole } from "@/types/org";
 import type { AssetStatus } from "@/types/domain";
@@ -25,7 +24,7 @@ interface AssetInspectorPanelProps {
 
 export function AssetInspectorPanel({ assetId, onClose }: AssetInspectorPanelProps) {
   const {
-    assets, projects, role, emittedIssues,
+    assets, projects, role, issues,
     updateAssetStatus, updateAssetProject,
   } = useOrg();
   const router = useRouter();
@@ -35,7 +34,7 @@ export function AssetInspectorPanel({ assetId, onClose }: AssetInspectorPanelPro
   const canChangeProject = CAN_CHANGE_PROJECT.has(role);
 
   const linkedIssues = asset
-    ? [...MOCK_ISSUES, ...emittedIssues].filter((i) => i.asset_id === asset.id)
+    ? issues.filter((i) => i.asset_id === asset.id)
     : [];
 
   const assetProject = asset

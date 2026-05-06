@@ -4,8 +4,6 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { useOrg } from "@/providers/OrgProvider";
 import { useMx } from "@/providers/MxProvider";
-import { MOCK_ASSETS } from "@/lib/mock/assets";
-import { MOCK_PROJECT_CONTEXTS } from "@/lib/config/org";
 import type { CreateMxWorkOrderInput, MxWorkOrderCategory, MxWorkOrderPriority, ReadinessStatus } from "@/lib/mx/types";
 import { CATEGORY_LABELS, PRIORITY_LABELS, READINESS_LABELS } from "@/lib/mx/rules";
 
@@ -24,14 +22,10 @@ const CATEGORIES: MxWorkOrderCategory[] = [
 
 const PRIORITIES: MxWorkOrderPriority[] = ["critical", "high", "medium", "low"];
 
-const READINESS_OPTIONS: Array<ReadinessStatus | "none"> = [
-  "none", "ready", "limited", "at_risk", "scheduled_service", "in_shop", "awaiting_parts", "down",
-];
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function CreateWorkOrderModal({ onClose, onCreated }: Props) {
-  const { currentUser, currentProject } = useOrg();
+  const { currentUser, currentProject, assets, projects } = useOrg();
   const { createWorkOrder } = useMx();
 
   const today = new Date().toISOString().slice(0, 10);
@@ -55,8 +49,8 @@ export function CreateWorkOrderModal({ onClose, onCreated }: Props) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  const selectedAsset   = MOCK_ASSETS.find((a) => a.id === form.equipmentId);
-  const selectedProject = MOCK_PROJECT_CONTEXTS.find((p) => p.id === form.projectId);
+  const selectedAsset   = assets.find((a) => a.id === form.equipmentId);
+  const selectedProject = projects.find((p) => p.id === form.projectId);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -190,7 +184,7 @@ export function CreateWorkOrderModal({ onClose, onCreated }: Props) {
               className="w-full text-sm bg-surface-overlay border border-surface-border rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-teal cursor-pointer"
             >
               <option value="">— No equipment linked —</option>
-              {MOCK_ASSETS.map((a) => (
+              {assets.map((a) => (
                 <option key={a.id} value={a.id}>{a.name}</option>
               ))}
             </select>
@@ -205,7 +199,7 @@ export function CreateWorkOrderModal({ onClose, onCreated }: Props) {
               className="w-full text-sm bg-surface-overlay border border-surface-border rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-teal cursor-pointer"
             >
               <option value="">— No project —</option>
-              {MOCK_PROJECT_CONTEXTS.map((p) => (
+              {projects.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>

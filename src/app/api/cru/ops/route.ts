@@ -17,11 +17,17 @@
  */
 
 import { NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/supabase/ssr";
 
 const CRU_SUPABASE_URL        = process.env.CRU_SUPABASE_URL;
 const CRU_OPS_INTERNAL_API_KEY = process.env.CRU_OPS_INTERNAL_API_KEY;
 
 export async function POST(request: Request) {
+  const sessionUser = await getSessionUser();
+  if (!sessionUser) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   // ── Config check — fail fast, adapter falls back to mock ─────────────────
   if (!CRU_SUPABASE_URL || !CRU_OPS_INTERNAL_API_KEY) {
     return NextResponse.json(

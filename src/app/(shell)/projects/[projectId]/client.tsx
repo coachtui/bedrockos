@@ -1,29 +1,27 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, MapPin, User, Calendar,
   Wrench, Users, ClipboardCheck, ChevronRight,
-  AlertCircle, Bell, Truck,
+  AlertCircle, Bell, Truck, DollarSign, Pencil, Settings,
 } from "lucide-react";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ActivityFeedItem } from "@/components/ui/ActivityFeedItem";
-import { MOCK_PROJECTS } from "@/lib/mock/projects";
-import { MOCK_ISSUES } from "@/lib/mock/issues";
-import { MOCK_ALERTS } from "@/lib/mock/alerts";
-import { MOCK_ACTIVITY } from "@/lib/mock/activity";
-import { MOCK_ASSETS } from "@/lib/mock/assets";
-import { MOCK_CREWS } from "@/lib/mock/crews";
+import { ProjectInspectorPanel } from "@/components/shell/ProjectInspectorPanel";
 import { useOrg } from "@/providers/OrgProvider";
 import { getRoleGroup } from "@/lib/utils/roles";
 import { buildFixUrl } from "@/lib/modules/fix/launch";
 import { FixLaunchButton } from "@/components/modules/fix/FixLaunchButton";
 import type { ActivityEvent, Issue, Alert } from "@/types/domain";
 import { ScheduleTab } from "@/components/schedule/ScheduleTab";
+import { ProjectCXCard } from "@/components/shell/ProjectCXCard";
+import { ProjectFilesCard } from "@/components/shell/ProjectFilesCard";
+import type { ProjectFile } from "@/types/domain";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -39,6 +37,12 @@ function relativeTime(iso: string): string {
   if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return `${Math.floor(diff / 86400)}d ago`;
+}
+
+function formatCurrency(n: number): string {
+  if (n >= 999_500) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)   return `$${(n / 1_000).toFixed(0)}K`;
+  return `$${n.toLocaleString()}`;
 }
 
 function getActivityHref(event: ActivityEvent): string | undefined {
@@ -131,15 +135,14 @@ function RoleCTABar({ projectId }: { projectId: string }) {
 
   if (roleGroup === "field") {
     return (
-      <div className="mb-4 flex items-center gap-3">
-        <button
-          className="inline-flex items-center gap-2 text-sm font-semibold text-gold border border-gold/30 bg-gold/5 px-4 py-2 rounded-lg cursor-not-allowed opacity-60"
-          disabled
+      <div className="mb-4">
+        <Link
+          href={`/modules/cru/crews?source=project-command-center&projectId=${projectId}`}
+          className="inline-flex items-center gap-2 text-sm font-semibold text-gold border border-gold/30 bg-gold/5 hover:bg-gold/15 px-4 py-2 rounded-lg transition-colors"
         >
           <Users size={14} />
           Assign Crew
-        </button>
-        <span className="text-xs text-content-muted">Crew assignment workflow coming next</span>
+        </Link>
       </div>
     );
   }
@@ -334,19 +337,41 @@ function ActivitySection({ events }: { events: ActivityEvent[] }) {
 
 // ── main client component ─────────────────────────────────────────────────────
 
-export function ProjectCommandCenterClient({ projectId }: { projectId: string }) {
-  const { role } = useOrg();
-  const [activeTab, setActiveTab] = useState<"overview" | "schedule">("overview");
-  const roleGroup = getRoleGroup(role);
+interface ProjectCommandCenterClientProps {
+  projectId:    string;
+  orgId:        string;
+  initialFiles: ProjectFile[];
+}
 
-  const project = MOCK_PROJECTS.find((p) => p.id === projectId)!;
+export function ProjectCommandCenterClient({ projectId, orgId, initialFiles }: ProjectCommandCenterClientProps) {
+  const { role, projects, assets, crews, setCurrentProject, issues, alerts, activity } = useOrg();
+  const [activeTab, setActiveTab] = useState<"overview" | "schedule">("overview");
+  const [editOpen, setEditOpen] = useState(false);
+  const roleGroup = getRoleGroup(role);
+  const canEdit = roleGroup === "oversight" || roleGroup === "office";
+
+  const project = projects.find((p) => p.id === projectId);
+
+  useEffect(() => {
+    if (project) {
+      setCurrentProject({ id: project.id, name: project.name, slug: project.slug });
+    }
+  }, [project, setCurrentProject]);
+
+  if (!project) {
+    return (
+      <PageContainer>
+        <p className="text-content-muted py-12 text-center text-sm">Project not found.</p>
+      </PageContainer>
+    );
+  }
 
   // Base project-scoped data
-  const projectIssues   = MOCK_ISSUES.filter((i) => i.project_id === projectId);
-  const projectAlerts   = MOCK_ALERTS.filter((a) => a.project_id === projectId);
-  const projectActivity = MOCK_ACTIVITY.filter((e) => e.project_id === projectId).slice(0, 8);
-  const projectAssets   = MOCK_ASSETS.filter((a) => a.project_id === projectId);
-  const projectCrews    = MOCK_CREWS.filter((c) => c.project_id === projectId);
+  const projectIssues   = issues.filter((i) => i.project_id === projectId);
+  const projectAlerts   = alerts.filter((a) => a.project_id === projectId);
+  const projectActivity = activity.filter((e) => e.project_id === projectId).slice(0, 8);
+  const projectAssets   = assets.filter((a) => a.project_id === projectId);
+  const projectCrews    = crews.filter((c) => c.projectId === projectId);
 
   // Role-aware issue filtering/ordering
   let openIssues = projectIssues.filter((i) => i.status !== "resolved");
@@ -399,16 +424,24 @@ export function ProjectCommandCenterClient({ projectId }: { projectId: string })
     <PageContainer maxWidth="wide">
 
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 mb-6">
+      <div className="flex items-center justify-between gap-2 mb-6">
+        <div className="flex items-center gap-2">
+          <Link
+            href="/projects"
+            className="flex items-center gap-1.5 text-sm text-content-muted hover:text-content-primary transition-colors"
+          >
+            <ArrowLeft size={14} />
+            Projects
+          </Link>
+          <span className="text-content-muted">/</span>
+          <span className="text-sm text-content-secondary truncate">{project.name}</span>
+        </div>
         <Link
-          href="/projects"
-          className="flex items-center gap-1.5 text-sm text-content-muted hover:text-content-primary transition-colors"
+          href={`/projects/${projectId}/settings`}
+          className="flex items-center gap-1.5 text-xs text-content-muted hover:text-content-primary transition-colors"
         >
-          <ArrowLeft size={14} />
-          Projects
+          <Settings size={12} /> Settings
         </Link>
-        <span className="text-content-muted">/</span>
-        <span className="text-sm text-content-secondary truncate">{project.name}</span>
       </div>
 
       {/* ── Project Header ─────────────────────────────────────────────────── */}
@@ -438,6 +471,11 @@ export function ProjectCommandCenterClient({ projectId }: { projectId: string })
             <h1 className="text-2xl font-bold text-content-primary leading-tight mb-3">
               {project.name}
             </h1>
+            {project.description && (
+              <p className="text-sm text-content-secondary mb-3 leading-relaxed max-w-xl">
+                {project.description}
+              </p>
+            )}
             <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-content-muted">
               <span className="flex items-center gap-1.5">
                 <MapPin size={11} />
@@ -451,10 +489,29 @@ export function ProjectCommandCenterClient({ projectId }: { projectId: string })
                 <Calendar size={11} />
                 {formatDate(project.start_date)} – {formatDate(project.end_date)}
               </span>
+              {project.award_price != null && (
+                <span className="flex items-center gap-1.5">
+                  <DollarSign size={11} />
+                  Contract:{" "}
+                  <span className="text-content-secondary font-medium ml-0.5">
+                    {formatCurrency(project.award_price)}
+                  </span>
+                </span>
+              )}
             </div>
           </div>
 
           <div className="shrink-0 md:text-right">
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => setEditOpen(true)}
+                className="mb-4 inline-flex items-center gap-1.5 text-xs text-content-muted hover:text-content-primary border border-surface-border hover:border-surface-border-hover rounded-lg px-3 py-1.5 transition-colors"
+              >
+                <Pencil size={11} />
+                Edit
+              </button>
+            )}
             <p className="text-[11px] font-bold uppercase tracking-widest text-content-muted mb-1.5">Progress</p>
             <p className="text-4xl font-bold text-gold tabular-nums leading-none mb-2.5">
               {project.progress_pct}
@@ -502,6 +559,12 @@ export function ProjectCommandCenterClient({ projectId }: { projectId: string })
 
             {/* Right column */}
             <div className="lg:col-span-2 space-y-4">
+
+              {/* CX Summary */}
+              <ProjectCXCard projectId={projectId} />
+
+              {/* Project Files */}
+              <ProjectFilesCard projectId={projectId} orgId={orgId} files={initialFiles} />
 
               {/* Project Snapshot — de-emphasize for field/maintenance */}
               <Card
@@ -613,6 +676,15 @@ export function ProjectCommandCenterClient({ projectId }: { projectId: string })
 
       {activeTab === "schedule" && (
         <ScheduleTab projectId={projectId} role={role} />
+      )}
+
+      {canEdit && (
+        <ProjectInspectorPanel
+          key={project.id}
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          project={project}
+        />
       )}
     </PageContainer>
   );

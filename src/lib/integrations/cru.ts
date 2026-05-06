@@ -64,6 +64,7 @@ export const OPS_REQUEST_TO_CRU_ROLE: Record<RequestType, string> = {
   mason:      "mason",
   pump_truck: "driver",
   equipment:  "mechanic",
+  manpower:   "laborer",
 };
 
 // ── DB response shapes (ops-api SELECT columns) ───────────────────────────────
