@@ -63,7 +63,8 @@ export async function serverSetIssueStatus(id: string, status: IssueStatus): Pro
   const { error } = await supabase
     .from("issues")
     .update({ status })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("org_id", ORG_ID);
   if (error) throwSupabaseWriteFailure(`serverSetIssueStatus(${id}, ${status})`, error);
 
   revalidatePath("/issues");

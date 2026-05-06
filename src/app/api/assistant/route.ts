@@ -5,6 +5,7 @@ import { buildSystemPrompt } from "@/lib/assistant/system-prompt";
 import { fetchOrgAssets } from "@/lib/supabase/assets";
 import { fetchOrgIssues } from "@/lib/supabase/issues";
 import { fetchOrgAlerts } from "@/lib/supabase/alerts";
+import { getSessionUser } from "@/lib/supabase/ssr";
 
 export const runtime = "nodejs";
 
@@ -16,6 +17,11 @@ const MODEL_ID       = "claude-haiku-4-5-20251001";
 const ORG_ID         = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
 
 export async function POST(request: Request) {
+  const sessionUser = await getSessionUser();
+  if (!sessionUser) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json(
       { error: "ANTHROPIC_API_KEY not configured" },

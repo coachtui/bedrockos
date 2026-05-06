@@ -95,7 +95,7 @@ export function ProjectFilesCard({ projectId, orgId, files }: ProjectFilesCardPr
     setEditingId(null);
     setEditingName("");
     if (!trimmed) return;
-    const result = await renameProjectFile(fileId, trimmed);
+    const result = await renameProjectFile(orgId, fileId, trimmed);
     if (result.error) setError(result.error);
     else router.refresh();
   }

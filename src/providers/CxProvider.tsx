@@ -105,7 +105,7 @@ export function CxProvider({
 
   function updateTask(id: string, patch: Partial<CxTask>) {
     dispatch({ type: "UPDATE_TASK", id, patch });
-    serverUpdateTask(id, patch).catch(logCxPersistenceFailure(`update task ${id}`));
+    serverUpdateTask(ORG_ID, id, patch).catch(logCxPersistenceFailure(`update task ${id}`));
   }
 
   function addEvent(input: Omit<CxEvent, "id">): CxEvent {
@@ -129,7 +129,7 @@ export function CxProvider({
 
   function removeAssignment(id: string) {
     dispatch({ type: "REMOVE_ASSIGNMENT", id });
-    serverRemoveAssignment(id).catch(logCxPersistenceFailure(`remove assignment ${id}`));
+    serverRemoveAssignment(ORG_ID, id).catch(logCxPersistenceFailure(`remove assignment ${id}`));
   }
 
   return (

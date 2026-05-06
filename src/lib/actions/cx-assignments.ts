@@ -15,7 +15,7 @@ export async function serverCreateAssignment(orgId: string, assignment: CxDayAss
   if (error) throwSupabaseWriteFailure(`serverCreateAssignment(${assignment.id})`, error);
 }
 
-export async function serverRemoveAssignment(id: string): Promise<void> {
-  const { error } = await supabase.from("cx_day_assignments").delete().eq("id", id);
+export async function serverRemoveAssignment(orgId: string, id: string): Promise<void> {
+  const { error } = await supabase.from("cx_day_assignments").delete().eq("id", id).eq("org_id", orgId);
   if (error) throwSupabaseWriteFailure(`serverRemoveAssignment(${id})`, error);
 }

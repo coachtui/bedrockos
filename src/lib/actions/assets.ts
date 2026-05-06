@@ -26,7 +26,8 @@ export async function serverUpdateAssetStatus(
   const { error } = await supabase
     .from("assets")
     .update({ status, updated_at: new Date().toISOString() })
-    .eq("id", assetId);
+    .eq("id", assetId)
+    .eq("org_id", ORG_ID);
   if (error) throwSupabaseWriteFailure(`serverUpdateAssetStatus(${assetId})`, error);
 }
 
@@ -37,6 +38,7 @@ export async function serverUpdateAssetProject(
   const { error } = await supabase
     .from("assets")
     .update({ project_id: projectId, updated_at: new Date().toISOString() })
-    .eq("id", assetId);
+    .eq("id", assetId)
+    .eq("org_id", ORG_ID);
   if (error) throwSupabaseWriteFailure(`serverUpdateAssetProject(${assetId})`, error);
 }

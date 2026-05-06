@@ -33,7 +33,7 @@ export async function serverBulkCreateTasks(orgId: string, tasks: CxTask[]): Pro
   if (error) throwSupabaseWriteFailure(`serverBulkCreateTasks(${tasks.length})`, error);
 }
 
-export async function serverUpdateTask(id: string, patch: Partial<CxTask>): Promise<void> {
+export async function serverUpdateTask(orgId: string, id: string, patch: Partial<CxTask>): Promise<void> {
   const update: Record<string, unknown> = {};
   if (patch.name              !== undefined) update.name                = patch.name;
   if (patch.type              !== undefined) update.type                = patch.type;
@@ -46,6 +46,6 @@ export async function serverUpdateTask(id: string, patch: Partial<CxTask>): Prom
   if (patch.notes             !== undefined) update.notes               = patch.notes     ?? null;
   if (patch.externalId        !== undefined) update.external_id         = patch.externalId ?? null;
   if (Object.keys(update).length === 0) return;
-  const { error } = await supabase.from("cx_tasks").update(update).eq("id", id);
+  const { error } = await supabase.from("cx_tasks").update(update).eq("id", id).eq("org_id", orgId);
   if (error) throwSupabaseWriteFailure(`serverUpdateTask(${id})`, error);
 }

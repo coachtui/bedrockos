@@ -67,6 +67,7 @@ export async function getSignedFileUrl(
 }
 
 export async function deleteProjectFile(
+  orgId: string,
   fileId: string,
   storagePath: string,
 ): Promise<{ error?: string }> {
@@ -79,13 +80,15 @@ export async function deleteProjectFile(
   const { error: dbError } = await supabase
     .from("project_files")
     .delete()
-    .eq("id", fileId);
+    .eq("id", fileId)
+    .eq("org_id", orgId);
 
   if (dbError) return { error: dbError.message };
   return {};
 }
 
 export async function renameProjectFile(
+  orgId: string,
   fileId: string,
   newName: string,
 ): Promise<{ error?: string }> {
@@ -95,7 +98,8 @@ export async function renameProjectFile(
   const { error } = await supabase
     .from("project_files")
     .update({ file_name: trimmed })
-    .eq("id", fileId);
+    .eq("id", fileId)
+    .eq("org_id", orgId);
 
   if (error) return { error: error.message };
   return {};

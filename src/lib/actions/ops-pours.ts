@@ -76,6 +76,7 @@ export async function serverEditPour(
     .from("ops_pours")
     .update(patch)
     .eq("id", id)
+    .eq("org_id", ORG_ID)
     .select(POUR_SELECT_COLUMNS)
     .single();
 
@@ -88,6 +89,7 @@ export async function serverSubmitPourForApproval(id: string): Promise<PourEvent
     .from("ops_pours")
     .update({ status: POUR_STATUS.PENDING_APPROVAL, rejection_reason: null })
     .eq("id", id)
+    .eq("org_id", ORG_ID)
     .select(POUR_SELECT_COLUMNS)
     .single();
   if (error || !data) throwSupabaseWriteFailure(`serverSubmitPourForApproval(${id})`, error);
@@ -111,6 +113,7 @@ export async function serverApprovePour(
       rejection_reason: null,
     })
     .eq("id", id)
+    .eq("org_id", ORG_ID)
     .select(POUR_SELECT_COLUMNS)
     .single();
   if (error || !data) throwSupabaseWriteFailure(`serverApprovePour(${id})`, error);
@@ -135,6 +138,7 @@ export async function serverRejectPour(
       approved_at:      null,
     })
     .eq("id", id)
+    .eq("org_id", ORG_ID)
     .select(POUR_SELECT_COLUMNS)
     .single();
   if (error || !data) throwSupabaseWriteFailure(`serverRejectPour(${id})`, error);
@@ -157,6 +161,7 @@ export async function serverCancelPour(
       cancellation_reason: reason.trim() || "No reason provided.",
     })
     .eq("id", id)
+    .eq("org_id", ORG_ID)
     .select(POUR_SELECT_COLUMNS)
     .single();
   if (error || !data) throwSupabaseWriteFailure(`serverCancelPour(${id})`, error);

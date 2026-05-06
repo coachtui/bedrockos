@@ -64,6 +64,7 @@ export async function serverUpdateMxWorkOrderStatus(
     .from("mx_work_orders")
     .update(patch)
     .eq("id", id)
+    .eq("org_id", ORG_ID)
     .select(MX_WO_SELECT_COLUMNS)
     .single();
 
@@ -87,6 +88,7 @@ export async function serverUpdateMxWorkOrder(
     .from("mx_work_orders")
     .update(patch)
     .eq("id", id)
+    .eq("org_id", ORG_ID)
     .select(MX_WO_SELECT_COLUMNS)
     .single();
 
@@ -102,6 +104,7 @@ export async function serverAssignMechanic(
     .from("mx_work_orders")
     .select("assigned_mechanic_ids")
     .eq("id", workOrderId)
+    .eq("org_id", ORG_ID)
     .single();
   if (readError || !existing) throwSupabaseWriteFailure(`serverAssignMechanic(${workOrderId})`, readError);
 
@@ -114,6 +117,7 @@ export async function serverAssignMechanic(
     .from("mx_work_orders")
     .update({ assigned_mechanic_ids: next })
     .eq("id", workOrderId)
+    .eq("org_id", ORG_ID)
     .select(MX_WO_SELECT_COLUMNS)
     .single();
 
@@ -129,6 +133,7 @@ export async function serverUnassignMechanic(
     .from("mx_work_orders")
     .select("assigned_mechanic_ids")
     .eq("id", workOrderId)
+    .eq("org_id", ORG_ID)
     .single();
   if (readError || !existing) throwSupabaseWriteFailure(`serverUnassignMechanic(${workOrderId})`, readError);
 
@@ -141,6 +146,7 @@ export async function serverUnassignMechanic(
     .from("mx_work_orders")
     .update({ assigned_mechanic_ids: next })
     .eq("id", workOrderId)
+    .eq("org_id", ORG_ID)
     .select(MX_WO_SELECT_COLUMNS)
     .single();
 

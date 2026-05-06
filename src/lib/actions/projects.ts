@@ -43,6 +43,6 @@ export async function serverUpdateProject(
   if (patch.award_price           !== undefined) update.award_price           = patch.award_price ?? null;
   if (patch.working_holiday_dates !== undefined) update.working_holiday_dates = patch.working_holiday_dates;
   if (Object.keys(update).length === 0) return;
-  const { error } = await supabase.from("projects").update(update).eq("id", id);
+  const { error } = await supabase.from("projects").update(update).eq("id", id).eq("org_id", ORG_ID);
   if (error) throwSupabaseWriteFailure(`serverUpdateProject(${id})`, error);
 }

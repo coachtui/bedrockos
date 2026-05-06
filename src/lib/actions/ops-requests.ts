@@ -51,6 +51,7 @@ export async function serverApproveRequest(id: string): Promise<Request> {
     .from("ops_requests")
     .update({ status: "approved" })
     .eq("id", id)
+    .eq("org_id", ORG_ID)
     .select(REQUEST_SELECT_COLUMNS)
     .single();
   if (error || !data) throwSupabaseWriteFailure(`serverApproveRequest(${id})`, error);
@@ -91,6 +92,7 @@ export async function serverAssignRequest(
     .from("ops_requests")
     .update(update)
     .eq("id", id)
+    .eq("org_id", ORG_ID)
     .select(REQUEST_SELECT_COLUMNS)
     .single();
   if (error || !data) throwSupabaseWriteFailure(`serverAssignRequest(${id})`, error);

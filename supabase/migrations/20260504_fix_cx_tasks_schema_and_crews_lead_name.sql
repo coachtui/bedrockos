@@ -1,6 +1,3 @@
--- cx_tasks: rename title → name
-alter table cx_tasks rename column title to name;
-
 -- cx_tasks: drop stale columns
 alter table cx_tasks drop column if exists priority;
 alter table cx_tasks drop column if exists due_date;

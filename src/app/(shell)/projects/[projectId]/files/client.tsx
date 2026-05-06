@@ -127,7 +127,7 @@ export function ProjectFilesClient({ projectId, orgId, initialFiles }: ProjectFi
     setEditingName("");
     if (!trimmed) return;
     setLocalFiles((prev) => prev.map((f) => f.id === fileId ? { ...f, fileName: trimmed } : f));
-    const result = await renameProjectFile(fileId, trimmed);
+    const result = await renameProjectFile(orgId, fileId, trimmed);
     if (result.error) {
       setError(result.error);
       router.refresh();

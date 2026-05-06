@@ -55,7 +55,8 @@ export async function serverLinkWorkerUser(
   const { error } = await supabase
     .from("workers")
     .update({ user_id: userId })
-    .eq("id", workerId);
+    .eq("id", workerId)
+    .eq("org_id", ORG_ID);
   if (error) return { error: describeSupabaseError(error) };
   return {};
 }

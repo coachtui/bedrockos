@@ -60,7 +60,7 @@ export async function serverUpdateUserRole(
 ): Promise<{ error?: string }> {
   const authCheck = await assertAdmin();
   if (authCheck.error) return authCheck;
-  const { error } = await supabase.from("org_users").update({ role }).eq("id", orgUserId);
+  const { error } = await supabase.from("org_users").update({ role }).eq("id", orgUserId).eq("org_id", ORG_ID);
   if (error) return { error: error.message };
   return {};
 }
@@ -68,7 +68,7 @@ export async function serverUpdateUserRole(
 export async function serverRemoveUser(orgUserId: string): Promise<{ error?: string }> {
   const authCheck = await assertAdmin();
   if (authCheck.error) return authCheck;
-  const { error } = await supabase.from("org_users").delete().eq("id", orgUserId);
+  const { error } = await supabase.from("org_users").delete().eq("id", orgUserId).eq("org_id", ORG_ID);
   if (error) return { error: error.message };
   return {};
 }

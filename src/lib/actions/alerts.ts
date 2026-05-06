@@ -4,11 +4,14 @@ import { revalidatePath } from "next/cache";
 import { supabase } from "@/lib/supabase/server";
 import { throwSupabaseWriteFailure } from "@/lib/supabase/errors";
 
+const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
+
 export async function serverSetAlertRead(id: string, isRead: boolean): Promise<void> {
   const { error } = await supabase
     .from("alerts")
     .update({ is_read: isRead })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("org_id", ORG_ID);
   if (error) throwSupabaseWriteFailure(`serverSetAlertRead(${id}, ${isRead})`, error);
 
   revalidatePath("/alerts");

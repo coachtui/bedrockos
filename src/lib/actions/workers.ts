@@ -32,6 +32,6 @@ export async function serverUpdateWorker(
   if (patch.available  !== undefined) update.available  = patch.available;
   if (patch.skills     !== undefined) update.skills     = patch.skills;
   if (Object.keys(update).length === 0) return;
-  const { error } = await supabase.from("workers").update(update).eq("id", id);
+  const { error } = await supabase.from("workers").update(update).eq("id", id).eq("org_id", ORG_ID);
   if (error) throwSupabaseWriteFailure(`serverUpdateWorker(${id})`, error);
 }

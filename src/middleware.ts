@@ -30,9 +30,14 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const isApiRoute  = request.nextUrl.pathname.startsWith("/api/");
   const isLoginPage = request.nextUrl.pathname === "/login";
 
+  // API routes return 401 JSON; page routes redirect to /login
   if (!user && !isLoginPage) {
+    if (isApiRoute) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -45,6 +50,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/).*)",
+    "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
 };
