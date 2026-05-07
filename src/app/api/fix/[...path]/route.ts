@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/supabase/ssr";
 import { fetchOrgUserByAuthId } from "@/lib/supabase/org-users";
+import { fetchPlatformOrg } from "@/lib/supabase/platform-orgs";
 
 const FIX_BACKEND_URL = process.env.FIX_BACKEND_URL;
 const FIX_PARTNER_KEY = process.env.FIX_PARTNER_KEY;
@@ -37,6 +38,15 @@ async function proxy(
     const orgUser = await fetchOrgUserByAuthId(sessionUser.id);
     const orgId   = orgUser?.org_id ?? process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "";
     const email   = orgUser?.email ?? sessionUser.email ?? "";
+
+    // Entitlement gate — Fix must be in the org's enabled_modules. Hiding the
+    // nav entry isn't enough; a user with the URL could otherwise reach the API.
+    if (orgId) {
+      const org = await fetchPlatformOrg(orgId);
+      if (!org?.enabledModules.includes("fix")) {
+        return NextResponse.json({ error: "Fix module not enabled for this organization" }, { status: 403 });
+      }
+    }
 
     const url    = new URL(request.url);
     const target = `${FIX_BACKEND_URL}/api/${params.path.join("/")}${url.search}`;
