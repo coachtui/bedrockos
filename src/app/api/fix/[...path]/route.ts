@@ -55,6 +55,9 @@ async function proxy(
 
     const res = await fetch(target, { method, headers, body });
     const data = await res.text();
+    if (res.status >= 500) {
+      console.error(`[fix-proxy] upstream ${res.status} from ${method} ${target}: ${data.slice(0, 500)}`);
+    }
     return new Response(data, {
       status: res.status,
       headers: { "Content-Type": res.headers.get("Content-Type") ?? "application/json" },
