@@ -2,6 +2,15 @@
 
 All notable changes to BedrockOS are documented here.
 
+## [0.2.1.0] - 2026-05-06
+
+### Added
+- **Native Fix diagnostic chat** — `/modules/fix` is now a first-class BedrockOS chat experience instead of an embedded iframe. Mechanics get a session sidebar, mode selector (consumer/operator/mechanic), heavy-equipment context form, image upload, and inline diagnostic + OBD result cards — all styled with BedrockOS design tokens. Opens with the asset/issue/project context pre-filled when launched from an issue or project Command Center, so there's no retyping "Cat 336 at Highland."
+- **DTC fast path** — type a fault code (e.g. `P0420`) on a fresh session and Fix returns the OBD lookup directly without spinning up a diagnostic tree.
+
+### Changed
+- The `/api/fix/[...path]` proxy now forwards the original `Content-Type` and streams request bodies through, so multipart image uploads reach the Fix backend intact instead of being mangled to JSON.
+
 ## [0.2.0.0] - 2026-05-06
 
 ### Added

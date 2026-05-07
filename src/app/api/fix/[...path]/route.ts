@@ -41,19 +41,25 @@ async function proxy(
   const target = `${FIX_BACKEND_URL}/api/${params.path.join("/")}${url.search}`;
 
   const headers = new Headers();
-  headers.set("Content-Type", "application/json");
+  // Preserve the client's Content-Type (JSON, multipart/form-data, etc.)
+  const incomingContentType = request.headers.get("content-type");
+  if (incomingContentType) headers.set("Content-Type", incomingContentType);
   // Partner-auth handshake — Fix backend trusts these because of FIX_PARTNER_KEY
   headers.set("X-Partner-Key",        FIX_PARTNER_KEY);
   headers.set("X-Partner-User-Id",    sessionUser.id);
   headers.set("X-Partner-User-Email", email);
   headers.set("X-Partner-Org-Id",     orgId);
 
-  const body = method !== "GET" && method !== "DELETE"
-    ? await request.text()
-    : undefined;
+  const hasBody = method !== "GET" && method !== "DELETE";
 
   try {
-    const res = await fetch(target, { method, headers, body });
+    const res = await fetch(target, {
+      method,
+      headers,
+      body: hasBody ? request.body : undefined,
+      // Required by undici when streaming a request body
+      ...(hasBody ? { duplex: "half" } : {}),
+    } as RequestInit & { duplex?: "half" });
     const data = await res.text();
     return new Response(data, {
       status: res.status,

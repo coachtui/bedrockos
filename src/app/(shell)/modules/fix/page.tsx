@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
-  Wrench, AlertTriangle, X, ArrowLeft, Truck, Building2, ExternalLink,
+  Wrench, AlertTriangle, X, ArrowLeft, Truck, Building2,
 } from "lucide-react";
 import { fetchOrgAlertById } from "@/lib/supabase/alerts";
 import { fetchOrgIssueById } from "@/lib/supabase/issues";
@@ -9,10 +9,10 @@ import { fetchOrgAssetById } from "@/lib/supabase/assets";
 import { fetchOrgProjects } from "@/lib/supabase/projects";
 import { getSourceConfig } from "@/lib/modules/source-config";
 import { FixEscalateButton } from "@/components/modules/fix/FixEscalateButton";
+import { FixChat } from "@/components/modules/fix/FixChat";
 
 export const metadata = { title: "Fix" };
-const ORG_ID     = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
-const FIX_APP_URL = process.env.FIX_APP_URL ?? "";
+const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
 
 type SearchParams = Promise<{
   issueId?: string;
@@ -30,15 +30,16 @@ export default async function FixPage({ searchParams }: { searchParams: SearchPa
   const source  = typeof params.source  === "string" ? params.source  : null;
   const role    = typeof params.role    === "string" ? params.role    : null;
 
-  const issue   = issueId ? await fetchOrgIssueById(ORG_ID, issueId)  : null;
-  const asset   = assetId ? await fetchOrgAssetById(ORG_ID, assetId)  : null;
-  const alert   = alertId ? await fetchOrgAlertById(ORG_ID, alertId)  : null;
+  const issue = issueId ? await fetchOrgIssueById(ORG_ID, issueId) : null;
+  const asset = assetId ? await fetchOrgAssetById(ORG_ID, assetId) : null;
+  const _alert = alertId ? await fetchOrgAlertById(ORG_ID, alertId) : null;
+  void _alert;
 
-  const projectId   = issue?.project_id ?? asset?.project_id ?? null;
-  const projects    = projectId ? await fetchOrgProjects(ORG_ID) : [];
-  const project     = projectId ? projects.find((p) => p.id === projectId) ?? null : null;
+  const projectId = issue?.project_id ?? asset?.project_id ?? null;
+  const projects  = projectId ? await fetchOrgProjects(ORG_ID) : [];
+  const project   = projectId ? projects.find((p) => p.id === projectId) ?? null : null;
 
-  const hasContext  = !!(issue || asset);
+  const hasContext   = !!(issue || asset);
   const sourceConfig = getSourceConfig(source);
 
   let returnHref:  string | null = null;
@@ -60,7 +61,6 @@ export default async function FixPage({ searchParams }: { searchParams: SearchPa
     project && { label: "Project" },
   ].filter(Boolean) as { label: string }[];
 
-  // Build a hint string for Fix's chat — lets the mechanic paste it in
   const contextHint = [
     asset   && `Asset: ${asset.name} (${asset.type})`,
     issue   && `Issue: ${issue.title}`,
@@ -70,10 +70,8 @@ export default async function FixPage({ searchParams }: { searchParams: SearchPa
   return (
     <div className="flex flex-col h-full overflow-hidden">
 
-      {/* ── Context Banner ─────────────────────────────────────────────── */}
       {hasContext && (
         <div className="shrink-0 border-b border-teal/20 bg-teal/5">
-
           <div className="flex items-start justify-between gap-4 px-5 pt-4 pb-3">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-xl bg-teal/15 border border-teal/25 flex items-center justify-center shrink-0 mt-0.5">
@@ -139,14 +137,6 @@ export default async function FixPage({ searchParams }: { searchParams: SearchPa
             )}
           </div>
 
-          {contextHint && (
-            <div className="border-t border-teal/15 px-5 py-2.5 flex items-center justify-between gap-4">
-              <p className="text-[11px] text-content-muted">
-                Copy to Fix chat: <span className="text-content-secondary font-medium">{contextHint}</span>
-              </p>
-            </div>
-          )}
-
           <div className="border-t border-teal/15 px-5 py-2.5 flex items-center gap-3">
             {returnHref && returnLabel && (
               <Link href={returnHref} className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal hover:opacity-80 transition-opacity">
@@ -168,37 +158,11 @@ export default async function FixPage({ searchParams }: { searchParams: SearchPa
         </div>
       )}
 
-      {/* ── Fix iframe ─────────────────────────────────────────────────── */}
-      {FIX_APP_URL ? (
-        <div className="flex-1 relative overflow-hidden">
-          <iframe
-            src={FIX_APP_URL}
-            className="absolute inset-0 w-full h-full border-0"
-            allow="camera; microphone"
-            title="Fix — Diagnostic AI"
-          />
-        </div>
-      ) : (
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 p-12 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-teal/10 border border-teal/20 flex items-center justify-center">
-            <Wrench size={22} className="text-teal" />
-          </div>
-          <div>
-            <p className="font-semibold text-content-primary text-sm mb-1">Fix service not configured</p>
-            <p className="text-xs text-content-muted max-w-xs leading-relaxed">
-              Add <code className="text-teal bg-teal/10 px-1 py-0.5 rounded font-mono text-[11px]">FIX_APP_URL</code> to your Vercel environment variables to connect the Fix diagnostic engine.
-            </p>
-          </div>
-          <a
-            href="https://railway.app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal border border-teal/30 rounded-lg px-3 py-1.5 hover:bg-teal/5 transition-colors"
-          >
-            Deploy Fix on Railway <ExternalLink size={11} />
-          </a>
-        </div>
-      )}
+      <FixChat
+        initialContextHint={contextHint || undefined}
+        initialAssetType={asset?.type ?? undefined}
+        initialAssetMakeModel={asset?.name ?? undefined}
+      />
     </div>
   );
 }
