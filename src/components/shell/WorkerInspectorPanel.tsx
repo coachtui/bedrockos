@@ -12,8 +12,8 @@ const WORKER_ROLES: WorkerRole[] = [
   "foreman", "superintendent", "mechanic", "driver",
 ];
 
-const CAN_EDIT           = new Set<UserRole>(["owner", "admin", "superintendent"]);
-const CAN_CHANGE_PROJECT = new Set<UserRole>(["owner", "admin"]);
+const CAN_EDIT           = new Set<UserRole>(["owner", "admin", "equipment_director", "operations_manager", "superintendent"]);
+const CAN_CHANGE_PROJECT = new Set<UserRole>(["owner", "admin", "equipment_director", "operations_manager"]);
 
 interface WorkerInspectorPanelProps {
   workerId: string | null;

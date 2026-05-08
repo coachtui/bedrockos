@@ -2,14 +2,16 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, MailCheck } from "lucide-react";
+import { Plus } from "lucide-react";
 import type { OrgUserRow } from "@/lib/supabase/org-users";
-import { serverInviteUser, serverResendInvite, serverUpdateUserRole, serverRemoveUser } from "@/lib/actions/org-users";
+import { serverInviteUser } from "@/lib/actions/org-users";
 import { ROLE_LABELS, ROLE_BADGE_COLORS } from "@/lib/constants/roles";
 import type { UserRole } from "@/types/org";
+import { UserInspectorPanel } from "./UserInspectorPanel";
 
 const ALL_ROLES: UserRole[] = [
-  "owner", "admin", "pm", "project_engineer", "superintendent", "foreman", "mechanic", "viewer",
+  "owner", "admin", "equipment_director", "operations_manager",
+  "pm", "project_engineer", "superintendent", "foreman", "mechanic", "viewer",
 ];
 
 const fieldClass = "bg-surface-overlay border border-surface-border rounded px-3 py-2 text-sm text-content-primary placeholder:text-content-muted focus:outline-none focus:border-gold/50";
@@ -22,10 +24,13 @@ export function UsersAdminPanel({ users }: { users: OrgUserRow[] }) {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName,  setInviteName]  = useState("");
   const [inviteRole,  setInviteRole]  = useState<UserRole>("viewer");
-  const [inviteError, setInviteError]   = useState<string | null>(null);
-  const [resendError, setResendError]   = useState<string | null>(null);
-  const [resendOk,    setResendOk]      = useState<string | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteOpen,  setInviteOpen]  = useState(false);
+
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const selectedUser = selectedUserId
+    ? users.find((u) => u.id === selectedUserId) ?? null
+    : null;
 
   function handleInvite(e: React.FormEvent) {
     e.preventDefault();
@@ -38,34 +43,6 @@ export function UsersAdminPanel({ users }: { users: OrgUserRow[] }) {
         setInviteEmail(""); setInviteName(""); setInviteRole("viewer"); setInviteOpen(false);
         router.refresh();
       }
-    });
-  }
-
-  function handleRoleChange(orgUserId: string, role: string) {
-    startTransition(async () => {
-      await serverUpdateUserRole(orgUserId, role);
-      router.refresh();
-    });
-  }
-
-  function handleResendInvite(email: string) {
-    setResendError(null);
-    setResendOk(null);
-    startTransition(async () => {
-      const result = await serverResendInvite(email);
-      if (result.error) {
-        setResendError(result.error);
-      } else {
-        setResendOk(`Invite resent to ${email}`);
-      }
-    });
-  }
-
-  function handleRemove(orgUserId: string) {
-    if (!confirm("Remove this user from the organization?")) return;
-    startTransition(async () => {
-      await serverRemoveUser(orgUserId);
-      router.refresh();
     });
   }
 
@@ -128,9 +105,6 @@ export function UsersAdminPanel({ users }: { users: OrgUserRow[] }) {
         )}
       </div>
 
-      {resendError && <p className="text-xs text-red-400">{resendError}</p>}
-      {resendOk    && <p className="text-xs text-green-400">{resendOk}</p>}
-
       {/* Users table */}
       <div className="rounded-[var(--radius-card)] border border-surface-border overflow-hidden">
         <table className="w-full text-sm">
@@ -139,13 +113,12 @@ export function UsersAdminPanel({ users }: { users: OrgUserRow[] }) {
               <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-content-muted">Name</th>
               <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-content-muted hidden md:table-cell">Email</th>
               <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-content-muted">Role</th>
-              <th className="px-4 py-3 w-10" />
             </tr>
           </thead>
           <tbody>
             {users.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-sm text-content-muted text-center">
+                <td colSpan={3} className="px-4 py-8 text-sm text-content-muted text-center">
                   No users yet. Invite someone to get started.
                 </td>
               </tr>
@@ -154,8 +127,15 @@ export function UsersAdminPanel({ users }: { users: OrgUserRow[] }) {
               const roleKey    = user.role as UserRole;
               const badgeClass = ROLE_BADGE_COLORS[roleKey] ?? "text-content-muted border-surface-border bg-surface-overlay";
               const initials   = user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "?";
+              const isSelected = user.id === selectedUserId;
               return (
-                <tr key={user.id} className="border-b border-surface-border last:border-0 hover:bg-surface-overlay/50 transition-colors">
+                <tr
+                  key={user.id}
+                  onClick={() => setSelectedUserId(user.id)}
+                  className={`border-b border-surface-border last:border-0 cursor-pointer transition-colors ${
+                    isSelected ? "bg-surface-overlay" : "hover:bg-surface-overlay/50"
+                  }`}
+                >
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-3">
                       <div className="w-7 h-7 rounded-full bg-gold/20 border border-gold/30 flex items-center justify-center shrink-0">
@@ -166,36 +146,9 @@ export function UsersAdminPanel({ users }: { users: OrgUserRow[] }) {
                   </td>
                   <td className="px-4 py-3.5 text-content-muted hidden md:table-cell">{user.email}</td>
                   <td className="px-4 py-3.5">
-                    <select
-                      value={user.role}
-                      disabled={isPending}
-                      onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                      className={`text-xs font-semibold px-2 py-1 rounded border ${badgeClass} bg-transparent focus:outline-none focus:border-gold/50`}
-                    >
-                      {ALL_ROLES.map((r) => (
-                        <option key={r} value={r}>{ROLE_LABELS[r] ?? r}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="px-4 py-3.5 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => handleResendInvite(user.email)}
-                        disabled={isPending}
-                        className="p-1 text-content-muted hover:text-gold transition-colors disabled:opacity-40"
-                        title="Resend invite"
-                      >
-                        <MailCheck size={13} />
-                      </button>
-                      <button
-                        onClick={() => handleRemove(user.id)}
-                        disabled={isPending}
-                        className="p-1 text-content-muted hover:text-red-400 transition-colors disabled:opacity-40"
-                        title="Remove user"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
+                    <span className={`inline-block text-[11px] font-semibold px-2 py-1 rounded border ${badgeClass}`}>
+                      {ROLE_LABELS[roleKey] ?? user.role}
+                    </span>
                   </td>
                 </tr>
               );
@@ -203,6 +156,11 @@ export function UsersAdminPanel({ users }: { users: OrgUserRow[] }) {
           </tbody>
         </table>
       </div>
+
+      <UserInspectorPanel
+        user={selectedUser}
+        onClose={() => setSelectedUserId(null)}
+      />
     </div>
   );
 }

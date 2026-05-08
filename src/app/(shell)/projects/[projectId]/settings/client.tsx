@@ -21,7 +21,7 @@ export function ProjectSettingsClient({ projectId }: { projectId: string }) {
 
   if (!project) return null;
 
-  const canEdit = role === "owner" || role === "admin" || role === "pm";
+  const canEdit = role === "owner" || role === "admin" || role === "equipment_director" || role === "operations_manager" || role === "pm";
   const workingDates = project.working_holiday_dates ?? [];
 
   function toggleHoliday(date: string) {

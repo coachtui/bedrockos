@@ -23,7 +23,8 @@ import type { ProjectContext, UserRole } from "@/types/org";
 
 /** Office / oversight roles — see all org projects. */
 const FULL_ACCESS_ROLES: readonly UserRole[] = [
-  "owner", "admin", "pm", "project_engineer",
+  "owner", "admin", "equipment_director", "operations_manager",
+  "pm", "project_engineer",
 ];
 
 // ── Mock field-role assignments ───────────────────────────────────────────────

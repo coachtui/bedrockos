@@ -58,7 +58,7 @@ export default function AssignmentsPage() {
 
   const today = localDateString();
   // pm included here (day-level assignment = crew scheduling), consistent with CAN_CREATE_ROLES in crews/page.tsx
-  const canEdit = role === "superintendent" || role === "project_engineer" || role === "pm" || role === "owner" || role === "admin";
+  const canEdit = role === "superintendent" || role === "project_engineer" || role === "pm" || role === "owner" || role === "admin" || role === "equipment_director" || role === "operations_manager";
 
   return (
     <PageContainer maxWidth="wide">

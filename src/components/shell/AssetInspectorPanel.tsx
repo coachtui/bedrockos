@@ -8,8 +8,8 @@ import { relativeTime } from "@/lib/utils/time";
 import type { UserRole } from "@/types/org";
 import type { AssetStatus } from "@/types/domain";
 
-const CAN_EDIT           = new Set<UserRole>(["owner", "admin", "superintendent"]);
-const CAN_CHANGE_PROJECT = new Set<UserRole>(["owner", "admin"]);
+const CAN_EDIT           = new Set<UserRole>(["owner", "admin", "equipment_director", "operations_manager", "superintendent"]);
+const CAN_CHANGE_PROJECT = new Set<UserRole>(["owner", "admin", "equipment_director", "operations_manager"]);
 
 const ASSET_STATUSES: { value: AssetStatus; label: string }[] = [
   { value: "active",      label: "Active" },

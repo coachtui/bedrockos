@@ -65,7 +65,7 @@ export default function TaskBankPage() {
       return a.name.localeCompare(b.name);
     });
 
-  const canEdit = role === "project_engineer" || role === "superintendent" || role === "owner" || role === "admin";
+  const canEdit = role === "project_engineer" || role === "superintendent" || role === "owner" || role === "admin" || role === "equipment_director" || role === "operations_manager";
 
   function openCreate() {
     setSelectedTaskId(undefined);

@@ -10,7 +10,7 @@ import { CrewPanel } from "@/components/cx/CrewPanel";
 import { useOrg } from "@/providers/OrgProvider";
 import type { CrewStatus } from "@/types/domain";
 
-const CAN_CREATE_ROLES = new Set(["superintendent", "project_engineer", "pm", "owner", "admin"]);
+const CAN_CREATE_ROLES = new Set(["superintendent", "project_engineer", "pm", "owner", "admin", "equipment_director", "operations_manager"]);
 
 const STATUS_DOT: Partial<Record<CrewStatus, string>> = {
   on_site:  "bg-green-400",

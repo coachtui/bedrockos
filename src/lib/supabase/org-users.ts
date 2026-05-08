@@ -4,7 +4,8 @@ import { logSupabaseReadFailure } from "./errors";
 import type { UserRole } from "@/types/org";
 
 const KNOWN_USER_ROLES = new Set<UserRole>([
-  "owner", "admin", "pm", "project_engineer",
+  "owner", "admin", "equipment_director", "operations_manager",
+  "pm", "project_engineer",
   "superintendent", "foreman", "mechanic", "viewer",
 ]);
 

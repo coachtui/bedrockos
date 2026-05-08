@@ -170,7 +170,7 @@ export default function SchedulePage() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>();
   const selectedTask = selectedTaskId ? tasks.find((t) => t.id === selectedTaskId) : undefined;
 
-  const canEdit = role === "project_engineer" || role === "superintendent" || role === "owner" || role === "admin";
+  const canEdit = role === "project_engineer" || role === "superintendent" || role === "owner" || role === "admin" || role === "equipment_director" || role === "operations_manager";
   const workingHolidayDates = projects.find((p) => p.id === currentProject.id)?.working_holiday_dates ?? [];
 
   function openCreate() {

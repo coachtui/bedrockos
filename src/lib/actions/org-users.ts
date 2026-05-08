@@ -10,8 +10,14 @@ async function assertAdmin(): Promise<{ error?: string }> {
   const session = await getSessionUser();
   if (!session) return { error: "Unauthorized" };
   const orgUser = await fetchOrgUser(ORG_ID, session.id);
-  if (!orgUser || (orgUser.role !== "owner" && orgUser.role !== "admin")) {
-    return { error: "Forbidden: owner or admin role required" };
+  if (
+    !orgUser ||
+    (orgUser.role !== "owner" &&
+      orgUser.role !== "admin" &&
+      orgUser.role !== "equipment_director" &&
+      orgUser.role !== "operations_manager")
+  ) {
+    return { error: "Forbidden: admin-level role required" };
   }
   return {};
 }
@@ -61,6 +67,25 @@ export async function serverUpdateUserRole(
   const authCheck = await assertAdmin();
   if (authCheck.error) return authCheck;
   const { error } = await supabase.from("org_users").update({ role }).eq("id", orgUserId).eq("org_id", ORG_ID);
+  if (error) return { error: error.message };
+  return {};
+}
+
+export async function serverUpdateUser(
+  orgUserId: string,
+  patch: { name?: string; role?: string },
+): Promise<{ error?: string }> {
+  const authCheck = await assertAdmin();
+  if (authCheck.error) return authCheck;
+  const update: Record<string, string> = {};
+  if (typeof patch.name === "string") update.name = patch.name.trim();
+  if (typeof patch.role === "string") update.role = patch.role;
+  if (Object.keys(update).length === 0) return {};
+  const { error } = await supabase
+    .from("org_users")
+    .update(update)
+    .eq("id", orgUserId)
+    .eq("org_id", ORG_ID);
   if (error) return { error: error.message };
   return {};
 }

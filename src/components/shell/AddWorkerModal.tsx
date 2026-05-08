@@ -25,7 +25,7 @@ const WORKER_ROLES: { value: WorkerRole; label: string }[] = [
 ];
 
 // Roles that can add new skills to the catalog
-const CAN_ADD_SKILLS = new Set<UserRole>(["owner", "admin", "superintendent"]);
+const CAN_ADD_SKILLS = new Set<UserRole>(["owner", "admin", "equipment_director", "operations_manager", "superintendent"]);
 
 export function AddWorkerModal({ onClose, onCreated }: Props) {
   const { addWorker, addSkillToRole, skillCatalog, role: userRole } = useOrg();

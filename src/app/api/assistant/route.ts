@@ -9,7 +9,7 @@ import { getSessionUser } from "@/lib/supabase/ssr";
 
 export const runtime = "nodejs";
 
-const KNOWN_ROLES    = new Set(["owner", "admin", "pm", "project_engineer", "superintendent", "foreman", "mechanic", "viewer"]);
+const KNOWN_ROLES    = new Set(["owner", "admin", "equipment_director", "operations_manager", "pm", "project_engineer", "superintendent", "foreman", "mechanic", "viewer"]);
 const KNOWN_MODULES  = new Set(["cru", "fix", "inspect", "datum", "mx", "ops"]);
 const MAX_MESSAGES   = 50;
 const MAX_BODY_BYTES = 100_000;

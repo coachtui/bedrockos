@@ -36,21 +36,21 @@ export const TERMINAL_STATUSES: MxWorkOrderStatus[] = ["completed", "canceled"];
 // ── Permission helpers ────────────────────────────────────────────────────────
 
 /** Roles with elevated access — can act across all projects and update WO status */
-const ELEVATED_ROLES: UserRole[] = ["owner", "admin", "mechanic"];
+const ELEVATED_ROLES: UserRole[] = ["owner", "admin", "equipment_director", "operations_manager", "mechanic"];
 
 /** Roles that can create a new work order (or report an equipment issue) */
 export function canCreateWorkOrder(role: UserRole): boolean {
-  return ["owner", "admin", "mechanic", "foreman", "superintendent", "project_engineer"].includes(role);
+  return ["owner", "admin", "equipment_director", "operations_manager", "mechanic", "foreman", "superintendent", "project_engineer"].includes(role);
 }
 
 /** Roles that can approve a work order (move from triage → approved) */
 export function canApproveWorkOrder(role: UserRole): boolean {
-  return ["owner", "admin"].includes(role);
+  return ["owner", "admin", "equipment_director", "operations_manager"].includes(role);
 }
 
 /** Roles that can assign mechanics to a work order */
 export function canAssignMechanic(role: UserRole): boolean {
-  return ["owner", "admin"].includes(role);
+  return ["owner", "admin", "equipment_director", "operations_manager"].includes(role);
 }
 
 /** Can this actor update status on a work order? */

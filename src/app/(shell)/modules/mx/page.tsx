@@ -41,7 +41,7 @@ const FEATURES = [
 
 export default function MxPage() {
   const { role } = useOrg();
-  const showMyWork = role === "mechanic" || role === "owner" || role === "admin";
+  const showMyWork = role === "mechanic" || role === "owner" || role === "admin" || role === "equipment_director" || role === "operations_manager";
   const features = FEATURES.filter((f) => f.href !== "/modules/mx/my-work" || showMyWork);
 
   return (

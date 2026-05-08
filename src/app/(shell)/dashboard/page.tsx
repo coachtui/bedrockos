@@ -17,14 +17,16 @@ import type { UserRole } from "@/types/org";
 // ── Page title per role ───────────────────────────────────────────────────────
 
 const PAGE_TITLE: Record<UserRole, string> = {
-  owner:            "System Overview",
-  admin:            "System Overview",
-  pm:               "System Overview",
-  project_engineer: "System Overview",
-  superintendent:   "Current Project Status",
-  foreman:          "Current Project Status",
-  mechanic:         "Equipment Status & Issues",
-  viewer:           "System Overview",
+  owner:              "System Overview",
+  admin:              "System Overview",
+  equipment_director: "System Overview",
+  operations_manager: "System Overview",
+  pm:                 "System Overview",
+  project_engineer:   "System Overview",
+  superintendent:     "Current Project Status",
+  foreman:            "Current Project Status",
+  mechanic:           "Equipment Status & Issues",
+  viewer:             "System Overview",
 };
 
 // ── Context banner ────────────────────────────────────────────────────────────

@@ -101,7 +101,9 @@ export function TaskInspectorPanel({
     role === "superintendent" ||
     role === "project_engineer" ||
     role === "owner" ||
-    role === "admin"
+    role === "admin" ||
+    role === "equipment_director" ||
+    role === "operations_manager"
   );
 
   const assignedWorkerIds = task?.assignedWorkerIds ?? [];

@@ -7,6 +7,8 @@ export type ModuleScope = "full" | "read" | "my_work" | "field" | "hidden";
 export type UserRole =
   | "owner"
   | "admin"
+  | "equipment_director"
+  | "operations_manager"
   | "pm"
   | "project_engineer"
   | "superintendent"

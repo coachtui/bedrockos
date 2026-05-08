@@ -8,7 +8,7 @@ import { ScheduleChat }    from "./ScheduleChat";
 import { CsvUploadPanel }  from "./CsvUploadPanel";
 import type { UserRole }   from "@/types/org";
 
-const SCHEDULE_ACTING_ROLES: UserRole[] = ["owner", "admin", "pm", "project_engineer", "superintendent"];
+const SCHEDULE_ACTING_ROLES: UserRole[] = ["owner", "admin", "equipment_director", "operations_manager", "pm", "project_engineer", "superintendent"];
 
 interface Props {
   projectId: string;
@@ -27,7 +27,7 @@ export function ScheduleTab({ projectId, role }: Props) {
   const [mobileTab,   setMobileTab]   = useState<"chat" | "schedule">("chat");
 
   const canAct = SCHEDULE_ACTING_ROLES.includes(role);
-  const canUpload = (["owner", "admin", "pm", "project_engineer"] as UserRole[]).includes(role);
+  const canUpload = (["owner", "admin", "equipment_director", "operations_manager", "pm", "project_engineer"] as UserRole[]).includes(role);
 
   const chatProps = {
     messages,

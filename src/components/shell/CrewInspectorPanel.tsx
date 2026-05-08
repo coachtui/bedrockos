@@ -7,7 +7,7 @@ import { useOrg } from "@/providers/OrgProvider";
 import type { UserRole } from "@/types/org";
 import type { CrewStatus } from "@/types/domain";
 
-const CAN_EDIT = new Set<UserRole>(["owner", "admin", "superintendent"]);
+const CAN_EDIT = new Set<UserRole>(["owner", "admin", "equipment_director", "operations_manager", "superintendent"]);
 
 const CREW_STATUSES: { value: CrewStatus; label: string }[] = [
   { value: "on_site",  label: "On Site" },

@@ -28,7 +28,7 @@ const FEATURES: FeatureCard[] = [
     title: "Crews",
     desc:  "Organize workers into named teams. Manage crew composition and assignments.",
     href:  "/modules/cru/crews",
-    roles: ["superintendent", "project_engineer", "pm", "owner", "admin"],
+    roles: ["superintendent", "project_engineer", "pm", "owner", "admin", "equipment_director", "operations_manager"],
   },
   {
     icon:  <LayoutGrid   size={16} className="text-gold" />,

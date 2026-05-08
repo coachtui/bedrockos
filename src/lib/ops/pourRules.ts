@@ -64,12 +64,13 @@ export function isValidTransition(from: PourStatus, to: PourStatus): boolean {
 // These are the only places where "who can do what" is defined.
 
 const CREATOR_ROLES: readonly UserRole[] = [
-  "owner", "admin", "pm", "project_engineer", "superintendent", "foreman",
+  "owner", "admin", "equipment_director", "operations_manager",
+  "pm", "project_engineer", "superintendent", "foreman",
 ];
 
-const APPROVER_ROLES: readonly UserRole[] = ["owner", "admin"];
+const APPROVER_ROLES: readonly UserRole[] = ["owner", "admin", "equipment_director", "operations_manager"];
 
-const ADMIN_ROLES: readonly UserRole[] = ["owner", "admin"];
+const ADMIN_ROLES: readonly UserRole[] = ["owner", "admin", "equipment_director", "operations_manager"];
 
 export function isAdminRole(role: UserRole): boolean {
   return (ADMIN_ROLES as readonly string[]).includes(role);

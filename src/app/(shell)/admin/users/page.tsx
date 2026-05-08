@@ -13,7 +13,7 @@ export default async function UsersPage() {
   const sessionUser = await getSessionUser();
   if (sessionUser) {
     const orgUser = await fetchOrgUser(ORG_ID, sessionUser.id);
-    if (!orgUser || (orgUser.role !== "owner" && orgUser.role !== "admin")) {
+    if (!orgUser || (orgUser.role !== "owner" && orgUser.role !== "admin" && orgUser.role !== "equipment_director" && orgUser.role !== "operations_manager")) {
       redirect("/dashboard");
     }
   }
