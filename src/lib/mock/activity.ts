@@ -26,18 +26,6 @@ export const MOCK_ACTIVITY: ActivityEvent[] = [
     target_id:   "issue_002",
   },
   {
-    id:          "act_003",
-    actor_name:  "Marcus Webb",
-    action:      "published layout reference points for",
-    entity_type: "project",
-    entity_name: "Highland Tower P2 — Level 8",
-    project_id:  "proj_highland_002",
-    module:      "datum",
-    timestamp:   "2026-04-08T07:00:00Z",
-    target_type: "issue",
-    target_id:   "issue_004",
-  },
-  {
     id:          "act_004",
     actor_name:  "Angela Torres",
     action:      "submitted inspection report",
@@ -92,18 +80,6 @@ export const MOCK_ACTIVITY: ActivityEvent[] = [
     target_id:   "issue_005",
   },
   // ── MX ────────────────────────────────────────────────────────────────────
-  {
-    id:          "act_mx_001",
-    actor_name:  "Marcus Webb",
-    action:      "opened work order for",
-    entity_type: "equipment",
-    entity_name: "Cat 330 Excavator #EQ-014",
-    project_id:  "proj_highland_002",
-    module:      "mx",
-    timestamp:   "2026-04-10T07:00:00Z",
-    target_type: "issue",
-    target_id:   "issue_mx_001",
-  },
   {
     id:          "act_mx_002",
     actor_name:  "Ray Castillo",

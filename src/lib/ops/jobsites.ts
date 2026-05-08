@@ -29,15 +29,8 @@ const FULL_ACCESS_ROLES: readonly UserRole[] = [
 // ── Mock field-role assignments ───────────────────────────────────────────────
 // Key: userId → list of project IDs they are assigned to.
 // In Phase 3 this table is replaced by project_members in Supabase.
-// The demo user (user_owner_001) gets a limited set when playing field roles
-// so the restriction is visible during role switching.
 
 const MOCK_FIELD_ASSIGNMENTS: Record<string, string[]> = {
-  // Marcus Webb playing superintendent / foreman
-  "user_owner_001": [
-    "proj_highland_002",   // Highland Tower — Phase 2
-    "proj_riverside_006",  // Riverside District Parking
-  ],
   // Dan Ortega (appears in pour seed data as creator)
   "user_foreman_001": [
     "proj_riverside_006",

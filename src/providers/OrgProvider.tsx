@@ -12,7 +12,7 @@ import type {
   CreateWorkerInput, WorkerRole,
   UpdateProjectInput,
 } from "@/types/domain";
-import { getOrgConfig, MOCK_USER_BY_ROLE, DEFAULT_USER } from "@/lib/config/org";
+import { getOrgConfig } from "@/lib/config/org";
 import { ENABLE_MOCK_FALLBACK, warnMockFallback } from "@/lib/config/data-source";
 import { getModulesForBundles } from "@/lib/modules/bundles";
 import { MOCK_PROJECTS } from "@/lib/mock/projects";
@@ -44,7 +44,6 @@ interface OrgContextValue {
   features:            OrgConfig["features"];
   availableProjects:   ProjectContext[];
   setCurrentProject:   (project: ProjectContext) => void;
-  setRole:             (role: UserRole) => void;
   isModuleEnabled:     (id: ModuleId) => boolean;
   getModuleFeatures:   (id: ModuleId) => ModuleFeatureMap;
   issues:   Issue[];
@@ -261,13 +260,6 @@ export function OrgProvider({
       };
     });
   }, [sessionPositions]);
-
-  function setRole(role: UserRole) {
-    setConfig((prev) => ({
-      ...prev,
-      currentUser: MOCK_USER_BY_ROLE[role] ?? { ...DEFAULT_USER, role },
-    }));
-  }
 
   function addProject(input: CreateProjectInput): Project {
     const project: Project = {
@@ -680,7 +672,6 @@ export function OrgProvider({
         features:            config.features,
         availableProjects,
         setCurrentProject,
-        setRole,
         isModuleEnabled,
         getModuleFeatures,
         issues,

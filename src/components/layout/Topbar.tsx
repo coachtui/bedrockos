@@ -7,7 +7,6 @@ import { serverSignOut } from "@/lib/actions/auth";
 import { useUI } from "@/providers/UIProvider";
 import { useOrg } from "@/providers/OrgProvider";
 import { ProjectSelector } from "./ProjectSelector";
-import { DevRoleSwitcher } from "@/components/dev/DevRoleSwitcher";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ROLE_LABELS } from "@/lib/constants/roles";
 
@@ -55,9 +54,6 @@ export function Topbar() {
       <div className="hidden sm:block">
         <ProjectSelector />
       </div>
-
-      {/* Dev role switcher */}
-      <DevRoleSwitcher />
 
       {/* Right actions */}
       <div className="flex items-center gap-2">
