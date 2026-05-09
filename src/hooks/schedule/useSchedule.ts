@@ -6,7 +6,7 @@ import type {
   ColumnMap,
 } from "@/lib/schedule/types";
 import {
-  parseUserIntent, buildMarkCompleteProposal, buildPushDateProposal,
+  buildMarkCompleteProposal, buildPushDateProposal,
   applyMutations, generateWeeklyLookahead, makeMessageId,
   buildCascadeProposalBody,
 } from "@/lib/schedule/agent";
@@ -167,7 +167,7 @@ export function useSchedule(projectId: string) {
   // ── Post free-text message ────────────────────────────────────────────────
 
   const postMessage = useCallback(
-    (text: string) => {
+    async (text: string) => {
       const userMsg: ScheduleMessage = {
         id:        makeMessageId(),
         projectId,
@@ -179,14 +179,50 @@ export function useSchedule(projectId: string) {
       };
       setMessages((prev) => [...prev, userMsg]);
 
-      const intent = parseUserIntent(text, activities);
+      try {
+        const res = await fetch("/api/schedule/chat", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ message: text, activities, projectId }),
+        });
 
-      if (intent.type === "mark_complete" && intent.activityId) {
-        markActivityComplete(intent.activityId);
-      } else if (intent.type === "push_date" && intent.activityId) {
-        pushActivity(intent.activityId, intent.days ?? 7);
+        if (!res.ok) throw new Error(`API error ${res.status}`);
+
+        const { intent_type, activity_id, days, reply } = await res.json() as {
+          intent_type:  "mark_complete" | "push_date" | "add_note";
+          activity_id:  string | null;
+          days:         number | null;
+          reply:        string;
+        };
+
+        if (intent_type === "mark_complete" && activity_id) {
+          markActivityComplete(activity_id);
+        } else if (intent_type === "push_date" && activity_id) {
+          pushActivity(activity_id, days ?? 7);
+        } else {
+          const replyMsg: ScheduleMessage = {
+            id:        makeMessageId(),
+            projectId,
+            type:      "confirmation",
+            author:    "agent",
+            body:      reply,
+            status:    "confirmed",
+            createdAt: new Date().toISOString(),
+          };
+          setMessages((prev) => [...prev, replyMsg]);
+        }
+      } catch {
+        const errMsg: ScheduleMessage = {
+          id:        makeMessageId(),
+          projectId,
+          type:      "confirmation",
+          author:    "agent",
+          body:      "Couldn't reach the schedule assistant. Try again.",
+          status:    "confirmed",
+          createdAt: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, errMsg]);
       }
-      // add_note: user message is already posted, no agent action
     },
     [activities, projectId, markActivityComplete, pushActivity],
   );
