@@ -8,6 +8,12 @@ const KNOWN_ROLES = new Set<WorkerRole>([
   "foreman", "superintendent", "operator", "laborer",
 ]);
 
+const VISIBLE_COUNT_ROLES = new Set<WorkerRole>([
+  "operator", "laborer", "mason", "carpenter", "driver", "mechanic",
+]);
+
+export type ProjectWorkerCounts = Partial<Record<WorkerRole, number>>;
+
 function toWorkerRole(r: string): WorkerRole {
   return KNOWN_ROLES.has(r as WorkerRole) ? (r as WorkerRole) : "laborer";
 }
@@ -39,5 +45,37 @@ export async function fetchOrgWorkers(orgId: string): Promise<OrgWorker[]> {
   } catch (err) {
     logSupabaseReadFailure(`fetchOrgWorkers(${orgId})`, err);
     return [];
+  }
+}
+
+export async function fetchWorkerCountsByProject(
+  orgId: string,
+): Promise<Record<string, ProjectWorkerCounts>> {
+  try {
+    const { data, error } = await supabase
+      .from("workers")
+      .select("role, project_id")
+      .eq("org_id", orgId);
+
+    if (error) {
+      logSupabaseReadFailure(`fetchWorkerCountsByProject(${orgId})`, error);
+      return {};
+    }
+    if (!data) return {};
+
+    const result: Record<string, ProjectWorkerCounts> = {};
+    for (const row of data) {
+      const projectId = row.project_id as string | null;
+      if (!projectId) continue;
+      const role = toWorkerRole(row.role);
+      if (!VISIBLE_COUNT_ROLES.has(role)) continue;
+      const counts = result[projectId] ?? {};
+      counts[role] = (counts[role] ?? 0) + 1;
+      result[projectId] = counts;
+    }
+    return result;
+  } catch (err) {
+    logSupabaseReadFailure(`fetchWorkerCountsByProject(${orgId})`, err);
+    return {};
   }
 }
