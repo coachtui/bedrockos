@@ -127,21 +127,46 @@ export function useSchedule(
 
   const pushActivity = useCallback(
     (activityId: string, days: number) => {
-      const mutations    = buildPushDateProposal(activityId, days, activities);
-      const proposalBody = buildCascadeProposalBody(mutations, activities);
-      const proposal: ScheduleMessage = {
-        id:        makeMessageId(),
-        projectId,
-        type:      "cascade_proposal",
-        author:    "agent",
-        body:      proposalBody,
-        payload:   mutations,
-        status:    "pending",
-        createdAt: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, proposal]);
+      const mutations         = buildPushDateProposal(activityId, days, activities);
+      const primaryMutation   = mutations.filter((m) => m.activityId === activityId);
+      const cascadeMutations  = mutations.filter((m) => m.activityId !== activityId);
+
+      // Apply the requested push immediately (user explicitly asked for it)
+      setSchedule((prev) => ({
+        ...prev,
+        activities:    applyMutations(prev.activities, primaryMutation),
+        lastUpdatedAt: new Date().toISOString(),
+      }));
+      primaryMutation.forEach((m) => onMutate?.(m));
+
+      if (cascadeMutations.length > 0) {
+        const proposalBody = buildCascadeProposalBody(mutations, activities);
+        const proposal: ScheduleMessage = {
+          id:        makeMessageId(),
+          projectId,
+          type:      "cascade_proposal",
+          author:    "agent",
+          body:      proposalBody,
+          payload:   cascadeMutations,
+          status:    "pending",
+          createdAt: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, proposal]);
+      } else {
+        const a = activities.find((x) => x.id === activityId);
+        const confirmation: ScheduleMessage = {
+          id:        makeMessageId(),
+          projectId,
+          type:      "confirmation",
+          author:    "agent",
+          body:      `✓ **${a?.name ?? "Activity"}** pushed by ${days} day${days !== 1 ? "s" : ""}.`,
+          status:    "confirmed",
+          createdAt: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, confirmation]);
+      }
     },
-    [activities, projectId],
+    [activities, projectId, onMutate],
   );
 
   // ── Confirm / dismiss cascade ─────────────────────────────────────────────
