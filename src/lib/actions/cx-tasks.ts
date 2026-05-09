@@ -3,6 +3,7 @@
 import { supabase } from "@/lib/supabase/server";
 import { throwSupabaseWriteFailure } from "@/lib/supabase/errors";
 import type { CxTask } from "@/lib/cx/types";
+import { fetchCxTasksByProject } from "@/lib/supabase/cx-tasks";
 
 function toRow(orgId: string, task: CxTask) {
   return {
@@ -48,4 +49,11 @@ export async function serverUpdateTask(orgId: string, id: string, patch: Partial
   if (Object.keys(update).length === 0) return;
   const { error } = await supabase.from("cx_tasks").update(update).eq("id", id).eq("org_id", orgId);
   if (error) throwSupabaseWriteFailure(`serverUpdateTask(${id})`, error);
+}
+
+export async function serverFetchCxTasksByProject(
+  orgId: string,
+  projectId: string,
+): Promise<CxTask[]> {
+  return fetchCxTasksByProject(orgId, projectId);
 }
