@@ -30,18 +30,27 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isApiRoute  = request.nextUrl.pathname.startsWith("/api/");
-  const isLoginPage = request.nextUrl.pathname === "/login";
+  const pathname = request.nextUrl.pathname;
+  const isApiRoute = pathname.startsWith("/api/");
+  // Public auth pages — must be reachable without a session so users can
+  // sign in, recover, or set a password from an invite/reset email link.
+  const isPublicAuthPage =
+    pathname === "/login" ||
+    pathname === "/forgot-password" ||
+    pathname === "/accept-invite";
 
   // API routes return 401 JSON; page routes redirect to /login
-  if (!user && !isLoginPage) {
+  if (!user && !isPublicAuthPage) {
     if (isApiRoute) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (user && isLoginPage) {
+  // Don't bounce a signed-in user away from /accept-invite — they land
+  // here from an invite link with a fresh session and still need to set
+  // a password. Only /login redirects authenticated users.
+  if (user && pathname === "/login") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
