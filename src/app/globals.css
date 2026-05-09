@@ -120,7 +120,8 @@ body {
   background-color: var(--color-surface-base);
   color: var(--color-content-primary);
   font-family: var(--font-family-sans);
-  font-size: 15px;
+  /* Fluid body: 14px on tiny phones, 15px on standard phones, 16px on tablets+. */
+  font-size: clamp(14px, 0.85rem + 0.4vw, 16px);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

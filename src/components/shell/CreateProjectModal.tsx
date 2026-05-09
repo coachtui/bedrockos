@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
 import { useOrg } from "@/providers/OrgProvider";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 import type { CreateProjectInput } from "@/types/domain";
 
 interface Props {
@@ -15,9 +15,12 @@ const PHASES = [
   "Finishes", "Closeout", "Planning",
 ];
 
+const EXIT_MS = 250;
+
 export function CreateProjectModal({ onClose, onCreated }: Props) {
   const { currentUser, addProject } = useOrg();
 
+  const [open, setOpen] = useState(true);
   const [form, setForm] = useState({
     name:        "",
     location:    "",
@@ -32,6 +35,11 @@ export function CreateProjectModal({ onClose, onCreated }: Props) {
 
   function set<K extends keyof typeof form>(key: K, value: typeof form[K]) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function close() {
+    setOpen(false);
+    window.setTimeout(onClose, EXIT_MS);
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -53,138 +61,130 @@ export function CreateProjectModal({ onClose, onCreated }: Props) {
     };
 
     const project = addProject(input);
-    onCreated(project.id);
-    onClose();
+    setOpen(false);
+    window.setTimeout(() => {
+      onCreated(project.id);
+      onClose();
+    }, EXIT_MS);
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-md bg-surface-base border border-surface-border rounded-[var(--radius-card)] shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-border">
-          <h2 className="text-sm font-semibold text-content-primary">Create Project</h2>
-          <button onClick={onClose} className="text-content-muted hover:text-content-primary transition-colors">
-            <X size={16} />
-          </button>
+    <BottomSheet open={open} onClose={close} title="Create Project">
+      <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
+        {error && (
+          <p className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded px-3 py-2">{error}</p>
+        )}
+
+        <div>
+          <label className="block text-xs font-medium text-content-secondary mb-1">Project Name</label>
+          <input
+            value={form.name}
+            onChange={(e) => set("name", e.target.value)}
+            placeholder="Highland Tower — Phase 3"
+            className="w-full text-sm bg-surface-overlay border border-surface-border rounded px-3 py-2 text-content-primary placeholder:text-content-muted focus:outline-none focus:border-gold"
+          />
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
-          {error && (
-            <p className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded px-3 py-2">{error}</p>
-          )}
+        <div>
+          <label className="block text-xs font-medium text-content-secondary mb-1">Location</label>
+          <input
+            value={form.location}
+            onChange={(e) => set("location", e.target.value)}
+            placeholder="Dallas, TX"
+            className="w-full text-sm bg-surface-overlay border border-surface-border rounded px-3 py-2 text-content-primary placeholder:text-content-muted focus:outline-none focus:border-gold"
+          />
+        </div>
 
+        <div>
+          <label className="block text-xs font-medium text-content-secondary mb-1">Phase</label>
+          <select
+            value={form.phase}
+            onChange={(e) => set("phase", e.target.value)}
+            className="w-full text-sm bg-surface-overlay border border-surface-border rounded px-3 py-2 text-content-primary focus:outline-none focus:border-gold"
+          >
+            {PHASES.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-content-secondary mb-1">Project Manager</label>
+          <input
+            value={form.pmName}
+            onChange={(e) => set("pmName", e.target.value)}
+            className="w-full text-sm bg-surface-overlay border border-surface-border rounded px-3 py-2 text-content-primary placeholder:text-content-muted focus:outline-none focus:border-gold"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-content-secondary mb-1">Project Name</label>
+            <label className="block text-xs font-medium text-content-secondary mb-1">Start Date</label>
             <input
-              value={form.name}
-              onChange={(e) => set("name", e.target.value)}
-              placeholder="Highland Tower — Phase 3"
-              className="w-full text-sm bg-surface-overlay border border-surface-border rounded px-3 py-2 text-content-primary placeholder:text-content-muted focus:outline-none focus:border-gold"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-content-secondary mb-1">Location</label>
-            <input
-              value={form.location}
-              onChange={(e) => set("location", e.target.value)}
-              placeholder="Dallas, TX"
-              className="w-full text-sm bg-surface-overlay border border-surface-border rounded px-3 py-2 text-content-primary placeholder:text-content-muted focus:outline-none focus:border-gold"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-content-secondary mb-1">Phase</label>
-            <select
-              value={form.phase}
-              onChange={(e) => set("phase", e.target.value)}
+              type="date"
+              value={form.startDate}
+              onChange={(e) => set("startDate", e.target.value)}
               className="w-full text-sm bg-surface-overlay border border-surface-border rounded px-3 py-2 text-content-primary focus:outline-none focus:border-gold"
-            >
-              {PHASES.map((p) => <option key={p} value={p}>{p}</option>)}
-            </select>
+            />
           </div>
-
           <div>
-            <label className="block text-xs font-medium text-content-secondary mb-1">Project Manager</label>
+            <label className="block text-xs font-medium text-content-secondary mb-1">End Date</label>
             <input
-              value={form.pmName}
-              onChange={(e) => set("pmName", e.target.value)}
-              className="w-full text-sm bg-surface-overlay border border-surface-border rounded px-3 py-2 text-content-primary placeholder:text-content-muted focus:outline-none focus:border-gold"
+              type="date"
+              value={form.endDate}
+              onChange={(e) => set("endDate", e.target.value)}
+              className="w-full text-sm bg-surface-overlay border border-surface-border rounded px-3 py-2 text-content-primary focus:outline-none focus:border-gold"
             />
           </div>
+        </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-content-secondary mb-1">Start Date</label>
-              <input
-                type="date"
-                value={form.startDate}
-                onChange={(e) => set("startDate", e.target.value)}
-                className="w-full text-sm bg-surface-overlay border border-surface-border rounded px-3 py-2 text-content-primary focus:outline-none focus:border-gold"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-content-secondary mb-1">End Date</label>
-              <input
-                type="date"
-                value={form.endDate}
-                onChange={(e) => set("endDate", e.target.value)}
-                className="w-full text-sm bg-surface-overlay border border-surface-border rounded px-3 py-2 text-content-primary focus:outline-none focus:border-gold"
-              />
-            </div>
-          </div>
+        <div>
+          <label className="block text-xs font-medium text-content-secondary mb-1">
+            Description{" "}
+            <span className="text-content-muted font-normal">(optional)</span>
+          </label>
+          <textarea
+            value={form.description}
+            onChange={(e) => set("description", e.target.value)}
+            placeholder="Brief description of project scope and objectives..."
+            rows={3}
+            className="w-full text-sm bg-surface-overlay border border-surface-border rounded px-3 py-2 text-content-primary placeholder:text-content-muted focus:outline-none focus:border-gold resize-none"
+          />
+        </div>
 
-          <div>
-            <label className="block text-xs font-medium text-content-secondary mb-1">
-              Description{" "}
-              <span className="text-content-muted font-normal">(optional)</span>
-            </label>
-            <textarea
-              value={form.description}
-              onChange={(e) => set("description", e.target.value)}
-              placeholder="Brief description of project scope and objectives..."
-              rows={3}
-              className="w-full text-sm bg-surface-overlay border border-surface-border rounded px-3 py-2 text-content-primary placeholder:text-content-muted focus:outline-none focus:border-gold resize-none"
+        <div>
+          <label className="block text-xs font-medium text-content-secondary mb-1">
+            Award Price{" "}
+            <span className="text-content-muted font-normal">(optional)</span>
+          </label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted text-sm">$</span>
+            <input
+              type="number"
+              min="0"
+              value={form.awardPrice}
+              onChange={(e) => set("awardPrice", e.target.value)}
+              placeholder="0"
+              className="w-full text-sm bg-surface-overlay border border-surface-border rounded pl-7 pr-3 py-2 text-content-primary placeholder:text-content-muted focus:outline-none focus:border-gold"
             />
           </div>
+        </div>
 
-          <div>
-            <label className="block text-xs font-medium text-content-secondary mb-1">
-              Award Price{" "}
-              <span className="text-content-muted font-normal">(optional)</span>
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted text-sm">$</span>
-              <input
-                type="number"
-                min="0"
-                value={form.awardPrice}
-                onChange={(e) => set("awardPrice", e.target.value)}
-                placeholder="0"
-                className="w-full text-sm bg-surface-overlay border border-surface-border rounded pl-7 pr-3 py-2 text-content-primary placeholder:text-content-muted focus:outline-none focus:border-gold"
-              />
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs text-content-secondary hover:text-content-primary transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 text-xs font-semibold bg-gold text-black rounded hover:bg-gold/90 transition-colors"
-            >
-              Create Project
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        {/* Actions — sticky-ish bottom on mobile via flex order */}
+        <div className="flex justify-end gap-2 pt-2">
+          <button
+            type="button"
+            onClick={close}
+            className="min-h-11 px-4 py-2 text-sm md:text-xs text-content-secondary hover:text-content-primary active:opacity-70 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="min-h-11 px-4 py-2 text-sm md:text-xs font-semibold bg-gold text-black rounded hover:bg-gold-hover active:opacity-80 transition-colors"
+          >
+            Create Project
+          </button>
+        </div>
+      </form>
+    </BottomSheet>
   );
 }
