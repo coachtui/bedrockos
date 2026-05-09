@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="BedrockOS">
+  <!-- Squircle dark background — iOS-style rounded corners -->
+  <rect width="512" height="512" rx="115" fill="#0B0B0D"/>
+
+  <!-- BedrockOS structural-grid mark.
+       Source geometry is a 192×192 region; scaled 2× and centered with 64px padding. -->
+  <g transform="translate(64 64) scale(2)">
+    <!-- Outer grid border -->
+    <rect x="28" y="28" width="136" height="136" fill="none" stroke="#3D3D47" stroke-width="2.5"/>
+
+    <!-- Interior subdivisions (thirds) -->
+    <line x1="73.33"  y1="28"  x2="73.33"  y2="164" stroke="#3D3D47" stroke-width="1.5" opacity="0.7"/>
+    <line x1="118.66" y1="28"  x2="118.66" y2="164" stroke="#3D3D47" stroke-width="1.5" opacity="0.7"/>
+    <line x1="28"     y1="73.33"  x2="164" y2="73.33"  stroke="#3D3D47" stroke-width="1.5" opacity="0.7"/>
+    <line x1="28"     y1="118.66" x2="164" y2="118.66" stroke="#3D3D47" stroke-width="1.5" opacity="0.7"/>
+
+    <!-- Gold cross-hair alignment marks -->
+    <line x1="96"  y1="0"   x2="96"  y2="28"  stroke="#EAB308" stroke-width="3"/>
+    <line x1="96"  y1="164" x2="96"  y2="192" stroke="#EAB308" stroke-width="3"/>
+    <line x1="0"   y1="96"  x2="28"  y2="96"  stroke="#EAB308" stroke-width="3"/>
+    <line x1="164" y1="96"  x2="192" y2="96"  stroke="#EAB308" stroke-width="3"/>
+
+    <!-- Center operational core -->
+    <rect x="66" y="66" width="60" height="60" fill="#141417" stroke="#EAB308" stroke-width="3"/>
+  </g>
+</svg>
