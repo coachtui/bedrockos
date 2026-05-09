@@ -138,8 +138,9 @@ export async function fetchCxTasksByProject(orgId: string, projectId: string): P
       logSupabaseReadFailure(`fetchCxTasksByProject(${projectId})`, error);
       return [];
     }
+    if (!data) return [];
 
-    return (data ?? []).map((row) => ({
+    return data.map((row) => ({
       id:                 row.id,
       projectId:          row.project_id,
       name:               row.name,
