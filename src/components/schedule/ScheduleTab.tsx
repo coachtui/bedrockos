@@ -107,13 +107,20 @@ function ScheduleTabInner({ projectId, orgId, role, cxTasks, csvSeed }: InnerPro
   );
 
   const handleMutate = useCallback(async (mutation: ScheduleMutation) => {
-    if (mutation.type === "mark_complete") {
-      await serverUpdateTask(orgId, mutation.activityId, { status: "complete" });
-    } else if (mutation.type === "push_date" && mutation.newStartDate && mutation.newEndDate) {
-      await serverUpdateTask(orgId, mutation.activityId, {
-        startDate: mutation.newStartDate,
-        endDate:   mutation.newEndDate,
-      });
+    try {
+      if (mutation.type === "mark_complete") {
+        await serverUpdateTask(orgId, mutation.activityId, { status: "complete" });
+      } else if (
+        (mutation.type === "push_date" || mutation.type === "pull_forward") &&
+        mutation.newStartDate && mutation.newEndDate
+      ) {
+        await serverUpdateTask(orgId, mutation.activityId, {
+          startDate: mutation.newStartDate,
+          endDate:   mutation.newEndDate,
+        });
+      }
+    } catch (err) {
+      console.error("[schedule] Failed to persist mutation to CX task", err);
     }
   }, [orgId]);
 
