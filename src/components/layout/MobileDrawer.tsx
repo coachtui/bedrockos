@@ -11,6 +11,7 @@ import {
 import { NAV_SECTIONS } from "@/lib/nav/nav-config";
 import { useOrg } from "@/providers/OrgProvider";
 import { BedrockGrid } from "@/components/brand/BedrockGrid";
+import { ProjectSelector } from "./ProjectSelector";
 
 const ICON_MAP: Record<string, React.ReactNode> = {
   LayoutDashboard: <LayoutDashboard size={16} />,
@@ -74,6 +75,14 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
           <button onClick={onClose} className="text-content-muted hover:text-content-primary transition-colors">
             <X size={16} />
           </button>
+        </div>
+
+        {/* Project switcher */}
+        <div className="px-3 py-3 border-b border-surface-border">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted px-1 mb-1.5">
+            Active project
+          </p>
+          <ProjectSelector />
         </div>
 
         {/* Nav */}
