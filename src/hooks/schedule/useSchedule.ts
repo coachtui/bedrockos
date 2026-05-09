@@ -2,8 +2,8 @@
 
 import { useState, useCallback } from "react";
 import type {
-  ProjectSchedule, ScheduleMessage,
-  ColumnMap,
+  ProjectSchedule, ScheduleMessage, ScheduleActivity,
+  ColumnMap, ScheduleMutation,
 } from "@/lib/schedule/types";
 import {
   buildMarkCompleteProposal, buildPushDateProposal,
@@ -16,9 +16,27 @@ import {
   MOCK_SCHEDULE_MESSAGES,
 } from "@/lib/schedule/mock-data";
 
-export function useSchedule(projectId: string) {
-  const [schedule,  setSchedule]  = useState<ProjectSchedule>(MOCK_PROJECT_SCHEDULE);
-  const [messages,  setMessages]  = useState<ScheduleMessage[]>(MOCK_SCHEDULE_MESSAGES);
+export function useSchedule(
+  projectId:          string,
+  initialActivities?: ScheduleActivity[],
+  onMutate?:          (mutation: ScheduleMutation) => void,
+) {
+  const [schedule, setSchedule] = useState<ProjectSchedule>(() => {
+    if (initialActivities) {
+      const now = new Date().toISOString();
+      return {
+        ...MOCK_PROJECT_SCHEDULE,
+        projectId,
+        activities:    initialActivities,
+        uploadedAt:    now,
+        lastUpdatedAt: now,
+      };
+    }
+    return MOCK_PROJECT_SCHEDULE;
+  });
+  const [messages, setMessages] = useState<ScheduleMessage[]>(
+    () => (initialActivities ? [] : MOCK_SCHEDULE_MESSAGES),
+  );
 
   const activities = schedule.activities;
 
@@ -72,6 +90,7 @@ export function useSchedule(projectId: string) {
         activities:    applyMutations(prev.activities, primaryMutation),
         lastUpdatedAt: new Date().toISOString(),
       }));
+      primaryMutation.forEach((m) => onMutate?.(m));
 
       const cascadeMutations = mutations.filter((m) => m.type !== "mark_complete");
       if (cascadeMutations.length > 0) {
@@ -101,7 +120,7 @@ export function useSchedule(projectId: string) {
         setMessages((prev) => [...prev, confirmation]);
       }
     },
-    [activities, projectId],
+    [activities, projectId, onMutate],
   );
 
   // ── Push date ─────────────────────────────────────────────────────────────
@@ -137,6 +156,7 @@ export function useSchedule(projectId: string) {
         activities:    applyMutations(prev.activities, msg.payload!),
         lastUpdatedAt: new Date().toISOString(),
       }));
+      msg.payload.forEach((m) => onMutate?.(m));
 
       const count = msg.payload.length;
       setMessages((prev) => [
@@ -152,7 +172,7 @@ export function useSchedule(projectId: string) {
         },
       ]);
     },
-    [messages, projectId],
+    [messages, projectId, onMutate],
   );
 
   const dismissCascade = useCallback(
