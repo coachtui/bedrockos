@@ -197,7 +197,7 @@ export function ProjectInspectorPanel({ open, onClose, project }: ProjectInspect
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs text-content-secondary hover:text-content-primary transition-colors"
+            className="min-h-11 md:min-h-0 px-4 py-2 text-sm md:text-xs text-content-secondary hover:text-content-primary active:opacity-70 transition-colors"
           >
             Cancel
           </button>

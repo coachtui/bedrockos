@@ -43,7 +43,7 @@ export function ModuleTile({ module: mod, isEnabled }: ModuleTileProps) {
   return (
     <Link
       href={mod.route}
-      className={`group block rounded-[var(--radius-card)] p-5 bg-surface-raised border border-surface-border shadow-[var(--shadow-card)] transition-all duration-150 ${accent.border} hover:bg-surface-overlay`}
+      className={`group block rounded-[var(--radius-card)] p-5 bg-surface-raised border border-surface-border shadow-[var(--shadow-card)] transition-all duration-150 ${accent.border} hover:bg-surface-overlay active:bg-surface-overlay active:scale-[0.99]`}
     >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">

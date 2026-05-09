@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, ChevronRight } from "lucide-react";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -32,21 +32,63 @@ export function ProjectsClient() {
           roleGroup !== "field" && roleGroup !== "maintenance" && role !== "viewer" ? (
             <button
               onClick={() => setShowModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gold text-black rounded hover:bg-gold/90 transition-colors"
+              className="inline-flex items-center gap-1.5 min-h-11 md:min-h-0 px-4 py-2 md:py-1.5 text-sm md:text-xs font-semibold bg-gold text-black rounded hover:bg-gold-hover active:opacity-80 transition-colors"
             >
-              <Plus size={13} />
-              New Project
+              <Plus size={14} />
+              <span className="hidden sm:inline">New Project</span>
+              <span className="sm:hidden">New</span>
             </button>
           ) : undefined
         }
       />
 
-      <div className="rounded-[var(--radius-card)] border border-surface-border overflow-hidden">
+      {/* Mobile: stacked card list */}
+      <div className="md:hidden space-y-2">
+        {visibleProjects.map((project) => (
+          <Link
+            key={project.id}
+            href={`/projects/${project.id}`}
+            className="block bg-surface-raised border border-surface-border rounded-[var(--radius-card)] p-4 active:opacity-80 active:scale-[0.995] transition-all"
+          >
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-content-primary truncate">{project.name}</p>
+                <p className="text-xs text-content-muted mt-0.5 truncate">{project.location}</p>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <StatusBadge status={project.status} />
+                <ChevronRight size={16} className="text-content-muted" />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 text-xs text-content-secondary mb-3">
+              <span className="truncate">{project.phase}</span>
+              <span className="truncate text-content-muted">{project.pm_name}</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-1.5 bg-surface-overlay rounded-full overflow-hidden">
+                <div className="h-full bg-gold rounded-full" style={{ width: `${project.progress_pct}%` }} />
+              </div>
+              <span className="text-xs text-content-muted tabular-nums shrink-0 w-9 text-right">
+                {project.progress_pct}%
+              </span>
+            </div>
+          </Link>
+        ))}
+
+        {visibleProjects.length === 0 && (
+          <p className="text-sm text-content-muted text-center py-12">No projects.</p>
+        )}
+      </div>
+
+      {/* Desktop: table */}
+      <div className="hidden md:block rounded-[var(--radius-card)] border border-surface-border overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-surface-border bg-surface-overlay">
               <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-content-muted">Project</th>
-              <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-content-muted hidden md:table-cell">Phase</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-content-muted">Phase</th>
               <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-content-muted hidden lg:table-cell">PM</th>
               <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-content-muted">Progress</th>
               <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-content-muted">Status</th>
@@ -61,7 +103,7 @@ export function ProjectsClient() {
                     <p className="text-xs text-content-muted mt-0.5">{project.location}</p>
                   </Link>
                 </td>
-                <td className="px-4 py-3.5 text-content-secondary hidden md:table-cell">{project.phase}</td>
+                <td className="px-4 py-3.5 text-content-secondary">{project.phase}</td>
                 <td className="px-4 py-3.5 text-content-secondary hidden lg:table-cell">{project.pm_name}</td>
                 <td className="px-4 py-3.5">
                   <div className="flex items-center gap-2">
