@@ -122,3 +122,43 @@ export async function fetchOrgTasks(orgId: string): Promise<CxTask[]> {
     return [];
   }
 }
+
+export async function fetchCxTasksByProject(orgId: string, projectId: string): Promise<CxTask[]> {
+  try {
+    const { data, error } = await supabase
+      .from("cx_tasks")
+      .select(
+        "id, project_id, name, type, start_date, end_date, location, status, crew_requirements, assigned_worker_ids, notes, external_id, original_duration, remaining_duration, predecessors, successors"
+      )
+      .eq("org_id", orgId)
+      .eq("project_id", projectId)
+      .order("start_date", { ascending: true, nullsFirst: false });
+
+    if (error) {
+      logSupabaseReadFailure(`fetchCxTasksByProject(${projectId})`, error);
+      return [];
+    }
+
+    return (data ?? []).map((row) => ({
+      id:                 row.id,
+      projectId:          row.project_id,
+      name:               row.name,
+      type:               toTaskType(row.type),
+      startDate:          row.start_date          ?? undefined,
+      endDate:            row.end_date             ?? undefined,
+      location:           row.location             ?? undefined,
+      status:             toTaskStatus(row.status),
+      crewRequirements:   Array.isArray(row.crew_requirements)   ? (row.crew_requirements as CxCrewRequirement[]) : [],
+      assignedWorkerIds:  Array.isArray(row.assigned_worker_ids) ? (row.assigned_worker_ids as string[])          : [],
+      notes:              row.notes                ?? undefined,
+      externalId:         row.external_id          ?? undefined,
+      originalDuration:   row.original_duration    ?? undefined,
+      remainingDuration:  row.remaining_duration   ?? undefined,
+      predecessors:       Array.isArray(row.predecessors) ? row.predecessors : [],
+      successors:         Array.isArray(row.successors)   ? row.successors   : [],
+    }));
+  } catch (err) {
+    logSupabaseReadFailure(`fetchCxTasksByProject(${projectId})`, err);
+    return [];
+  }
+}
