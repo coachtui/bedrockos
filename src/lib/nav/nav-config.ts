@@ -29,7 +29,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: "Admin",
     items: [
-      { label: "Organization",   href: "/admin/organization", icon: "Building" },
+      { label: "Profile",         href: "/admin/organization", icon: "User" },
       { label: "Users & Roles",  href: "/admin/users",        icon: "UserCog" },
       { label: "Feature Access", href: "/admin/feature-access", icon: "Lock" },
     ],
