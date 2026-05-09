@@ -4,8 +4,9 @@ import { getSessionUser } from "@/lib/supabase/ssr";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { UsersAdminPanel } from "@/components/admin/UsersAdminPanel";
+import { getEnvOrgId } from "@/lib/config/org";
 
-const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
+const ORG_ID = getEnvOrgId();
 
 export const metadata = { title: "Users & Roles" };
 

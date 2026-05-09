@@ -2,6 +2,7 @@
 
 import { supabase } from "@/lib/supabase/server";
 import { throwSupabaseWriteFailure } from "@/lib/supabase/errors";
+import { getEnvOrgId } from "@/lib/config/org";
 import {
   MX_WO_SELECT_COLUMNS,
   rowToMxWorkOrder,
@@ -13,7 +14,7 @@ import type {
   MxWorkOrderUpdate,
 } from "@/lib/mx/types";
 
-const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
+const ORG_ID = getEnvOrgId();
 
 export async function serverCreateMxWorkOrder(
   id: string,

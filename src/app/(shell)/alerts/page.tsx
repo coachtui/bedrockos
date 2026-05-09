@@ -5,10 +5,11 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { fetchOrgAlerts } from "@/lib/supabase/alerts";
 import type { AlertType, AlertSeverity } from "@/types/domain";
+import { getEnvOrgId } from "@/lib/config/org";
 
 export const metadata = { title: "Alerts" };
 
-const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
+const ORG_ID = getEnvOrgId();
 
 const TYPE_ICON: Record<AlertType, React.ReactNode> = {
   safety:     <AlertTriangle  size={14} className="text-status-critical" />,

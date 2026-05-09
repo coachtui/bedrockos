@@ -12,8 +12,9 @@ import { getIssuePhotoSignedUrl } from "@/lib/actions/issues";
 import { IssueStatusButtons } from "@/components/shell/IssueStatusButtons";
 import { notFound } from "next/navigation";
 import type { ModuleId } from "@/types/org";
+import { getEnvOrgId } from "@/lib/config/org";
 
-const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
+const ORG_ID = getEnvOrgId();
 
 const MODULE_LABEL: Record<ModuleId, string> = {
   fix:      "Fix",

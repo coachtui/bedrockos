@@ -6,6 +6,7 @@ import { fetchOrgAssets } from "@/lib/supabase/assets";
 import { fetchOrgIssues } from "@/lib/supabase/issues";
 import { fetchOrgAlerts } from "@/lib/supabase/alerts";
 import { getSessionUser } from "@/lib/supabase/ssr";
+import { getEnvOrgId } from "@/lib/config/org";
 
 export const runtime = "nodejs";
 
@@ -14,7 +15,7 @@ const KNOWN_MODULES  = new Set(["cru", "fix", "inspect", "datum", "mx", "ops"]);
 const MAX_MESSAGES   = 50;
 const MAX_BODY_BYTES = 100_000;
 const MODEL_ID       = "claude-haiku-4-5-20251001";
-const ORG_ID         = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
+const ORG_ID         = getEnvOrgId();
 
 export async function POST(request: Request) {
   const sessionUser = await getSessionUser();

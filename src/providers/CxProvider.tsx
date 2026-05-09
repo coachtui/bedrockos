@@ -5,8 +5,9 @@ import type { CxTask, CxEvent, CxDayAssignment, CreateCxTaskInput } from "@/lib/
 import { MOCK_CX_EVENTS } from "@/lib/cx/mock-data";
 import { serverCreateTask, serverBulkCreateTasks, serverUpdateTask } from "@/lib/actions/cx-tasks";
 import { serverCreateAssignment, serverRemoveAssignment } from "@/lib/actions/cx-assignments";
+import { getEnvOrgId } from "@/lib/config/org";
 
-const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
+const ORG_ID = getEnvOrgId();
 
 function logCxPersistenceFailure(operation: string): (error: unknown) => void {
   return (error) => {

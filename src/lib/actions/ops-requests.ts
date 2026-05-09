@@ -4,8 +4,9 @@ import { supabase } from "@/lib/supabase/server";
 import { throwSupabaseWriteFailure } from "@/lib/supabase/errors";
 import { REQUEST_SELECT_COLUMNS, rowToRequest } from "@/lib/supabase/ops-requests";
 import type { Request } from "@/lib/ops/types";
+import { getEnvOrgId } from "@/lib/config/org";
 
-const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
+const ORG_ID = getEnvOrgId();
 
 function toInsertRow(req: Request): Record<string, unknown> {
   return {

@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { supabase } from "@/lib/supabase/server";
 import { throwSupabaseWriteFailure } from "@/lib/supabase/errors";
+import { getEnvOrgId } from "@/lib/config/org";
 
-const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
+const ORG_ID = getEnvOrgId();
 
 export async function serverSetAlertRead(id: string, isRead: boolean): Promise<void> {
   const { error } = await supabase

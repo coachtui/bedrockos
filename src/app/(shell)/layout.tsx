@@ -20,8 +20,9 @@ import {
 } from "@/lib/supabase/worker-project-roles";
 import type { WorkerProjectRole } from "@/types/domain";
 import { ShellClientRoot }     from "./shell-client";
+import { getEnvOrgId } from "@/lib/config/org";
 
-const FALLBACK_ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
+const FALLBACK_ORG_ID = getEnvOrgId();
 
 export default async function ShellRootLayout({ children }: { children: React.ReactNode }) {
   const sessionUser = await getSessionUser();

@@ -1,6 +1,24 @@
 import type { OrgConfig, ProjectContext } from "@/types/org";
 
 /* ─────────────────────────────────────────────────────────
+   Environment-derived org id
+
+   Single source of truth for the active organization id at
+   build/runtime. Set NEXT_PUBLIC_CRU_ORG_ID in every environment.
+   Throws at first call site if unset — better than silently
+   defaulting to a wrong tenant.
+   ───────────────────────────────────────────────────────── */
+export function getEnvOrgId(): string {
+  const id = process.env.NEXT_PUBLIC_CRU_ORG_ID;
+  if (!id) {
+    throw new Error(
+      "NEXT_PUBLIC_CRU_ORG_ID is not set. Add it to .env.local for dev and to Vercel env vars for prod.",
+    );
+  }
+  return id;
+}
+
+/* ─────────────────────────────────────────────────────────
    Mock selectable projects (used by ProjectSelector)
    ───────────────────────────────────────────────────────── */
 export const MOCK_PROJECT_CONTEXTS: ProjectContext[] = [
@@ -16,13 +34,10 @@ export const MOCK_PROJECT_CONTEXTS: ProjectContext[] = [
    ───────────────────────────────────────────────────────── */
 export const MOCK_ORG_CONFIG: OrgConfig = {
   org: {
-    id:        "org_aiga_001",
+    id:        getEnvOrgId(),
     name:      "AIGA Construction",
     slug:      "aiga",
-    // Real UUID of the AIGA Construction organization in CRU's Supabase DB.
-    // Find it in: CRU Supabase dashboard → Table editor → companies → id
-    // or: SELECT id FROM companies WHERE slug = 'aiga' (or similar)
-    cruOrgId:  process.env.NEXT_PUBLIC_CRU_ORG_ID ?? undefined,
+    cruOrgId:  getEnvOrgId(),
   },
   currentProject: MOCK_PROJECT_CONTEXTS[0],
   // Placeholder only — OrgProvider replaces this with the signed-in Supabase

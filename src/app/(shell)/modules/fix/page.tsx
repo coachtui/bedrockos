@@ -10,9 +10,10 @@ import { fetchOrgProjects } from "@/lib/supabase/projects";
 import { getSourceConfig } from "@/lib/modules/source-config";
 import { FixEscalateButton } from "@/components/modules/fix/FixEscalateButton";
 import { FixChat } from "@/components/modules/fix/FixChat";
+import { getEnvOrgId } from "@/lib/config/org";
 
 export const metadata = { title: "Fix" };
-const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
+const ORG_ID = getEnvOrgId();
 
 type SearchParams = Promise<{
   issueId?: string;

@@ -5,8 +5,9 @@ import { throwSupabaseWriteFailure } from "@/lib/supabase/errors";
 import { POUR_SELECT_COLUMNS, rowToPour } from "@/lib/supabase/ops-pours";
 import { POUR_STATUS } from "@/lib/ops/pourRules";
 import type { CreatePourInput, PourEvent } from "@/lib/ops/types";
+import { getEnvOrgId } from "@/lib/config/org";
 
-const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
+const ORG_ID = getEnvOrgId();
 
 export async function serverCreatePour(
   id: string,

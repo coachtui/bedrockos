@@ -4,8 +4,9 @@ import { revalidatePath } from "next/cache";
 import { supabase } from "@/lib/supabase/server";
 import { throwSupabaseWriteFailure } from "@/lib/supabase/errors";
 import type { Issue, IssueStatus } from "@/types/domain";
+import { getEnvOrgId } from "@/lib/config/org";
 
-const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
+const ORG_ID = getEnvOrgId();
 const KNOWN_STATUSES: IssueStatus[] = ["open", "in_progress", "resolved"];
 
 export async function serverInsertIssue(issue: Issue): Promise<void> {

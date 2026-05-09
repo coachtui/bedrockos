@@ -7,10 +7,11 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { fetchOrgIssues } from "@/lib/supabase/issues";
 import type { IssueSeverity } from "@/types/domain";
 import type { ModuleId } from "@/types/org";
+import { getEnvOrgId } from "@/lib/config/org";
 
 export const metadata = { title: "Issues" };
 
-const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
+const ORG_ID = getEnvOrgId();
 
 const MODULE_LABEL: Record<ModuleId, string> = {
   fix:      "Fix",

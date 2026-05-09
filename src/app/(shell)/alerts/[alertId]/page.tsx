@@ -9,8 +9,9 @@ import { fetchOrgIssueById } from "@/lib/supabase/issues";
 import { AlertReadToggle } from "@/components/shell/AlertReadToggle";
 import { notFound } from "next/navigation";
 import type { AlertType, AlertSeverity } from "@/types/domain";
+import { getEnvOrgId } from "@/lib/config/org";
 
-const ORG_ID = process.env.NEXT_PUBLIC_CRU_ORG_ID ?? "org_aiga_001";
+const ORG_ID = getEnvOrgId();
 
 const TYPE_LABEL: Record<AlertType, string> = {
   safety:     "Safety",
