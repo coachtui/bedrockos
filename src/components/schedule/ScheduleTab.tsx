@@ -13,6 +13,8 @@ import { serverUpdateTask }               from "@/lib/actions/cx-tasks";
 import type { UserRole }                  from "@/types/org";
 import type { CxTask }                    from "@/lib/cx/types";
 import type { ScheduleActivity, ScheduleMutation } from "@/lib/schedule/types";
+import { applyColumnMap, parseCSVText }            from "@/lib/schedule/csv-parser";
+import type { ColumnMap }                          from "@/lib/schedule/types";
 
 const SCHEDULE_ACTING_ROLES: UserRole[] = [
   "owner", "admin", "equipment_director", "operations_manager",
@@ -89,21 +91,25 @@ interface InnerProps {
   orgId:     string;
   role:      UserRole;
   cxTasks:   CxTask[];
+  csvSeed?:  ScheduleActivity[];
 }
 
-function ScheduleTabInner({ projectId, orgId, role, cxTasks }: InnerProps) {
+function ScheduleTabInner({ projectId, orgId, role, cxTasks, csvSeed }: InnerProps) {
   const [showUpload, setShowUpload] = useState(false);
   const [mobileTab,  setMobileTab]  = useState<"chat" | "schedule">("chat");
 
   const canAct    = SCHEDULE_ACTING_ROLES.includes(role);
   const canUpdate = (["owner", "admin", "equipment_director", "operations_manager", "pm", "project_engineer"] as UserRole[]).includes(role);
 
-  const initialActivities = useMemo(() => cxTasks.map(cxTaskToActivity), [cxTasks]);
+  const initialActivities = useMemo(
+    () => csvSeed ?? cxTasks.map(cxTaskToActivity),
+    [csvSeed, cxTasks],
+  );
 
   const handleMutate = useCallback(async (mutation: ScheduleMutation) => {
     if (mutation.type === "mark_complete") {
       await serverUpdateTask(orgId, mutation.activityId, { status: "complete" });
-    } else if (mutation.type === "push_date") {
+    } else if (mutation.type === "push_date" && mutation.newStartDate && mutation.newEndDate) {
       await serverUpdateTask(orgId, mutation.activityId, {
         startDate: mutation.newStartDate,
         endDate:   mutation.newEndDate,
@@ -208,12 +214,15 @@ export function ScheduleTab({ projectId, role }: Props) {
 
   const [cxTasks, setCxTasks] = useState<CxTask[] | null>(null);
   const [showUpload, setShowUpload] = useState(false);
+  const [csvSeed, setCsvSeed] = useState<ScheduleActivity[] | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     setCxTasks(null);
     serverFetchCxTasksByProject(orgId, projectId)
-      .then(setCxTasks)
-      .catch(() => setCxTasks([]));
+      .then((tasks) => { if (!cancelled) setCxTasks(tasks); })
+      .catch(() => { if (!cancelled) setCxTasks([]); });
+    return () => { cancelled = true; };
   }, [orgId, projectId]);
 
   if (cxTasks === null) {
@@ -230,11 +239,29 @@ export function ScheduleTab({ projectId, role }: Props) {
         <div className="border border-surface-border rounded-[var(--radius-card)] overflow-hidden">
           <CsvUploadPanel
             projectId={projectId}
-            onUpload={(_text, _map) => setShowUpload(false)}
+            onUpload={(text, map) => {
+                const rows       = parseCSVText(text);
+                const headers    = rows[0] ?? [];
+                const activities = applyColumnMap(rows, headers, map, projectId);
+                setCsvSeed(activities);
+                setShowUpload(false);
+              }}
             onCancel={() => setShowUpload(false)}
           />
         </div>
       </div>
+    );
+  }
+
+  if (csvSeed !== null) {
+    return (
+      <ScheduleTabInner
+        projectId={projectId}
+        orgId={orgId}
+        role={role}
+        cxTasks={[]}
+        csvSeed={csvSeed}
+      />
     );
   }
 
