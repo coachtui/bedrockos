@@ -71,8 +71,18 @@ When `initialActivities` is provided, use it instead of `MOCK_PROJECT_SCHEDULE`.
 - CSV parser and column mapping logic — no changes
 - CX module schedule page — no changes
 
+## Mutation Sync Back to cx_tasks
+
+`useSchedule` mutations must persist back to Supabase when the activities originated from CX tasks (i.e., when `initialActivities` was provided).
+
+| Mutation | cx_tasks update |
+|---|---|
+| `markActivityComplete(activityId)` | `serverUpdateTask(activityId, { status: "complete" })` |
+| `pushActivity(activityId, days)` | `serverUpdateTask(activityId, { endDate: newEndDate, startDate: newStartDate })` |
+
+Implementation: `useSchedule` accepts an optional `onMutate` callback. `ScheduleTab` provides a callback that calls the appropriate server action. This keeps the hook decoupled from Supabase directly.
+
 ## Out of Scope
 
-- Writing CX task mutations back from the schedule tab (mark complete / push date do not sync back to `cx_tasks` — that is a future bidirectional sync feature)
-- Persisting session-level schedule state to Supabase
 - The CSV import path creating `cx_tasks` rows (import remains session-only)
+- Persisting AI chat messages to Supabase
