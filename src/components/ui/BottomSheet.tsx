@@ -7,8 +7,10 @@ import { X } from "lucide-react";
 interface BottomSheetProps {
   open:     boolean;
   onClose:  () => void;
-  /** Optional title rendered in the sheet header. Omit to render no header. */
-  title?:   string;
+  /** Optional title in the sheet header. String renders as <h2>; ReactNode passes through. */
+  title?:   React.ReactNode;
+  /** Plain-text label for screen readers when `title` is a ReactNode. */
+  ariaLabel?: string;
   children: React.ReactNode;
   /** Tailwind max-width class applied at md+ (centered modal). Default `md:max-w-md`. */
   desktopWidthClass?: string;
@@ -25,6 +27,7 @@ export function BottomSheet({
   open,
   onClose,
   title,
+  ariaLabel,
   children,
   desktopWidthClass = "md:max-w-md",
 }: BottomSheetProps) {
@@ -68,7 +71,7 @@ export function BottomSheet({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={title}
+      aria-label={ariaLabel ?? (typeof title === "string" ? title : undefined)}
       className="fixed inset-0 z-50 flex md:items-center md:justify-center"
     >
       {/* Backdrop */}
@@ -106,13 +109,17 @@ export function BottomSheet({
 
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between px-5 py-3 md:py-4 border-b border-surface-border shrink-0">
-            <h2 className="text-base md:text-sm font-semibold text-content-primary">{title}</h2>
+          <div className="flex items-center justify-between gap-3 px-5 py-3 md:py-4 border-b border-surface-border shrink-0">
+            <div className="min-w-0 flex-1">
+              {typeof title === "string"
+                ? <h2 className="text-base md:text-sm font-semibold text-content-primary">{title}</h2>
+                : title}
+            </div>
             <button
               type="button"
               onClick={onClose}
               aria-label="Close dialog"
-              className="-mr-2 p-2 min-h-11 min-w-11 flex items-center justify-center text-content-muted hover:text-content-primary active:bg-surface-overlay/60 rounded-lg transition-colors"
+              className="-mr-2 p-2 min-h-11 min-w-11 flex items-center justify-center text-content-muted hover:text-content-primary active:bg-surface-overlay/60 rounded-lg transition-colors shrink-0"
             >
               <X size={18} />
             </button>
