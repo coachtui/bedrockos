@@ -18,7 +18,10 @@ export function MobileNav() {
 
   return (
     <>
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 pb-safe bg-surface-raised border-t border-surface-border">
+      <nav
+        aria-label="Primary"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 pb-safe pl-safe pr-safe bg-surface-raised/95 backdrop-blur-md border-t border-surface-border"
+      >
         <div className="flex items-stretch h-14">
           {PRIMARY_TABS.map((tab) => {
             const isActive = pathname === tab.href || (tab.href !== "/dashboard" && pathname.startsWith(tab.href));
@@ -26,23 +29,26 @@ export function MobileNav() {
               <Link
                 key={tab.href}
                 href={tab.href}
-                className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${
-                  isActive ? "text-gold" : "text-content-muted"
+                aria-current={isActive ? "page" : undefined}
+                className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors active:bg-surface-overlay/60 ${
+                  isActive ? "text-gold" : "text-content-secondary"
                 }`}
               >
                 {tab.icon}
-                <span className="text-[9px] font-semibold uppercase tracking-wider">{tab.label}</span>
+                <span className="text-[11px] font-semibold tracking-tight">{tab.label}</span>
               </Link>
             );
           })}
 
           {/* All nav drawer */}
           <button
+            type="button"
+            aria-label="Open navigation menu"
             onClick={() => setDrawerOpen(true)}
-            className="flex-1 flex flex-col items-center justify-center gap-1 text-content-muted"
+            className="flex-1 flex flex-col items-center justify-center gap-1 text-content-secondary transition-colors active:bg-surface-overlay/60"
           >
             <Grid3x3 size={20} />
-            <span className="text-[9px] font-semibold uppercase tracking-wider">More</span>
+            <span className="text-[11px] font-semibold tracking-tight">More</span>
           </button>
         </div>
       </nav>

@@ -45,7 +45,7 @@ export function IssueStatusButtons({ issueId, status }: { issueId: string; statu
             key={opt.value}
             onClick={() => setStatus(opt.value)}
             disabled={pending}
-            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold transition-colors disabled:opacity-50 ${
+            className={`inline-flex items-center justify-center gap-1.5 min-h-11 px-4 py-2 rounded-lg border text-sm font-semibold transition-colors active:opacity-70 disabled:opacity-50 ${
               isActive
                 ? opt.activeClass
                 : "border-surface-border bg-surface-overlay text-content-secondary hover:text-content-primary hover:border-surface-border-hover"
