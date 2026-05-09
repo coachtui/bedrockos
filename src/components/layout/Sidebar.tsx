@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Building2, Truck, HardHat, Activity,
   MapPin, Wrench, Users, ClipboardCheck, ClipboardList,
   Building, UserCog, Lock, ChevronLeft, ChevronRight,
-  AlertCircle, Bell, ShieldAlert,
+  AlertCircle, Bell, ShieldAlert, CircleUser,
 } from "lucide-react";
 import { useUI } from "@/providers/UIProvider";
 import { useOrg } from "@/providers/OrgProvider";
@@ -25,6 +25,7 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   ClipboardCheck:  <ClipboardCheck  size={16} />,
   Building:        <Building        size={16} />,
   UserCog:         <UserCog         size={16} />,
+  CircleUser:      <CircleUser      size={16} />,
   Lock:            <Lock            size={16} />,
   AlertCircle:     <AlertCircle     size={16} />,
   Bell:            <Bell            size={16} />,

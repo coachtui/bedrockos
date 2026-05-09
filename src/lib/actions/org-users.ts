@@ -93,6 +93,21 @@ export async function serverUpdateUser(
   return {};
 }
 
+export async function serverUpdateOwnProfile(
+  patch: { name?: string },
+): Promise<{ error?: string }> {
+  const session = await getSessionUser();
+  if (!session) return { error: "Unauthorized" };
+  const orgUser = await fetchOrgUserByAuthId(session.id);
+  if (!orgUser) return { error: "Profile not found" };
+  const update: Record<string, string> = {};
+  if (typeof patch.name === "string" && patch.name.trim()) update.name = patch.name.trim();
+  if (Object.keys(update).length === 0) return {};
+  const { error } = await supabase.from("org_users").update(update).eq("id", orgUser.id);
+  if (error) return { error: error.message };
+  return {};
+}
+
 export async function serverRemoveUser(orgUserId: string): Promise<{ error?: string }> {
   const { orgUser, error: authError } = await assertAdmin();
   if (authError || !orgUser) return { error: authError ?? "Unauthorized" };
