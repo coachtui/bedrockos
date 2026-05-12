@@ -37,19 +37,34 @@ function toOrgWorker(orgId: string) {
   });
 }
 
+// On CRU failure, return [] rather than throwing — consumers (MX, etc.) show
+// an empty list instead of crashing. No mock fallback data ever returned.
+
 export async function getOrgWorkforce(orgId: string, siteId?: string): Promise<OrgWorker[]> {
-  const workers = await getCruWorkersForOrg(orgId, siteId);
-  return workers.map(toOrgWorker(orgId));
+  try {
+    const workers = await getCruWorkersForOrg(orgId, siteId);
+    return workers.map(toOrgWorker(orgId));
+  } catch {
+    return [];
+  }
 }
 
 export async function getOrgWorkersByRole(orgId: string, role: WorkerRole): Promise<OrgWorker[]> {
-  const workers = await getCruWorkersByRole(orgId, role);
-  return workers.map(toOrgWorker(orgId));
+  try {
+    const workers = await getCruWorkersByRole(orgId, role);
+    return workers.map(toOrgWorker(orgId));
+  } catch {
+    return [];
+  }
 }
 
 export async function getOrgMechanicsAndDrivers(orgId: string): Promise<OrgWorker[]> {
-  const workers = await getCruMechanicsAndDrivers(orgId);
-  return workers.map(toOrgWorker(orgId));
+  try {
+    const workers = await getCruMechanicsAndDrivers(orgId);
+    return workers.map(toOrgWorker(orgId));
+  } catch {
+    return [];
+  }
 }
 
 /**

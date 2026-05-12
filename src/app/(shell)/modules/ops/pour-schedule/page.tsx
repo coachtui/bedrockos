@@ -38,9 +38,15 @@ const CRU_STATUS_BADGE: Record<string, string> = {
   completed: "text-teal            border-teal/40          bg-teal/20",
 };
 
-// Date range for CRU query
-const CRU_QUERY_START = "2026-04-01";
-const CRU_QUERY_END   = "2026-04-30";
+// Rolling CRU query window: 30 days back through 180 days forward.
+// Wide enough to surface recently-completed pours alongside upcoming planning.
+function getCruQueryRange(): { start: string; end: string } {
+  const fmt   = (d: Date) => d.toISOString().split("T")[0];
+  const now   = new Date();
+  const start = new Date(now); start.setDate(start.getDate() - 30);
+  const end   = new Date(now); end.setDate(end.getDate() + 180);
+  return { start: fmt(start), end: fmt(end) };
+}
 
 // ── View mode ─────────────────────────────────────────────────────────────────
 
@@ -102,7 +108,8 @@ export default function PourSchedulePage() {
 
   useEffect(() => {
     let cancelled = false;
-    getCruSiteEventsForOrg(cruOrgId, CRU_QUERY_START, CRU_QUERY_END, "pour")
+    const { start, end } = getCruQueryRange();
+    getCruSiteEventsForOrg(cruOrgId, start, end, "pour")
       .then((data) => { if (!cancelled) setCruEvents(data); })
       .catch(() => { if (!cancelled) setCruError(true); })
       .finally(() => { if (!cancelled) setLoadingCru(false); });
