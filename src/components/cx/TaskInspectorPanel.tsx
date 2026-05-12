@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { InspectorPanel } from "@/components/ui/InspectorPanel";
 import type { CxTask, CxTaskType, CxTaskStatus, CxCrewRequirement, CreateCxTaskInput } from "@/lib/cx/types";
 import type { WorkerRole } from "@/types/domain";
-import { Plus, Trash2, UserMinus } from "lucide-react";
+import type { Request as OpsRequest } from "@/lib/ops/types";
+import { Plus, Trash2, UserMinus, Droplets, Users, CheckCircle2, Clock } from "lucide-react";
 import { useOrg } from "@/providers/OrgProvider";
 import { useCx } from "@/providers/CxProvider";
+import { useOps } from "@/providers/OpsProvider";
 
 const TASK_TYPES: CxTaskType[] = [
   "pour", "inspection", "delivery", "grading",
@@ -94,8 +97,9 @@ export function TaskInspectorPanel({
 }: TaskInspectorPanelProps) {
   const isEdit = !!task;
 
-  const { workers, role } = useOrg();
+  const { workers, role, currentOrganization, currentProject, currentUser } = useOrg();
   const { updateTask } = useCx();
+  const { requests, createRequest } = useOps();
 
   const canAssign = isEdit && (
     role === "superintendent" ||
@@ -153,6 +157,49 @@ export function TaskInspectorPanel({
       ...prev,
       reqs: prev.reqs.filter((_, idx) => idx !== i),
     }));
+  }
+
+  // ── Shared Resources (OPS link) ──────────────────────────────────────────────
+  // Pour-type tasks request shared pump trucks / mason crews from OX.
+  // Requests are linked back to this CX task via sourceTaskId.
+
+  const linkedRequests = task
+    ? requests.filter((r) => r.sourceTaskId === task.id)
+    : [];
+  const linkedPumpRequest  = linkedRequests.find((r) => r.type === "pump_truck");
+  const linkedMasonRequest = linkedRequests.find((r) => r.type === "mason");
+
+  const [masonQty, setMasonQty] = useState(4);
+
+  function requestPumpTruck() {
+    if (!task || !startDate) return;
+    createRequest({
+      type:              "pump_truck",
+      jobsite:           currentProject.name,
+      jobsiteId:         currentProject.id,
+      dateNeeded:        startDate,
+      notes:             `Pump truck for ${task.name}`,
+      status:            "pending",
+      requestedBy:       currentOrganization.name,
+      requestedByUserId: currentUser.id,
+      sourceTaskId:      task.id,
+    });
+  }
+
+  function requestMasonCrew() {
+    if (!task || !startDate) return;
+    createRequest({
+      type:              "mason",
+      jobsite:           currentProject.name,
+      jobsiteId:         currentProject.id,
+      dateNeeded:        startDate,
+      notes:             `${masonQty} masons for ${task.name}`,
+      status:            "pending",
+      requestedBy:       currentOrganization.name,
+      requestedByUserId: currentUser.id,
+      requestedCount:    masonQty,
+      sourceTaskId:      task.id,
+    });
   }
 
   function handleSave() {
@@ -288,6 +335,66 @@ export function TaskInspectorPanel({
         ))}
       </div>
 
+      {type === "pour" && (
+        <div className={sectionClass}>
+          <div className="flex items-center justify-between mb-2">
+            <label className={labelClass} style={{ marginBottom: 0 }}>Shared Resources</label>
+            <span className="text-[9px] font-bold uppercase tracking-widest text-gold/80 border border-gold/30 bg-gold/10 rounded px-1.5 py-0.5">
+              OX
+            </span>
+          </div>
+
+          {!isEdit && (
+            <p className="text-xs text-content-muted italic">
+              Save the pour first, then request shared pump truck or mason crew from OX.
+            </p>
+          )}
+
+          {isEdit && !startDate && (
+            <p className="text-xs text-content-muted italic">
+              Set a start date to request shared resources.
+            </p>
+          )}
+
+          {isEdit && startDate && (
+            <div className="space-y-2.5 mt-2">
+              {/* Pump truck row */}
+              <SharedResourceRow
+                icon={<Droplets size={13} className="text-gold" />}
+                label="Pump Truck"
+                request={linkedPumpRequest}
+                onRequest={requestPumpTruck}
+              />
+
+              {/* Mason crew row */}
+              <SharedResourceRow
+                icon={<Users size={13} className="text-gold" />}
+                label={linkedMasonRequest
+                  ? `Mason Crew · ${linkedMasonRequest.requestedCount ?? linkedMasonRequest.quantity ?? "?"}`
+                  : "Mason Crew"}
+                request={linkedMasonRequest}
+                onRequest={requestMasonCrew}
+                quantityPicker={!linkedMasonRequest ? (
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={masonQty}
+                    onChange={(e) => setMasonQty(Math.max(1, parseInt(e.target.value) || 1))}
+                    className={`${fieldClass} !w-14 shrink-0 text-center`}
+                    title="Mason count"
+                  />
+                ) : undefined}
+              />
+
+              <p className="text-[10px] text-content-muted">
+                Requests appear on the <Link href="/modules/ops/pour-schedule" className="text-gold hover:underline">OX pour schedule</Link> for approval and assignment from the shared pool.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {isEdit && (
         <div className={sectionClass}>
           <div className="flex items-center justify-between mb-2">
@@ -384,5 +491,67 @@ export function TaskInspectorPanel({
         })()}
       </div>
     </InspectorPanel>
+  );
+}
+
+// ── SharedResourceRow ────────────────────────────────────────────────────────
+// Compact row used inside the Shared Resources section to display either a
+// "Request" CTA (when no linked OPS request exists) or live status from the
+// existing request.
+
+interface SharedResourceRowProps {
+  icon:            React.ReactNode;
+  label:           string;
+  request:         OpsRequest | undefined;
+  onRequest:       () => void;
+  quantityPicker?: React.ReactNode;
+}
+
+function SharedResourceRow({ icon, label, request, onRequest, quantityPicker }: SharedResourceRowProps) {
+  if (request) {
+    const isAssigned = request.status === "assigned" || request.status === "closed";
+    const isApproved = request.status === "approved";
+    const badgeClass = isAssigned
+      ? "text-teal border-teal/40 bg-teal/15"
+      : isApproved
+        ? "text-gold border-gold/40 bg-gold/10"
+        : "text-content-muted border-surface-border bg-surface-border";
+    const assigneeLabel = request.assignedToLabel ?? request.assignedTo;
+
+    return (
+      <div className="flex items-center justify-between py-2 px-2.5 border border-surface-border rounded bg-surface-overlay">
+        <div className="flex items-center gap-2 min-w-0">
+          {icon}
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-content-primary truncate">{label}</p>
+            {assigneeLabel && (
+              <p className="text-[10px] text-content-muted truncate">Assigned: {assigneeLabel}</p>
+            )}
+          </div>
+        </div>
+        <span className={`inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest border rounded px-1.5 py-0.5 ${badgeClass}`}>
+          {isAssigned ? <CheckCircle2 size={10} /> : <Clock size={10} />}
+          {request.status}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between py-2 px-2.5 border border-dashed border-surface-border rounded">
+      <div className="flex items-center gap-2">
+        {icon}
+        <span className="text-xs font-semibold text-content-primary">{label}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        {quantityPicker}
+        <button
+          onClick={onRequest}
+          className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-black bg-gold hover:bg-gold/90 rounded transition-colors"
+        >
+          Request
+        </button>
+      </div>
+    </div>
   );
 }

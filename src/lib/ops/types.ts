@@ -35,6 +35,8 @@ export interface Request {
   /** Legacy headcount field — use quantity for new requests */
   requestedCount?:     number;
   sourcePourId?:       string;
+  /** CX task this request was opened from (CX → OPS link). */
+  sourceTaskId?:       string;
   linkedMxWorkOrderId?: string;
 }
 
