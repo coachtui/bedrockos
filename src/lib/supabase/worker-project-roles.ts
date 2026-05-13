@@ -49,7 +49,7 @@ export async function fetchWorkerByUserId(
       .select("id")
       .eq("org_id", orgId)
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
     if (error) {
       logSupabaseReadFailure(`fetchWorkerByUserId(${orgId}, ${userId})`, error);
       return null;
