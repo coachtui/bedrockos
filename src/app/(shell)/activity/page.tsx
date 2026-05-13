@@ -9,14 +9,14 @@ import type { ActivityEvent } from "@/types/domain";
 import type { ModuleId } from "@/types/org";
 
 const MODULE_FILTERS: { label: string; value: ModuleId | "all" }[] = [
-  { label: "All",     value: "all"     },
-  { label: "MX",      value: "mx"      },
-  { label: "OPS",     value: "ops"     },
-  { label: "Fix",     value: "fix"     },
-  { label: "CRU",     value: "cru"     },
-  { label: "Datum",   value: "datum"   },
-  { label: "Inspect", value: "inspect" },
-  { label: "Safety",  value: "safety"  },
+  { label: "All", value: "all"     },
+  { label: "CX",  value: "cru"     },
+  { label: "DX",  value: "datum"   },
+  { label: "IX",  value: "inspect" },
+  { label: "FX",  value: "fix"     },
+  { label: "OX",  value: "ops"     },
+  { label: "MX",  value: "mx"      },
+  { label: "SX",  value: "safety"  },
 ];
 
 function getEventHref(event: ActivityEvent): string | undefined {
@@ -27,7 +27,11 @@ function getEventHref(event: ActivityEvent): string | undefined {
 
 export default function ActivityPage() {
   const [filter, setFilter] = useState<ModuleId | "all">("all");
-  const { activity } = useOrg();
+  const { activity, enabledModules } = useOrg();
+
+  const visibleFilters = MODULE_FILTERS.filter(
+    (f) => f.value === "all" || enabledModules.includes(f.value),
+  );
 
   const events = filter === "all"
     ? activity
@@ -41,7 +45,7 @@ export default function ActivityPage() {
       />
 
       <div className="flex items-center gap-2 flex-wrap mb-6">
-        {MODULE_FILTERS.map((f) => (
+        {visibleFilters.map((f) => (
           <button
             key={f.value}
             onClick={() => setFilter(f.value)}

@@ -3,7 +3,7 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { Card } from "@/components/ui/Card";
 import { ClipboardList, Hammer, CalendarDays, ArrowUpRight } from "lucide-react";
 
-export const metadata = { title: "OPS" };
+export const metadata = { title: "OX" };
 
 const FEATURES = [
   {
@@ -39,7 +39,7 @@ export default function OpsPage() {
           <div className="w-3 h-3 rounded-full bg-gold" />
           <span className="text-xs font-bold uppercase tracking-widest text-gold">Module · Operations</span>
         </div>
-        <h1 className="text-2xl font-bold text-content-primary">OPS</h1>
+        <h1 className="text-2xl font-bold text-content-primary">OX</h1>
         <p className="text-content-secondary mt-2 max-w-md leading-relaxed">
           Operations and workflow engine. Coordinate field requests, concrete pours, and monitor maintenance impact across your entire organization.
         </p>

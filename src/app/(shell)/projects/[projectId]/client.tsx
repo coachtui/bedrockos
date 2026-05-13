@@ -79,7 +79,7 @@ const ALERT_SEVERITY_DOT: Record<string, string> = {
 const MODULE_ACTIONS = [
   {
     key:         "cru",
-    label:       "CRU",
+    label:       "CX",
     description: "Crew operations",
     href:        "/modules/cru",
     icon:        <Users size={15} className="text-gold" />,
@@ -87,7 +87,7 @@ const MODULE_ACTIONS = [
   },
   {
     key:         "fix",
-    label:       "Fix",
+    label:       "FX",
     description: "Equipment diagnostics",
     href:        "/modules/fix",
     icon:        <Wrench size={15} className="text-teal" />,
@@ -95,7 +95,7 @@ const MODULE_ACTIONS = [
   },
   {
     key:         "inspect",
-    label:       "Inspect",
+    label:       "IX",
     description: "Field inspections",
     href:        "/modules/inspect",
     icon:        <ClipboardCheck size={15} className="text-blue-brand" />,
@@ -103,7 +103,7 @@ const MODULE_ACTIONS = [
   },
   {
     key:         "datum",
-    label:       "Datum",
+    label:       "DX",
     description: "Geospatial layout",
     href:        "/modules/datum",
     icon:        <MapPin size={15} className="text-teal" />,

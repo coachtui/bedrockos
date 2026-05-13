@@ -12,7 +12,7 @@ import { FixEscalateButton } from "@/components/modules/fix/FixEscalateButton";
 import { FixChat } from "@/components/modules/fix/FixChat";
 import { getEnvOrgId } from "@/lib/config/org";
 
-export const metadata = { title: "Fix" };
+export const metadata = { title: "FX" };
 const ORG_ID = getEnvOrgId();
 
 type SearchParams = Promise<{

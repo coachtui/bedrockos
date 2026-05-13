@@ -30,7 +30,7 @@ export default function InspectPage() {
           <div className="w-3 h-3 rounded-full bg-blue-brand" />
           <span className="text-xs font-bold uppercase tracking-widest text-blue-brand">Module</span>
         </div>
-        <h1 className="text-2xl font-bold text-content-primary">Inspect</h1>
+        <h1 className="text-2xl font-bold text-content-primary">IX</h1>
         <p className="text-content-secondary mt-2 max-w-md leading-relaxed">
           Walk a task, capture conditions, file an issue. The supe and foreman see it on their dashboards.
         </p>

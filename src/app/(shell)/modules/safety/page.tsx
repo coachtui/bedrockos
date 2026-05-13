@@ -30,7 +30,7 @@ export default function SafetyPage() {
           <div className="w-3 h-3 rounded-full bg-status-critical" />
           <span className="text-xs font-bold uppercase tracking-widest text-status-critical">Module</span>
         </div>
-        <h1 className="text-2xl font-bold text-content-primary">Safety</h1>
+        <h1 className="text-2xl font-bold text-content-primary">SX</h1>
         <p className="text-content-secondary mt-2 max-w-md leading-relaxed">
           Log a near-miss, hazard, or incident on a task. Photos optional. Audit-ready records.
         </p>

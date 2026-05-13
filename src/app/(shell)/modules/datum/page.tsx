@@ -3,7 +3,7 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { Card } from "@/components/ui/Card";
 import { MapPin, Layers, Navigation, ArrowUpRight } from "lucide-react";
 
-export const metadata = { title: "Datum" };
+export const metadata = { title: "DX" };
 
 const FEATURES = [
   {
@@ -31,7 +31,7 @@ export default function DatumPage() {
           <div className="w-3 h-3 rounded-full bg-teal" />
           <span className="text-xs font-bold uppercase tracking-widest text-teal">Module · Field Layout</span>
         </div>
-        <h1 className="text-2xl font-bold text-content-primary">Datum</h1>
+        <h1 className="text-2xl font-bold text-content-primary">DX</h1>
         <p className="text-content-secondary mt-2 max-w-md leading-relaxed">
           GPS + map overlay for field layout. A fast, lightweight alternative to Trimble workflows — helps crews align work on site without a full survey setup.
         </p>

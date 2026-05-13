@@ -17,14 +17,14 @@ import { getEnvOrgId } from "@/lib/config/org";
 const ORG_ID = getEnvOrgId();
 
 const MODULE_LABEL: Record<ModuleId, string> = {
-  fix:      "Fix",
-  cru:      "CRU",
-  inspect:  "Inspect",
-  datum:    "Datum",
-  ops:      "OPS",
+  fix:      "FX",
+  cru:      "CX",
+  inspect:  "IX",
+  datum:    "DX",
+  ops:      "OX",
   mx:       "MX",
   schedule: "Schedule",
-  safety:   "Safety",
+  safety:   "SX",
 };
 
 const MODULE_COLOR: Record<ModuleId, string> = {

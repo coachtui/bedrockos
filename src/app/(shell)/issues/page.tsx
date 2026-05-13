@@ -5,6 +5,7 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { fetchOrgIssues } from "@/lib/supabase/issues";
+import { fetchPlatformOrg } from "@/lib/supabase/platform-orgs";
 import type { IssueSeverity } from "@/types/domain";
 import type { ModuleId } from "@/types/org";
 import { getEnvOrgId } from "@/lib/config/org";
@@ -14,14 +15,14 @@ export const metadata = { title: "Issues" };
 const ORG_ID = getEnvOrgId();
 
 const MODULE_LABEL: Record<ModuleId, string> = {
-  fix:      "Fix",
-  cru:      "CRU",
-  inspect:  "Inspect",
-  datum:    "Datum",
-  ops:      "OPS",
+  fix:      "FX",
+  cru:      "CX",
+  inspect:  "IX",
+  datum:    "DX",
+  ops:      "OX",
   mx:       "MX",
   schedule: "Schedule",
-  safety:   "Safety",
+  safety:   "SX",
 };
 
 const MODULE_COLOR: Record<ModuleId, string> = {
@@ -57,16 +58,25 @@ export default async function IssuesPage({ searchParams }: { searchParams: Searc
   const source   = typeof params.source   === "string" ? params.source   : "all";
 
   const SEVERITY_FILTERS = ["all", "critical", "high", "medium", "low"];
-  const SOURCE_FILTERS   = [
-    { label: "All",     value: "all"     },
-    { label: "MX",      value: "mx"      },
-    { label: "OPS",     value: "ops"     },
-    { label: "Fix",     value: "fix"     },
-    { label: "Inspect", value: "inspect" },
-    { label: "Safety",  value: "safety"  },
+  const ALL_SOURCE_FILTERS: { label: string; value: ModuleId | "all" }[] = [
+    { label: "All", value: "all"     },
+    { label: "CX",  value: "cru"     },
+    { label: "DX",  value: "datum"   },
+    { label: "IX",  value: "inspect" },
+    { label: "FX",  value: "fix"     },
+    { label: "OX",  value: "ops"     },
+    { label: "MX",  value: "mx"      },
+    { label: "SX",  value: "safety"  },
   ];
 
-  const issues = await fetchOrgIssues(ORG_ID);
+  const [issues, org] = await Promise.all([
+    fetchOrgIssues(ORG_ID),
+    fetchPlatformOrg(ORG_ID),
+  ]);
+  const enabledModules = org?.enabledModules ?? [];
+  const SOURCE_FILTERS = ALL_SOURCE_FILTERS.filter(
+    (f) => f.value === "all" || enabledModules.includes(f.value),
+  );
 
   const filtered = issues
     .filter((i) => severity === "all" || i.severity === severity)
