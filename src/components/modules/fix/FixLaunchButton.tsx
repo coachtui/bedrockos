@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Wrench } from "lucide-react";
 import { buildFixUrl, isStandaloneMode } from "@/lib/modules/fix/launch";
 import type { FixLaunchContext } from "@/lib/modules/fix/launch";
+import { useOrg } from "@/providers/OrgProvider";
 
 export type FixLaunchVariant = "primary" | "outline" | "ghost" | "inline";
 
@@ -32,6 +33,9 @@ export function FixLaunchButton({
   variant = "primary",
   className,
 }: FixLaunchButtonProps) {
+  const { isModuleEnabled } = useOrg();
+  if (!isModuleEnabled("fix")) return null;
+
   const href = buildFixUrl(context);
   const cls  = className ?? VARIANT_CLASS[variant];
 

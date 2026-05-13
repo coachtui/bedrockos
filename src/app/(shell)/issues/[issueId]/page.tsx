@@ -12,9 +12,7 @@ import { getIssuePhotoSignedUrl } from "@/lib/actions/issues";
 import { IssueStatusButtons } from "@/components/shell/IssueStatusButtons";
 import { notFound } from "next/navigation";
 import type { ModuleId } from "@/types/org";
-import { getEnvOrgId } from "@/lib/config/org";
-
-const ORG_ID = getEnvOrgId();
+import { getSessionOrgId } from "@/lib/config/session-org";
 
 const MODULE_LABEL: Record<ModuleId, string> = {
   fix:      "FX",
@@ -49,13 +47,15 @@ type Params = Promise<{ issueId: string }>;
 
 export async function generateMetadata({ params }: { params: Params }) {
   const { issueId } = await params;
-  const issue = await fetchOrgIssueById(ORG_ID, issueId);
+  const orgId = await getSessionOrgId();
+  const issue = await fetchOrgIssueById(orgId, issueId);
   return { title: issue ? issue.title : "Issue Not Found" };
 }
 
 export default async function IssueDetailPage({ params }: { params: Params }) {
   const { issueId } = await params;
-  const issue = await fetchOrgIssueById(ORG_ID, issueId);
+  const orgId = await getSessionOrgId();
+  const issue = await fetchOrgIssueById(orgId, issueId);
 
   if (!issue) notFound();
 

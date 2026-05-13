@@ -6,6 +6,7 @@ import type { ActivityEvent } from "@/types/domain";
 interface ActivityFeedItemProps {
   event:        ActivityEvent;
   showProject?: boolean;
+  projectName?: string;
   href?:        string;
 }
 
@@ -25,7 +26,7 @@ function relativeTime(iso: string): string {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-export function ActivityFeedItem({ event, showProject = false, href }: ActivityFeedItemProps) {
+export function ActivityFeedItem({ event, showProject = false, projectName, href }: ActivityFeedItemProps) {
   const inner = (
     <div className={`flex items-start gap-3 py-2.5 border-b border-surface-border last:border-0 ${href ? "group cursor-pointer hover:bg-surface-overlay rounded-lg px-2 -mx-2 transition-colors" : ""}`}>
       <div className={`shrink-0 mt-0.5 w-6 h-6 rounded-full bg-surface-overlay border border-surface-border flex items-center justify-center ${href ? "group-hover:border-surface-border-hover transition-colors" : ""}`}>
@@ -37,8 +38,8 @@ export function ActivityFeedItem({ event, showProject = false, href }: ActivityF
           {" "}{event.action}{" "}
           <span className={`${href ? "group-hover:text-content-primary" : ""} text-content-secondary`}>{event.entity_name}</span>
         </p>
-        {showProject && (
-          <p className="text-xs text-content-muted mt-0.5">{event.project_id.replace(/_/g, " ")}</p>
+        {showProject && projectName && (
+          <p className="text-xs text-content-muted mt-0.5">{projectName}</p>
         )}
       </div>
       <span className="shrink-0 text-[11px] text-content-muted tabular-nums">{relativeTime(event.timestamp)}</span>

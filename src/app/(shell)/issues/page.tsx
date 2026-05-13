@@ -1,18 +1,15 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Plus } from "lucide-react";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { fetchOrgIssues } from "@/lib/supabase/issues";
-import { fetchPlatformOrg } from "@/lib/supabase/platform-orgs";
+import { ReportIssueDialog } from "@/components/shell/ReportIssueDialog";
+import { useOrg } from "@/providers/OrgProvider";
 import type { IssueSeverity } from "@/types/domain";
 import type { ModuleId } from "@/types/org";
-import { getEnvOrgId } from "@/lib/config/org";
-
-export const metadata = { title: "Issues" };
-
-const ORG_ID = getEnvOrgId();
 
 const MODULE_LABEL: Record<ModuleId, string> = {
   fix:      "FX",
@@ -43,6 +40,25 @@ const SEVERITY_BAR: Record<IssueSeverity, string> = {
   low:      "bg-surface-border",
 };
 
+const SEVERITY_FILTERS: { label: string; value: IssueSeverity | "all" }[] = [
+  { label: "All Severity", value: "all"      },
+  { label: "Critical",     value: "critical" },
+  { label: "High",         value: "high"     },
+  { label: "Medium",       value: "medium"   },
+  { label: "Low",          value: "low"      },
+];
+
+const ALL_SOURCE_FILTERS: { label: string; value: ModuleId | "all" }[] = [
+  { label: "All", value: "all"     },
+  { label: "CX",  value: "cru"     },
+  { label: "DX",  value: "datum"   },
+  { label: "IX",  value: "inspect" },
+  { label: "FX",  value: "fix"     },
+  { label: "OX",  value: "ops"     },
+  { label: "MX",  value: "mx"      },
+  { label: "SX",  value: "safety"  },
+];
+
 function relativeTime(iso: string): string {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
   if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
@@ -50,31 +66,13 @@ function relativeTime(iso: string): string {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-type SearchParams = Promise<{ severity?: string; source?: string }>;
+export default function IssuesPage() {
+  const { issues, enabledModules } = useOrg();
+  const [severity,       setSeverity]       = useState<IssueSeverity | "all">("all");
+  const [source,         setSource]         = useState<ModuleId | "all">("all");
+  const [reportOpen,     setReportOpen]     = useState(false);
 
-export default async function IssuesPage({ searchParams }: { searchParams: SearchParams }) {
-  const params   = await searchParams;
-  const severity = typeof params.severity === "string" ? params.severity : "all";
-  const source   = typeof params.source   === "string" ? params.source   : "all";
-
-  const SEVERITY_FILTERS = ["all", "critical", "high", "medium", "low"];
-  const ALL_SOURCE_FILTERS: { label: string; value: ModuleId | "all" }[] = [
-    { label: "All", value: "all"     },
-    { label: "CX",  value: "cru"     },
-    { label: "DX",  value: "datum"   },
-    { label: "IX",  value: "inspect" },
-    { label: "FX",  value: "fix"     },
-    { label: "OX",  value: "ops"     },
-    { label: "MX",  value: "mx"      },
-    { label: "SX",  value: "safety"  },
-  ];
-
-  const [issues, org] = await Promise.all([
-    fetchOrgIssues(ORG_ID),
-    fetchPlatformOrg(ORG_ID),
-  ]);
-  const enabledModules = org?.enabledModules ?? [];
-  const SOURCE_FILTERS = ALL_SOURCE_FILTERS.filter(
+  const sourceFilters = ALL_SOURCE_FILTERS.filter(
     (f) => f.value === "all" || enabledModules.includes(f.value),
   );
 
@@ -85,48 +83,55 @@ export default async function IssuesPage({ searchParams }: { searchParams: Searc
   const openCount     = issues.filter((i) => i.status !== "resolved").length;
   const criticalCount = issues.filter((i) => i.severity === "critical").length;
 
+  const pillBase    = "px-3 py-1 rounded-[var(--radius-pill)] text-xs font-semibold border transition-colors";
+  const pillActive  = "bg-gold/15 text-gold border-gold/30";
+  const pillDefault = "bg-surface-overlay text-content-secondary border-surface-border hover:border-surface-border-hover hover:text-content-primary";
+
   return (
     <PageContainer maxWidth="wide">
+      {reportOpen && <ReportIssueDialog onClose={() => setReportOpen(false)} />}
+
       <SectionHeader
         title="Issues"
         subtitle={`${openCount} open · ${criticalCount} critical`}
+        action={
+          <button
+            onClick={() => setReportOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold hover:bg-gold-hover text-content-inverse text-xs font-semibold transition-colors"
+          >
+            <Plus size={13} />
+            Report Issue
+          </button>
+        }
       />
 
       {/* Filter row */}
       <div className="flex flex-wrap items-center gap-4 mb-5">
         {/* Severity pills */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          {SEVERITY_FILTERS.map((s) => (
-            <Link
-              key={s}
-              href={`/issues?severity=${s}&source=${source}`}
-              className={`px-3 py-1 rounded-[var(--radius-pill)] text-xs font-semibold border transition-colors capitalize ${
-                severity === s
-                  ? "bg-gold/15 text-gold border-gold/30"
-                  : "bg-surface-overlay text-content-secondary border-surface-border hover:border-surface-border-hover hover:text-content-primary"
-              }`}
+          {SEVERITY_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => setSeverity(f.value)}
+              className={`${pillBase} capitalize ${severity === f.value ? pillActive : pillDefault}`}
             >
-              {s === "all" ? "All Severity" : s}
-            </Link>
+              {f.label}
+            </button>
           ))}
         </div>
 
         <div className="h-4 w-px bg-surface-border hidden sm:block" />
 
         {/* Source pills */}
-        <div className="flex items-center gap-1.5">
-          {SOURCE_FILTERS.map((f) => (
-            <Link
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {sourceFilters.map((f) => (
+            <button
               key={f.value}
-              href={`/issues?severity=${severity}&source=${f.value}`}
-              className={`px-3 py-1 rounded-[var(--radius-pill)] text-xs font-semibold border transition-colors ${
-                source === f.value
-                  ? "bg-gold/15 text-gold border-gold/30"
-                  : "bg-surface-overlay text-content-secondary border-surface-border hover:border-surface-border-hover hover:text-content-primary"
-              }`}
+              onClick={() => setSource(f.value)}
+              className={`${pillBase} ${source === f.value ? pillActive : pillDefault}`}
             >
               {f.label}
-            </Link>
+            </button>
           ))}
         </div>
       </div>
@@ -145,10 +150,8 @@ export default async function IssuesPage({ searchParams }: { searchParams: Searc
                   href={`/issues/${issue.id}`}
                   className="flex items-start gap-3 px-4 py-3.5 border-b border-surface-border last:border-0 hover:bg-surface-overlay transition-colors group"
                 >
-                  {/* Severity bar */}
                   <div className={`shrink-0 w-0.5 self-stretch rounded-full mt-0.5 ${SEVERITY_BAR[issue.severity]}`} />
 
-                  {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                       <p className="text-sm font-semibold text-content-primary group-hover:text-gold transition-colors">
@@ -162,7 +165,6 @@ export default async function IssuesPage({ searchParams }: { searchParams: Searc
                     </div>
                   </div>
 
-                  {/* Meta */}
                   <div className="shrink-0 flex flex-col items-end gap-1.5">
                     <div className="flex items-center gap-1.5">
                       <span className={`text-[10px] font-semibold border rounded-[var(--radius-badge)] px-1.5 py-0.5 uppercase tracking-wide ${MODULE_COLOR[issue.module]}`}>

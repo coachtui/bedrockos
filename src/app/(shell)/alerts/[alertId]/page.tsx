@@ -9,9 +9,7 @@ import { fetchOrgIssueById } from "@/lib/supabase/issues";
 import { AlertReadToggle } from "@/components/shell/AlertReadToggle";
 import { notFound } from "next/navigation";
 import type { AlertType, AlertSeverity } from "@/types/domain";
-import { getEnvOrgId } from "@/lib/config/org";
-
-const ORG_ID = getEnvOrgId();
+import { getSessionOrgId } from "@/lib/config/session-org";
 
 const TYPE_LABEL: Record<AlertType, string> = {
   safety:     "Safety",
@@ -38,18 +36,20 @@ type Params = Promise<{ alertId: string }>;
 
 export async function generateMetadata({ params }: { params: Params }) {
   const { alertId } = await params;
-  const alert = await fetchOrgAlertById(ORG_ID, alertId);
+  const orgId = await getSessionOrgId();
+  const alert = await fetchOrgAlertById(orgId, alertId);
   return { title: alert ? alert.message : "Alert Not Found" };
 }
 
 export default async function AlertDetailPage({ params }: { params: Params }) {
   const { alertId } = await params;
-  const alert = await fetchOrgAlertById(ORG_ID, alertId);
+  const orgId = await getSessionOrgId();
+  const alert = await fetchOrgAlertById(orgId, alertId);
 
   if (!alert) notFound();
 
   const relatedIssue = alert.related_issue_id
-    ? await fetchOrgIssueById(ORG_ID, alert.related_issue_id)
+    ? await fetchOrgIssueById(orgId, alert.related_issue_id)
     : null;
 
   return (

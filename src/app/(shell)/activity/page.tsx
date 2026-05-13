@@ -27,7 +27,7 @@ function getEventHref(event: ActivityEvent): string | undefined {
 
 export default function ActivityPage() {
   const [filter, setFilter] = useState<ModuleId | "all">("all");
-  const { activity, enabledModules } = useOrg();
+  const { activity, enabledModules, projects } = useOrg();
 
   const visibleFilters = MODULE_FILTERS.filter(
     (f) => f.value === "all" || enabledModules.includes(f.value),
@@ -70,6 +70,7 @@ export default function ActivityPage() {
                 key={event.id}
                 event={event}
                 showProject
+                projectName={projects.find((p) => p.id === event.project_id)?.name}
                 href={getEventHref(event)}
               />
             ))
