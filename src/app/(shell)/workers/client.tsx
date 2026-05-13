@@ -1,28 +1,95 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus } from "lucide-react";
+import {
+  Plus, ChevronDown,
+  Wrench, Truck, Hammer, HardHat, ClipboardList, BrickWall, Shovel,
+  type LucideIcon,
+} from "lucide-react";
+import { Bulldozer } from "@phosphor-icons/react";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { Card } from "@/components/ui/Card";
 import { AddWorkerModal } from "@/components/shell/AddWorkerModal";
 import { WorkerInspectorPanel } from "@/components/shell/WorkerInspectorPanel";
 import { useOrg } from "@/providers/OrgProvider";
+import type { OrgWorker, WorkerRole } from "@/types/domain";
 
-const AVATAR_COLORS = [
-  "bg-blue-500", "bg-violet-500", "bg-rose-500", "bg-amber-500",
-  "bg-teal-500", "bg-emerald-500", "bg-indigo-500", "bg-pink-500",
-];
+type AnyIcon = LucideIcon | typeof Bulldozer;
 
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0][0].toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
+const ROLE_ICON: Record<WorkerRole, AnyIcon> = {
+  mechanic:       Wrench,
+  driver:         Truck,
+  carpenter:      Hammer,
+  mason:          BrickWall,
+  operator:       Bulldozer,
+  foreman:        HardHat,
+  superintendent: ClipboardList,
+  laborer:        Shovel,
+};
 
-function getAvatarColor(name: string): string {
-  const index = name.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  return AVATAR_COLORS[index % AVATAR_COLORS.length];
+function WorkerCard({
+  worker,
+  isSelected,
+  onClick,
+}: {
+  worker:     OrgWorker;
+  isSelected: boolean;
+  onClick:    () => void;
+}) {
+  const [skillsOpen, setSkillsOpen] = useState(false);
+  const RoleIcon = ROLE_ICON[worker.role] ?? HardHat;
+
+  return (
+    <div
+      className={`bg-surface-raised border rounded-[var(--radius-card)] p-4 cursor-pointer active:opacity-80 transition-colors ${
+        isSelected ? "border-teal/50" : "border-surface-border hover:border-surface-border-hover"
+      }`}
+      onClick={onClick}
+    >
+      <div className="flex items-start justify-between mb-3">
+        <div className="w-9 h-9 rounded-lg bg-surface-overlay border border-surface-border flex items-center justify-center">
+          <RoleIcon size={16} className="text-content-secondary" />
+        </div>
+        <span
+          className={`w-2 h-2 rounded-full mt-1 ${worker.available ? "bg-green-400" : "bg-content-muted"}`}
+          title={worker.available ? "Available" : "Needed on Site"}
+        />
+      </div>
+
+      <p className="font-semibold text-content-primary text-sm">{worker.name}</p>
+      <p className="text-xs text-content-muted mt-0.5 capitalize">{worker.role}</p>
+
+      <div className="mt-3">
+        {worker.skills.length === 0 ? (
+          <p className="text-xs text-content-muted">No skills on file</p>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setSkillsOpen((o) => !o); }}
+              className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded border text-xs font-semibold transition-colors ${
+                skillsOpen
+                  ? "border-gold/40 bg-gold/5 text-gold"
+                  : "border-surface-border text-content-secondary hover:border-content-muted hover:text-content-primary"
+              }`}
+            >
+              <span>Skills ({worker.skills.length})</span>
+              <ChevronDown size={13} className={`transition-transform ${skillsOpen ? "rotate-180" : ""}`} />
+            </button>
+            {skillsOpen && (
+              <div className="mt-2 rounded border border-surface-border bg-surface-overlay/50">
+                <ul className="divide-y divide-surface-border">
+                  {worker.skills.map((skill) => (
+                    <li key={skill} className="px-3 py-1.5 text-xs text-content-primary">{skill}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function WorkersClient() {
@@ -81,53 +148,14 @@ export function WorkersClient() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-        {filteredWorkers.map((worker) => {
-          const visibleSkills = worker.skills.slice(0, 3);
-          const extraCount    = worker.skills.length - visibleSkills.length;
-          const isSelected    = worker.id === selectedWorkerId;
-
-          return (
-            <Card
-              key={worker.id}
-              variant="default"
-              onClick={() => setSelectedWorkerId(worker.id)}
-              className={`hover:border-surface-border-hover transition-colors ${isSelected ? "border-teal/50" : ""}`}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-white text-xs font-bold ${getAvatarColor(worker.name)}`}>
-                  {getInitials(worker.name)}
-                </div>
-                <span
-                  className={`w-2 h-2 rounded-full mt-1 ${worker.available ? "bg-green-400" : "bg-content-muted"}`}
-                  title={worker.available ? "Available" : "Needed on Site"}
-                />
-              </div>
-              <p className="font-semibold text-content-primary text-sm">{worker.name}</p>
-              <p className="text-xs text-content-muted mt-0.5 capitalize">{worker.role}</p>
-              <div className="mt-3 pt-3 border-t border-surface-border">
-                {worker.skills.length === 0 ? (
-                  <p className="text-xs text-content-muted">No skills on file</p>
-                ) : (
-                  <div className="flex flex-wrap gap-1">
-                    {visibleSkills.map((skill) => (
-                      <span
-                        key={skill}
-                        className="text-xs bg-surface-overlay border border-surface-border rounded px-2 py-0.5 text-content-secondary"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                    {extraCount > 0 && (
-                      <span className="text-xs bg-surface-overlay border border-surface-border rounded px-2 py-0.5 text-content-muted">
-                        +{extraCount} more
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </Card>
-          );
-        })}
+        {filteredWorkers.map((worker) => (
+          <WorkerCard
+            key={worker.id}
+            worker={worker}
+            isSelected={worker.id === selectedWorkerId}
+            onClick={() => setSelectedWorkerId(worker.id)}
+          />
+        ))}
       </div>
 
       {showModal && (
