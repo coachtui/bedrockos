@@ -14,7 +14,7 @@ function toProjectStatus(s: string): ProjectStatus {
 export async function fetchOrgProjects(orgId: string): Promise<Project[]> {
   try {
     const { data, error } = await supabase
-      .from("projects")
+      .from("project_health")
       .select("id, name, slug, status, phase, location, pm_name, progress_pct, open_issues, last_activity, start_date, end_date, description, award_price, working_holiday_dates")
       .eq("org_id", orgId)
       .order("created_at", { ascending: false });
