@@ -19,7 +19,7 @@ function getPageTitle(pathname: string): string {
     projects:             "Projects",
     assets:               "Assets",
     crews:                "Crews",
-    workers:              "Workers",
+    workers:              "Personnel",
     activity:             "Activity",
     "field-operations":   "Field Operations",
     equipment:            "Equipment Intelligence",

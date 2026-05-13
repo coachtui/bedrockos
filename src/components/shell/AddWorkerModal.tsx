@@ -87,16 +87,16 @@ export function AddWorkerModal({ onClose, onCreated }: Props) {
 
   const header = (
     <div>
-      <h2 className="text-base md:text-sm font-semibold text-content-primary">Add Worker</h2>
+      <h2 className="text-base md:text-sm font-semibold text-content-primary">Add Personnel</h2>
       <p className="text-xs text-content-muted mt-0.5">
         Step {step === "details" ? "1" : "2"} of 2 —{" "}
-        {step === "details" ? "Worker details" : "Assign skills"}
+        {step === "details" ? "Personnel details" : "Assign skills"}
       </p>
     </div>
   );
 
   return (
-    <BottomSheet open={open} onClose={close} title={header} ariaLabel="Add Worker">
+    <BottomSheet open={open} onClose={close} title={header} ariaLabel="Add Personnel">
       {step === "details" && (
         <form onSubmit={handleDetailsNext} className="px-5 py-4 space-y-4">
           {error && (
@@ -210,7 +210,7 @@ export function AddWorkerModal({ onClose, onCreated }: Props) {
               onClick={handleSubmit}
               className="min-h-11 px-4 py-2 text-sm md:text-xs font-semibold bg-gold text-black rounded hover:bg-gold-hover active:opacity-80 transition-colors"
             >
-              Add Worker
+              Add Personnel
             </button>
           </div>
         </div>

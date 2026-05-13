@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, ChevronRight, CalendarDays } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Plus, ChevronRight, CalendarDays, ChevronDown, Users, Truck } from "lucide-react";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -10,7 +11,7 @@ import { CreateProjectModal } from "@/components/shell/CreateProjectModal";
 import { useOrg } from "@/providers/OrgProvider";
 import { getRoleGroup } from "@/lib/utils/roles";
 import type { ProjectWorkerCounts } from "@/lib/supabase/workers";
-import type { WorkerRole } from "@/types/domain";
+import type { WorkerRole, Project, OrgWorker, Asset } from "@/types/domain";
 
 const ROLE_PILL_ORDER: WorkerRole[] = [
   "operator", "laborer", "mason", "carpenter", "driver", "mechanic",
@@ -37,12 +38,172 @@ function rolePills(counts: ProjectWorkerCounts | undefined): { role: WorkerRole;
   return out;
 }
 
+type Expanded = "workers" | "equipment" | null;
+
+function ProjectCard({
+  project,
+  pills,
+  projectWorkers,
+  projectAssets,
+}: {
+  project:        Project;
+  pills:          { role: WorkerRole; label: string; count: number }[];
+  projectWorkers: OrgWorker[];
+  projectAssets:  Asset[];
+}) {
+  const [expanded, setExpanded] = useState<Expanded>(null);
+  const router = useRouter();
+  const { availableProjects, setCurrentProject } = useOrg();
+
+  const workerCount = projectWorkers.length;
+  const assetCount  = projectAssets.length;
+
+  function goToSchedule() {
+    const ctx = availableProjects.find((p) => p.id === project.id);
+    if (ctx) setCurrentProject(ctx);
+    router.push("/modules/cru/schedule");
+  }
+
+  function toggle(section: Exclude<Expanded, null>) {
+    setExpanded((prev) => (prev === section ? null : section));
+  }
+
+  return (
+    <div className="bg-surface-raised border border-surface-border rounded-[var(--radius-card)] p-4">
+      <Link
+        href={`/projects/${project.id}`}
+        className="block active:opacity-80 active:scale-[0.995] transition-all"
+      >
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-content-primary truncate">{project.name}</p>
+            <p className="text-xs text-content-muted mt-0.5 truncate">{project.location}</p>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <StatusBadge status={project.status} />
+            <ChevronRight size={16} className="text-content-muted" />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 text-xs text-content-secondary mb-3">
+          <span className="truncate">{project.phase}</span>
+          <span className="truncate text-content-muted">{project.pm_name}</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-1.5 bg-surface-overlay rounded-full overflow-hidden">
+            <div className="h-full bg-gold rounded-full" style={{ width: `${project.progress_pct}%` }} />
+          </div>
+          <span className="text-xs text-content-muted tabular-nums shrink-0 w-9 text-right">
+            {project.progress_pct}%
+          </span>
+        </div>
+      </Link>
+
+      {pills.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {pills.map((pill) => (
+            <span
+              key={pill.role}
+              className="inline-flex items-center gap-1 rounded-full bg-surface-overlay px-2 py-0.5 text-[11px] text-content-muted"
+            >
+              <span>{pill.label}</span>
+              <span className="tabular-nums text-content-secondary">×{pill.count}</span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => toggle("workers")}
+          className={`flex items-center justify-between gap-2 px-3 py-2 rounded border text-xs font-semibold transition-colors ${
+            expanded === "workers"
+              ? "border-gold/40 bg-gold/5 text-gold"
+              : "border-surface-border text-content-secondary hover:border-content-muted hover:text-content-primary"
+          }`}
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <Users size={13} /> Personnel
+            <span className="tabular-nums text-content-muted font-normal">({workerCount})</span>
+          </span>
+          <ChevronDown size={13} className={`transition-transform ${expanded === "workers" ? "rotate-180" : ""}`} />
+        </button>
+        <button
+          type="button"
+          onClick={() => toggle("equipment")}
+          className={`flex items-center justify-between gap-2 px-3 py-2 rounded border text-xs font-semibold transition-colors ${
+            expanded === "equipment"
+              ? "border-gold/40 bg-gold/5 text-gold"
+              : "border-surface-border text-content-secondary hover:border-content-muted hover:text-content-primary"
+          }`}
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <Truck size={13} /> Equipment
+            <span className="tabular-nums text-content-muted font-normal">({assetCount})</span>
+          </span>
+          <ChevronDown size={13} className={`transition-transform ${expanded === "equipment" ? "rotate-180" : ""}`} />
+        </button>
+      </div>
+
+      {expanded === "workers" && (
+        <div className="mt-2 rounded border border-surface-border bg-surface-overlay/50 max-h-64 overflow-y-auto">
+          {projectWorkers.length === 0 ? (
+            <p className="text-xs text-content-muted py-3 text-center">No personnel on this site.</p>
+          ) : (
+            <ul className="divide-y divide-surface-border">
+              {projectWorkers.map((w) => (
+                <li key={w.id} className="flex items-center justify-between gap-3 px-3 py-1.5 text-xs">
+                  <span className="truncate text-content-primary">{w.name}</span>
+                  <span className="text-content-muted capitalize shrink-0">{ROLE_LABEL[w.role] ?? w.role}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {expanded === "equipment" && (
+        <div className="mt-2 rounded border border-surface-border bg-surface-overlay/50 max-h-64 overflow-y-auto">
+          {projectAssets.length === 0 ? (
+            <p className="text-xs text-content-muted py-3 text-center">No equipment on this site.</p>
+          ) : (
+            <ul className="divide-y divide-surface-border">
+              {projectAssets.map((a) => (
+                <li key={a.id} className="flex items-center justify-between gap-3 px-3 py-1.5 text-xs">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-content-primary">{a.name}</p>
+                    <p className="truncate text-[11px] text-content-muted">{a.type}</p>
+                  </div>
+                  <StatusBadge status={a.status} size="sm" />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      <div className="mt-3 flex justify-end">
+        <button
+          type="button"
+          onClick={goToSchedule}
+          className="inline-flex items-center gap-1 text-xs text-content-muted hover:text-content-primary active:opacity-80 transition-colors"
+        >
+          <CalendarDays size={13} />
+          View Schedule
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function ProjectsClient({
   workerCountsByProject,
 }: {
   workerCountsByProject: Record<string, ProjectWorkerCounts>;
 }) {
-  const { projects, role, currentProject } = useOrg();
+  const { projects, role, currentProject, workers, assets } = useOrg();
   const [showModal, setShowModal] = useState(false);
 
   const roleGroup       = getRoleGroup(role);
@@ -73,141 +234,20 @@ export function ProjectsClient({
         }
       />
 
-      {/* Mobile: stacked card list */}
-      <div className="md:hidden space-y-2">
-        {visibleProjects.map((project) => {
-          const pills = rolePills(workerCountsByProject[project.id]);
-          return (
-            <div
-              key={project.id}
-              className="block bg-surface-raised border border-surface-border rounded-[var(--radius-card)] p-4"
-            >
-              <Link
-                href={`/projects/${project.id}`}
-                className="block active:opacity-80 active:scale-[0.995] transition-all"
-              >
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-content-primary truncate">{project.name}</p>
-                    <p className="text-xs text-content-muted mt-0.5 truncate">{project.location}</p>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <StatusBadge status={project.status} />
-                    <ChevronRight size={16} className="text-content-muted" />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between gap-3 text-xs text-content-secondary mb-3">
-                  <span className="truncate">{project.phase}</span>
-                  <span className="truncate text-content-muted">{project.pm_name}</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-1.5 bg-surface-overlay rounded-full overflow-hidden">
-                    <div className="h-full bg-gold rounded-full" style={{ width: `${project.progress_pct}%` }} />
-                  </div>
-                  <span className="text-xs text-content-muted tabular-nums shrink-0 w-9 text-right">
-                    {project.progress_pct}%
-                  </span>
-                </div>
-              </Link>
-
-              {pills.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {pills.map((pill) => (
-                    <span
-                      key={pill.role}
-                      className="inline-flex items-center gap-1 rounded-full bg-surface-overlay px-2 py-0.5 text-[11px] text-content-muted"
-                    >
-                      <span>{pill.label}</span>
-                      <span className="tabular-nums text-content-secondary">×{pill.count}</span>
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <div className="mt-3 flex justify-end">
-                <Link
-                  href="/modules/cru"
-                  className="inline-flex items-center gap-1 text-xs text-content-muted hover:text-content-primary active:opacity-80 transition-colors"
-                >
-                  <CalendarDays size={13} />
-                  View Schedules
-                </Link>
-              </div>
-            </div>
-          );
-        })}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        {visibleProjects.map((project) => (
+          <ProjectCard
+            key={project.id}
+            project={project}
+            pills={rolePills(workerCountsByProject[project.id])}
+            projectWorkers={workers.filter((w) => w.projectId === project.id)}
+            projectAssets={assets.filter((a) => a.project_id === project.id)}
+          />
+        ))}
 
         {visibleProjects.length === 0 && (
-          <p className="text-sm text-content-muted text-center py-12">No projects.</p>
+          <p className="text-sm text-content-muted text-center py-12 col-span-full">No projects.</p>
         )}
-      </div>
-
-      {/* Desktop: table */}
-      <div className="hidden md:block rounded-[var(--radius-card)] border border-surface-border overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-surface-border bg-surface-overlay">
-              <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-content-muted">Project</th>
-              <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-content-muted">Phase</th>
-              <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-content-muted hidden lg:table-cell">PM</th>
-              <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-content-muted">Progress</th>
-              <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-content-muted">Status</th>
-              <th className="text-right px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-content-muted">Schedules</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleProjects.map((project) => {
-              const pills = rolePills(workerCountsByProject[project.id]);
-              return (
-                <tr key={project.id} className="border-b border-surface-border last:border-0 hover:bg-surface-overlay transition-colors">
-                  <td className="px-4 py-3.5 align-top">
-                    <Link href={`/projects/${project.id}`} className="group block">
-                      <p className="font-semibold text-content-primary group-hover:text-gold transition-colors">{project.name}</p>
-                      <p className="text-xs text-content-muted mt-0.5">{project.location}</p>
-                    </Link>
-                    {pills.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {pills.map((pill) => (
-                          <span
-                            key={pill.role}
-                            className="inline-flex items-center gap-1 rounded-full bg-surface-overlay px-2 py-0.5 text-[11px] text-content-muted"
-                          >
-                            <span>{pill.label}</span>
-                            <span className="tabular-nums text-content-secondary">×{pill.count}</span>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-4 py-3.5 text-content-secondary align-top">{project.phase}</td>
-                  <td className="px-4 py-3.5 text-content-secondary hidden lg:table-cell align-top">{project.pm_name}</td>
-                  <td className="px-4 py-3.5 align-top">
-                    <div className="flex items-center gap-2">
-                      <div className="w-24 h-1.5 bg-surface-overlay rounded-full overflow-hidden">
-                        <div className="h-full bg-gold rounded-full" style={{ width: `${project.progress_pct}%` }} />
-                      </div>
-                      <span className="text-xs text-content-muted tabular-nums">{project.progress_pct}%</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3.5 align-top">
-                    <StatusBadge status={project.status} />
-                  </td>
-                  <td className="px-4 py-3.5 text-right align-top">
-                    <Link
-                      href="/modules/cru"
-                      className="inline-flex items-center gap-1 text-xs text-content-muted hover:text-content-primary transition-colors"
-                    >
-                      <CalendarDays size={13} />
-                      View Schedules
-                    </Link>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
       </div>
 
       {showModal && (

@@ -52,15 +52,15 @@ export function WorkersClient() {
   return (
     <PageContainer maxWidth="wide">
       <SectionHeader
-        title="Workers"
-        subtitle={`${filteredWorkers.length}${roleFilter !== "all" ? ` ${roleFilter}s` : " workers"} · ${availableCount} available`}
+        title="Personnel"
+        subtitle={`${filteredWorkers.length}${roleFilter !== "all" ? ` ${roleFilter}s` : " personnel"} · ${availableCount} available`}
         action={
           <button
             onClick={() => setShowModal(true)}
             className="flex items-center gap-1.5 min-h-11 md:min-h-0 px-4 md:px-3 py-2 md:py-1.5 text-sm md:text-xs font-semibold bg-gold text-black rounded hover:bg-gold/90 active:opacity-80 transition-colors"
           >
             <Plus size={13} />
-            Add Worker
+            Add Personnel
           </button>
         }
       />

@@ -97,7 +97,7 @@ export function TaskInspectorPanel({
 }: TaskInspectorPanelProps) {
   const isEdit = !!task;
 
-  const { workers, role, currentOrganization, currentProject, currentUser } = useOrg();
+  const { workers, crews, role, currentOrganization, currentProject, currentUser } = useOrg();
   const { updateTask } = useCx();
   const { requests, createRequest } = useOps();
 
@@ -121,6 +121,18 @@ export function TaskInspectorPanel({
       : [...current, workerId];
     updateTask(task.id, { assignedWorkerIds: next });
   }
+
+  function assignCrew(crewId: string) {
+    if (!task) return;
+    const crew = crews.find((c) => c.id === crewId);
+    if (!crew) return;
+    const merged = Array.from(new Set([...task.assignedWorkerIds, ...crew.memberIds]));
+    updateTask(task.id, { assignedWorkerIds: merged });
+  }
+
+  const assignableCrews = crews.filter(
+    (c) => !c.projectId || c.projectId === projectId,
+  );
 
   const [formState, setFormState] = useState<FormState>(() => getInitialState(task));
 
@@ -402,6 +414,40 @@ export function TaskInspectorPanel({
               Assigned Workers · {assignedWorkerIds.length}
             </label>
           </div>
+
+          {canAssign && assignableCrews.length > 0 && (
+            <div className="mb-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted mb-1">
+                Assign Crew
+              </p>
+              <select
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) {
+                    assignCrew(e.target.value);
+                    e.target.value = "";
+                  }
+                }}
+                className="w-full text-sm bg-surface-2 border border-surface-border rounded px-2 py-1.5"
+              >
+                <option value="">— Pick a crew to add its members —</option>
+                {assignableCrews.map((c) => {
+                  const newCount = c.memberIds.filter(
+                    (id) => !assignedWorkerIds.includes(id),
+                  ).length;
+                  return (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.memberIds.length} {c.memberIds.length === 1 ? "member" : "members"}
+                      {newCount < c.memberIds.length ? `, +${newCount} new` : ""})
+                    </option>
+                  );
+                })}
+              </select>
+              <p className="text-[11px] text-content-muted mt-1 italic">
+                Adds the crew&apos;s roster — you can still remove or swap individuals after.
+              </p>
+            </div>
+          )}
 
           {assignedWorkerIds.length === 0 && (
             <p className="text-xs text-content-muted italic mb-2">No workers assigned yet.</p>

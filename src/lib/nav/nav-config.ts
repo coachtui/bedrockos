@@ -8,7 +8,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Projects",   href: "/projects",  icon: "Building2" },
       { label: "Assets",     href: "/assets",    icon: "Truck" },
       { label: "Crews",      href: "/crews",     icon: "HardHat" },
-      { label: "Workers",    href: "/workers",   icon: "Users" },
+      { label: "Personnel",  href: "/workers",   icon: "Users" },
       { label: "Activity",   href: "/activity",  icon: "Activity" },
       { label: "Issues",     href: "/issues",    icon: "AlertCircle" },
       { label: "Alerts",     href: "/alerts",    icon: "Bell" },
